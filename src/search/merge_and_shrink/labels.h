@@ -58,6 +58,10 @@ public:
     int get_label_cost(int label) const;
     void dump_labels() const;
 
+    bool is_active(int label) const {
+        return label_costs[label] != -1;
+    }
+
     // The summed number of both inactive and active labels.
     int get_num_total_labels() const {
         return label_costs.size();

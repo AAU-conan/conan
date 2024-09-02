@@ -5,3 +5,5 @@ __pycache__/
 /builds/
 /misc/.tox/
 /misc/autodoc/downward-xmlrpc.secret
+.idea
+src/cmake-build-debug

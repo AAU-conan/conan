@@ -362,6 +362,14 @@ public:
         return FactProxy(*task, task->get_operator_precondition(
                              op_index, fact_index, is_axiom));
     }
+
+    [[nodiscard]] ProxyIterator<PreconditionsProxy> begin() const {
+        return ProxyIterator<PreconditionsProxy> (*this, 0);
+    }
+
+    [[nodiscard]] ProxyIterator<PreconditionsProxy> end() const {
+        return ProxyIterator<PreconditionsProxy> (*this, size());
+    }
 };
 
 

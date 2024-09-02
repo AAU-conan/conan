@@ -958,3 +958,191 @@ create_fast_downward_library(
         algorithms/sccs
     DEPENDENCY_ONLY
 )
+
+#####################################################################
+######## Add-ons with respect to Fast Downward start here  ##########
+#####################################################################
+
+create_fast_downward_library(
+        NAME step_time_estimation
+        HELP "Estimates the time spent on each operation on a sequence of operations"
+        SOURCES
+        algorithms/step_time_estimation
+        DEPENDENCY_ONLY
+)
+
+create_fast_downward_library(
+        NAME variable_ordering
+        HELP "Variable ordering strategies"
+        SOURCES
+        variable_ordering/variable_ordering_strategy
+        variable_ordering/variable_ordering_gamer
+        DEPENDENCY ONLY
+)
+
+
+create_fast_downward_library(
+        NAME factored_transition_system
+        HELP "Factored transition system representation"
+        SOURCES
+        factored_transition_system/factored_state_mapping
+        factored_transition_system/fts_task
+        factored_transition_system/fts_task_factory
+        factored_transition_system/label_map
+        factored_transition_system/labelled_transition_system
+#        factored_transition_system/symbolic_state_mapping.h
+        DEPENDENCY ONLY
+        DEPENDS
+        mas_heuristic
+)
+
+
+create_fast_downward_library(
+        NAME dominance
+        HELP "Dominance Analysis techniques"
+        SOURCES
+        dominance/dominance_analysis
+        dominance/dominance_pruning
+        dominance/dominance_pruning_local
+        dominance/factored_dominance_relation
+        dominance/label_relation
+        dominance/ld_simulation
+        dominance/local_state_relation
+        #dominance/dominance_pruning_dd
+        #dominance/label_relation_identity
+        #dominance/label_relation_noop
+        DEPENDS
+        factored_transition_system
+)
+
+
+create_fast_downward_library(
+        NAME numeric_dominance
+        HELP "Quantitative Dominance Analysis techniques"
+        SOURCES
+        #numeric_dominance/numeric_dominance_relation
+        #numeric_dominance/numeric_label_relation
+        numeric_dominance/numeric_local_state_relation
+        numeric_dominance/tau_labels
+        DEPENDS
+        factored_transition_system
+)
+
+create_fast_downward_library(
+        NAME symbolic
+        HELP "Symbolic search algorithms"
+        SOURCES
+        symbolic/sym_variables
+        symbolic/bdd_manager
+        symbolic/bucket
+        symbolic/transition_relation
+        symbolic/sym_state_space_manager
+        symbolic/original_state_space
+        symbolic/sym_search
+        symbolic/uniform_cost_search
+        symbolic/sym_controller
+        symbolic/sym_solution
+        symbolic/unidirectional_search
+        symbolic/bidirectional_search
+        symbolic/open_list
+        symbolic/closed_list
+        symbolic/merge_bdds
+
+        # symbolic/dead_states
+        # symbolic/breadth_first_search # TODO: Not compiled for now (could be useful for unsolvability PDBs)
+
+        DEPENDS variable_ordering step_time_estimation
+)
+#[[
+
+create_fast_downward_library(
+        NAME gamer_pdbs
+        HELP "Heuristic"
+        SOURCES
+        symbolic/gamer_pdbs_heuristic
+        DEPENDS SYMBOLIC
+)
+]]
+
+#create_fast_downward_library(
+#        NAME strong_type
+#        HELP "Library to handle strong_type: github.com:rollbear/strong_type"
+#        SOURCES
+#        strong_type/affine_point.hpp
+#        strong_type/strong_type.hpp
+#        ONLY_DEPENDENCY
+#)
+
+
+create_fast_downward_library(
+        NAME symbolic_search
+        HELP "Symbolic search engine"
+        SOURCES
+        search_algorithms/symbolic_search
+        DEPENDS symbolic
+)
+#[[
+
+create_fast_downward_library(
+        NAME h2_preprocessor
+        HELP "h2 preprocessor"
+        SOURCES
+        h2_preprocessor/disambiguated_operator
+        h2_preprocessor/disambiguated_partial_state
+        h2_preprocessor/disambiguated_task
+        h2_preprocessor/h2_mutexes
+        h2_preprocessor/h2_preprocessor
+        h2_preprocessor/h2_statistics
+        h2_preprocessor/types
+        h2_preprocessor/op_h2
+        h2_preprocessor/disambiguation_method
+        DEPENDS
+        task_properties cartesian_set fact_indexing
+)
+]]
+
+
+
+# List of things to integrate over time:
+# TODO: h2_preprocessor
+# TODO: dominance_analysis
+# TODO: dominance_pruning
+# TODO: fts_task
+##################################
+# TODO: stackelberg_planning
+# TODO: symbolic_pdbs
+# TODO: symbolic_perimeter_pdbs
+# TODO: symba
+# TODO: sympa
+# TODO: merge_and_shrink_unsolvability
+# TODO: hyperabstractions
+# TODO: symmetries
+# TODO: Decoupled search
+# TODO: operator mutexes
+# TODO: potential heuristics for symbolic search
+# TODO: Axioms support on symbolic search
+# TODO: Generation of all optimal plans
+# TODO: partial grounding
+# TODO: pruning rules ILP bad actions
+
+# If any enabled plugin requires the CUDD library, compile with it.
+# If CUDD is not installed, the planner will still compile, but
+# using components that depend on CUDD will cause an error.
+# This behavior can be overwritten by setting the
+# option USE_CUDD to false.
+option(USE_CUDD  "Compile with support for CUDD if installed on this system." TRUE)
+
+if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
+    find_package(Cudd)
+    if(Cudd_FOUND)
+        target_compile_definitions(symbolic INTERFACE USE_CUDD)
+        include_directories(${CUDD_INCLUDE_DIRS})
+        target_link_libraries(symbolic INTERFACE ${CUDD_LIBRARIES})
+        #set(CMAKE_CXX_FLAGS_DEBUG "-O3") # need to exclude the -D_GLIBCXX_DEBUG flag for CUDD
+    endif()
+endif()
+
+find_package(Boost)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+endif()

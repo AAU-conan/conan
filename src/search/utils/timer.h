@@ -4,6 +4,7 @@
 #include "system.h"
 
 #include <ostream>
+#include <limits>
 
 namespace utils {
 class Duration {
@@ -12,6 +13,13 @@ public:
     explicit Duration(double seconds) : seconds(seconds) {}
     operator double() const {
         return seconds;
+    }
+
+    bool is_infinity() const {
+        return seconds == std::numeric_limits<double>::infinity();
+    }
+    static Duration infinity() {
+        return Duration(std::numeric_limits<double>::infinity());
     }
 };
 

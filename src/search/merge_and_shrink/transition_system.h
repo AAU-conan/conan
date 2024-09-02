@@ -278,6 +278,10 @@ public:
     const std::vector<int> &get_incorporated_variables() const {
         return incorporated_variables;
     }
+
+    const std::vector<bool  > &get_goal_states() const {
+        return goal_states;
+    }
 };
 }
 

@@ -62,6 +62,13 @@ int MergeAndShrinkRepresentationLeaf::get_value(const State &state) const {
     return lookup_table[value];
 }
 
+int MergeAndShrinkRepresentationLeaf::get_value(const vector<int> &state) const {
+    assert ((size_t)var_id < state.size());
+    int value = state[var_id];
+    assert ((size_t)value < lookup_table.size());
+    return lookup_table[value];
+}
+
 bool MergeAndShrinkRepresentationLeaf::is_total() const {
     for (int entry : lookup_table) {
         if (entry == PRUNED_STATE) {
@@ -126,6 +133,7 @@ void MergeAndShrinkRepresentationMerge::apply_abstraction_to_lookup_table(
     domain_size = new_domain_size;
 }
 
+//TODO: Use templates to avoid redundancy between state value?
 int MergeAndShrinkRepresentationMerge::get_value(
     const State &state) const {
     int state1 = left_child->get_value(state);
@@ -134,6 +142,15 @@ int MergeAndShrinkRepresentationMerge::get_value(
         return PRUNED_STATE;
     return lookup_table[state1][state2];
 }
+
+    int MergeAndShrinkRepresentationMerge::get_value(
+            const std::vector<int> &state) const {
+        int state1 = left_child->get_value(state);
+        int state2 = right_child->get_value(state);
+        if (state1 == PRUNED_STATE || state2 == PRUNED_STATE)
+            return PRUNED_STATE;
+        return lookup_table[state1][state2];
+    }
 
 bool MergeAndShrinkRepresentationMerge::is_total() const {
     for (const vector<int> &row : lookup_table) {
