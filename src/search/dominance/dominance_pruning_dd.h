@@ -17,7 +17,7 @@ namespace dominance {
     std::ostream &operator<<(std::ostream &os, const PruningDD &m);
 
     class LocalStateRelationBDD {
-        std::vector<BDD> dominance_bdds;        //For each abstract state, we create a BDD that represents all the abstract states dominated by it or dominating it
+        std::vector<BDD> dominance_bdds;  //For each abstract state, we create a BDD that represents all the abstract states dominated by it or dominating it
 
     public:
         LocalStateRelationBDD(std::vector<BDD> && dominance_bdds) :
@@ -41,6 +41,7 @@ namespace dominance {
         std::vector<std::unique_ptr<LocalStateRelationBDD>> local_bdd_representation;
 
         BDD getBDDToInsert(const State &state);
+
         BDD getIrrelevantStates() const;
 
         //Methods to keep dominated states in explicit search

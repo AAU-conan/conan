@@ -23,11 +23,18 @@ namespace fts {
     // Preliminary experiments showed that this can pay off for the computation of dominance relations
 
     class FTSTask : public AbstractTask {
+        // The abstract task that was used to generate this task. This is optional.
+        // For now just used to preserve fact and action names, whenever they match
+        const std::shared_ptr<AbstractTask> parent;
+
         std::vector<int> label_costs;
         std::vector<std::unique_ptr<LabelledTransitionSystem>> transition_systems;
 
+
     public:
         FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts);
+        FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts, const std::shared_ptr<AbstractTask> parent);
+
 
         int get_num_labels() const;
 

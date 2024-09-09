@@ -25,6 +25,19 @@ namespace fts {
         }
     }
 
+    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts, const std::shared_ptr<AbstractTask> parent) : parent(parent) {
+
+        LabelMap label_map (fts.get_labels());
+        for (const auto & ts : fts) {
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map));
+        }
+
+        label_costs.resize(label_map.get_num_labels());
+        for (size_t i = 0; i < label_costs.size(); ++i) {
+            label_costs[i] = fts.get_labels().get_label_cost(label_map.get_old_id(i));
+        }
+    }
+
     int FTSTask::get_num_labels() const {
         return label_costs.size();
     }
@@ -44,7 +57,12 @@ namespace fts {
     }
 
     std::string FTSTask::get_variable_name(int var) const {
-        return std::format("FTSvar-{}", var); //TODO: return var name
+        if (parent && parent->get_num_variables() == get_num_variables() && parent->get_variable_domain_size(var) ==
+                                                                                    get_variable_domain_size(var)){
+            return parent->get_variable_name(var);
+        } else {
+            return std::format("FTSvar-{}", var);
+        }
     }
 
     int FTSTask::get_variable_domain_size(int var) const {
@@ -59,7 +77,12 @@ namespace fts {
         ABORT("Accessing axioms of an FTSTask");    }
 
     std::string FTSTask::get_fact_name(const FactPair &fact) const {
-        return std::format("FTSfact-{}-{}", fact.var, fact.value); // TODO: return fact name if available
+        if (parent && parent->get_num_variables() == get_num_variables() && parent->get_variable_domain_size(fact.var) ==
+                                                                            get_variable_domain_size(fact.var)){
+            return parent->get_fact_name(fact);
+        } else {
+            return std::format("FTSfact-{}-{}", fact.var, fact.value);
+        }
     }
 
     bool FTSTask::are_facts_mutex(const FactPair &, const FactPair &) const {
@@ -73,7 +96,11 @@ namespace fts {
 
     std::string FTSTask::get_operator_name(int index, bool is_axiom) const {
         assert (!is_axiom);
-        return std::format("FTSop-{}", index); //TODO: return operator name
+        if (parent && parent->get_num_operators() == get_num_labels()){
+            return parent->get_operator_name(index, is_axiom);
+        } else {
+            return std::format("FTSop-{}", index);
+        }
     }
 
     int FTSTask::get_num_operators() const {

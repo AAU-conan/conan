@@ -34,7 +34,7 @@ namespace fts {
                         true,
                         utils::g_log);
 
-        return {std::make_unique<FTSTask>(fts), std::make_unique<FactoredStateMappingIdentity>()};
+        return {std::make_unique<FTSTask>(fts, task), std::make_unique<FactoredStateMappingIdentity>()};
     }
 
     class AtomicTaskFactoryFeature
