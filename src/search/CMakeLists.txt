@@ -51,6 +51,8 @@ if (WIN32)
     copy_dlls_to_binary_dir_after_build(downward)
 endif()
 
+
+
 # In the following, we include all source files, grouped into libraries with
 # dependencies among each other.
 
@@ -147,6 +149,7 @@ create_fast_downward_library(
         utils/system_windows
         utils/timer
         utils/tuples
+        utils/graphviz
     CORE_LIBRARY
 )
 # On Linux, find the rt library for clock_gettime().
@@ -990,6 +993,8 @@ create_fast_downward_library(
         factored_transition_system/fts_task_factory
         factored_transition_system/label_map
         factored_transition_system/labelled_transition_system
+        factored_transition_system/draw_fts
+        factored_transition_system/fact_names
 #        factored_transition_system/symbolic_state_mapping.h
         DEPENDENCY ONLY
         DEPENDS
@@ -1014,6 +1019,23 @@ create_fast_downward_library(
         #dominance/label_relation_identity
         #dominance/label_relation_noop
         DEPENDS
+        factored_transition_system
+)
+
+
+create_fast_downward_library(
+        NAME qualified_dominance
+        HELP "Qualified Dominance Analysis techniques"
+        SOURCES
+        qualified_dominance/qualified_dominance_pruning
+        qualified_dominance/qualified_dominance_analysis
+        qualified_dominance/qualified_factored_dominance_relation
+        qualified_dominance/qualified_local_state_relation
+        qualified_dominance/qualified_dominance_pruning_local
+        qualified_dominance/qualified_ld_simulation
+        qualified_dominance/qualified_label_relation
+        DEPENDS
+        dominance
         factored_transition_system
 )
 
@@ -1133,6 +1155,8 @@ create_fast_downward_library(
 # This behavior can be overwritten by setting the
 # option USE_CUDD to false.
 option(USE_CUDD  "Compile with support for CUDD if installed on this system." TRUE)
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 
 if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
     find_package(Cudd)

@@ -1,15 +1,19 @@
 #include "labelled_transition_system.h"
 
+#include "fact_names.h"
 #include "label_map.h"
+#include "../abstract_task.h"
 #include "../merge_and_shrink/transition_system.h"
 #include "../merge_and_shrink/labels.h"
 
+class AbstractTask;
 using namespace std;
 
 namespace fts {
     LabelledTransitionSystem::LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &ts,
-                                                       const LabelMap &labelMap) :
-            num_states(ts.get_size()), goal_states(ts.get_goal_states()) {
+                                                       const LabelMap &labelMap,
+                                                       FactValueNames fact_value_names) :
+            num_states(ts.get_size()), goal_states(ts.get_goal_states()), fact_value_names(std::move(fact_value_names)) {
 
         int num_labels = labelMap.get_num_labels();
 

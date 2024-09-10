@@ -9,6 +9,11 @@
 #include <cassert>
 #include <ranges>
 #include <iostream>
+#include <memory>
+
+#include "fact_names.h"
+
+class AbstractTask;
 
 namespace merge_and_shrink {
     class TransitionSystem;
@@ -122,13 +127,13 @@ namespace fts {
 
         std::vector<std::vector<int> > label_groups;
         std::vector<LabelGroup> label_group_of_label; //TODO: Make a map to avoid representing irrelevant labels explicitly?
-        std::vector<std::string> name_states;
         std::vector<LTSTransition> transitions;
         std::vector<std::vector<LTSTransition> > transitions_src;
         std::vector<std::vector<TSTransition> > transitions_label_group;
+        FactValueNames fact_value_names;
 
     public:
-        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap);
+        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, FactValueNames fact_value_names);
 
         ~LabelledTransitionSystem() {}
 
@@ -168,12 +173,8 @@ namespace fts {
             return transitions_label_group[label_group.group];
         }
 
-        const std::vector<std::string> &get_names() const {
-            return name_states;
-        }
-
-        const std::string &name(int s) const {
-            return name_states[s];
+        [[nodiscard]] std::string name(int s) const {
+            return fact_value_names.get_fact_value_name(s);
         }
 
         int get_initial_state() const {

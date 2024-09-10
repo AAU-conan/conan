@@ -1,7 +1,7 @@
 include_guard(GLOBAL)
 
 add_library(common_cxx_flags INTERFACE)
-target_compile_features(common_cxx_flags INTERFACE cxx_std_20)
+target_compile_features(common_cxx_flags INTERFACE cxx_std_23)
 
 set(using_gcc_like "$<CXX_COMPILER_ID:ARMClang,AppleClang,Clang,GNU,LCC>")
 set(using_gcc "$<CXX_COMPILER_ID:GNU>")

@@ -7,3 +7,5 @@ __pycache__/
 /misc/autodoc/downward-xmlrpc.secret
 .idea
 src/cmake-build-debug
+src/search/cmake-build-debug
+sas-files
