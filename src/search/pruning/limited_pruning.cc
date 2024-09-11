@@ -26,8 +26,8 @@ void LimitedPruning::initialize(const shared_ptr<AbstractTask> &task) {
     log << "pruning method: limited" << endl;
 }
 
-void LimitedPruning::prune(
-    const State &state, vector<OperatorID> &op_ids) {
+void LimitedPruning::prune_generation(
+    const State &state, const SearchNodeInfo & node_info, vector<OperatorID> &op_ids) {
     if (is_pruning_disabled) {
         return;
     }
@@ -50,8 +50,36 @@ void LimitedPruning::prune(
     }
 
     ++num_pruning_calls;
-    pruning_method->prune(state, op_ids);
+    pruning_method->prune_generation(state, node_info, op_ids);
 }
+
+    bool LimitedPruning::prune_expansion(
+            const State &state, const SearchNodeInfo & node_info) {
+        if (is_pruning_disabled) {
+            return false;
+        }
+        if (num_pruning_calls == num_expansions_before_checking_pruning_ratio &&
+            min_required_pruning_ratio > 0.) {
+            double pruning_ratio = (num_successors_before_pruning == 0) ? 1. : 1. - (
+                    static_cast<double>(num_successors_after_pruning) /
+                    static_cast<double>(num_successors_before_pruning));
+            if (log.is_at_least_normal()) {
+                log << "Pruning ratio after " << num_expansions_before_checking_pruning_ratio
+                    << " calls: " << pruning_ratio << endl;
+            }
+            if (pruning_ratio < min_required_pruning_ratio) {
+                if (log.is_at_least_normal()) {
+                    log << "-- pruning ratio is lower than minimum pruning ratio ("
+                        << min_required_pruning_ratio << ") -> switching off pruning" << endl;
+                }
+                is_pruning_disabled = true;
+            }
+        }
+
+        ++num_pruning_calls;
+        return pruning_method->prune_expansion(state, node_info);
+    }
+
 
 class LimitedPruningFeature
     : public plugins::TypedFeature<PruningMethod, LimitedPruning> {

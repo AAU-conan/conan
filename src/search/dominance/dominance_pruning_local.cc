@@ -7,6 +7,7 @@
 
 using namespace std;
 
+
 namespace dominance {
     DominancePruningLocal::DominancePruningLocal(bool compare_initial_state, bool compare_siblings,
                                                  const std::shared_ptr<fts::FTSTaskFactory> & fts_factory,
@@ -63,9 +64,9 @@ namespace dominance {
     }
 
 
-    void DominancePruningLocal::prune(const State &state, std::vector<OperatorID> &op_ids) {
+    void DominancePruningLocal::prune_generation(const State &state, const SearchNodeInfo &, std::vector<OperatorID> &op_ids) {
         state.unpack();
-        vector<int> parent = state.get_unpacked_values();
+        const vector<int> & parent = state.get_unpacked_values();
         vector<int> parent_transformed = state_mapping->transform(parent);
 
         vector<int> succ = parent;

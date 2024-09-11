@@ -179,6 +179,10 @@ SearchStatus EagerSearch::step() {
     if (check_goal_and_set_plan(s))
         return SOLVED;
 
+    if(pruning_method->prune_state(s, node->get_info())) {
+        return IN_PROGRESS;
+    }
+
     vector<OperatorID> applicable_ops;
     successor_generator.generate_applicable_ops(s, applicable_ops);
 
@@ -186,7 +190,7 @@ SearchStatus EagerSearch::step() {
       TODO: When preferred operators are in use, a preferred operator will be
       considered by the preferred operator queues even when it is pruned.
     */
-    pruning_method->prune_operators(s, applicable_ops);
+    pruning_method->prune_operators(s, node->get_info(), applicable_ops);
 
     // This evaluates the expanded state (again) to get preferred ops
     EvaluationContext eval_context(s, node->get_g(), false, &statistics, true);

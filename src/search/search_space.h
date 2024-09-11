@@ -25,6 +25,10 @@ class SearchNode {
 public:
     SearchNode(const State &state, SearchNodeInfo &info);
 
+    const SearchNodeInfo & get_info () const{
+        return info;
+    }
+
     const State &get_state() const;
 
     bool is_new() const;

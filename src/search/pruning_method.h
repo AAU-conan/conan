@@ -5,6 +5,7 @@
 
 #include "utils/logging.h"
 #include "utils/timer.h"
+#include "search_node_info.h"
 
 #include <memory>
 #include <vector>
@@ -25,18 +26,28 @@ class PruningMethod {
     utils::Timer timer;
     friend class limited_pruning::LimitedPruning;
 
-    virtual void prune(
-        const State &state, std::vector<OperatorID> &op_ids) = 0;
+    virtual bool prune_expansion(
+            const State &, const SearchNodeInfo & ) {
+        return false;
+    }
+
+    virtual void prune_generation(
+        const State &, const SearchNodeInfo & , std::vector<OperatorID> &) {
+    }
 protected:
     mutable utils::LogProxy log;
     std::shared_ptr<AbstractTask> task;
     long num_successors_before_pruning;
     long num_successors_after_pruning;
+    long num_states_checked;
+    long num_states_pruned;
 public:
     explicit PruningMethod(utils::Verbosity verbosity);
     virtual ~PruningMethod() = default;
     virtual void initialize(const std::shared_ptr<AbstractTask> &task);
-    void prune_operators(const State &state, std::vector<OperatorID> &op_ids);
+    void prune_operators(const State &state, const SearchNodeInfo & node_info, std::vector<OperatorID> &op_ids);
+    bool prune_state(const State &state, const SearchNodeInfo & node_info);
+
     virtual void print_statistics() const;
 };
 

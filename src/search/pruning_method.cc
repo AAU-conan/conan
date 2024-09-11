@@ -20,11 +20,14 @@ void PruningMethod::initialize(const shared_ptr<AbstractTask> &task_) {
     task = task_;
     num_successors_before_pruning = 0;
     num_successors_after_pruning = 0;
+    num_states_checked = 0;
+    num_states_pruned = 0;
 }
 
 void PruningMethod::prune_operators(
-    const State &state, vector<OperatorID> &op_ids) {
+    const State &state, const SearchNodeInfo & node_info, vector<OperatorID> &op_ids) {
     assert(!task_properties::is_goal_state(TaskProxy(*task), state));
+
     /*
       We only measure time with verbose verbosity level because time
       measurements induce a significant overhead, up to 30% for configurations
@@ -34,12 +37,31 @@ void PruningMethod::prune_operators(
         timer.resume();
     }
     int num_ops_before_pruning = op_ids.size();
-    prune(state, op_ids);
+    prune_generation(state, node_info, op_ids);
     num_successors_before_pruning += num_ops_before_pruning;
     num_successors_after_pruning += op_ids.size();
     if (log.is_at_least_verbose()) {
         timer.stop();
     }
+}
+
+
+bool PruningMethod::prune_state(const State &state, const SearchNodeInfo &node_info) {
+    if (log.is_at_least_verbose()) {
+        timer.resume();
+    }
+
+    bool pruned = prune_expansion(state, node_info);
+    num_states_checked++;
+    if (pruned) {
+        num_states_pruned++;
+    }
+
+    if (log.is_at_least_verbose()) {
+        timer.stop();
+    }
+
+    return pruned;
 }
 
 void PruningMethod::print_statistics() const {
@@ -48,10 +70,22 @@ void PruningMethod::print_statistics() const {
             << num_successors_before_pruning << endl
             << "total successors after pruning: "
             << num_successors_after_pruning << endl;
+
         double pruning_ratio = (num_successors_before_pruning == 0) ? 1. : 1. - (
             static_cast<double>(num_successors_after_pruning) /
             static_cast<double>(num_successors_before_pruning));
         log << "Pruning ratio: " << pruning_ratio << endl;
+
+        log << "total states checked: "
+            << num_states_checked << endl
+            << "total states pruned: "
+            << num_states_pruned << endl;
+
+        double pruning_ratio_expansions = (num_states_checked == 0) ? 1. : (
+                static_cast<double>(num_states_pruned) /
+                static_cast<double>(num_states_checked));
+        log << "Pruning ratio expansions: " << pruning_ratio_expansions << endl;
+
         if (log.is_at_least_verbose()) {
             log << "Time for pruning operators: " << timer << endl;
         }

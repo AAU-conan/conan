@@ -15,8 +15,11 @@ class LimitedPruning : public PruningMethod {
     int num_pruning_calls;
     bool is_pruning_disabled;
 
-    virtual void prune(
-        const State &state, std::vector<OperatorID> &op_ids) override;
+    virtual void prune_generation(
+        const State &state, const SearchNodeInfo & node_info, std::vector<OperatorID> &op_ids) override;
+
+    virtual bool prune_expansion(
+            const State &state, const SearchNodeInfo & node_info) override;
 public:
     explicit LimitedPruning(
         const std::shared_ptr<PruningMethod> &pruning,

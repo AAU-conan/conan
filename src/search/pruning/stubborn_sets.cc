@@ -57,7 +57,7 @@ void StubbornSets::compute_achievers(const TaskProxy &task_proxy) {
     }
 }
 
-void StubbornSets::prune(const State &state, vector<OperatorID> &op_ids) {
+void StubbornSets::prune_generation(const State &state, const SearchNodeInfo & , vector<OperatorID> &op_ids) {
     // Clear stubborn set from previous call.
     stubborn.assign(num_operators, false);
 
