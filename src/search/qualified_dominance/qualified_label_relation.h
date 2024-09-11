@@ -21,32 +21,31 @@ namespace utils {
 }
 
 namespace qdominance {
-
-/* 
- * Label relation represents the preorder relations on labels that
- * occur in a set of LTS
- */
+    /*
+     * Label relation represents the preorder relations on labels that
+     * occur in a set of LTS
+     */
     class QualifiedLabelRelation {
         int num_labels;
         //For each lts, matrix indicating whether l1 simulates l2
         //std::vector<std::vector<std::vector<bool > > > dominates;
 
-        std::vector<std::vector<AllNoneFactorIndex> > dominates_in;
+        std::vector<std::vector<AllNoneFactorIndex>> dominates_in;
 
         //Indicates whether labels are dominated by noop or other irrelevant
         //variables in theta
-        std::vector<std::vector<bool> > simulated_by_irrelevant;
-        std::vector<std::vector<bool> > simulates_irrelevant;
+        std::vector<std::vector<bool>> simulated_by_irrelevant;
+        std::vector<std::vector<bool>> simulates_irrelevant;
 
         std::vector<AllNoneFactorIndex> dominated_by_noop_in;
 
-        bool update(int i, const fts::LabelledTransitionSystem &lts, const QualifiedLocalStateRelation &sim);
+        bool update(int i, const fts::LabelledTransitionSystem& lts, const QualifiedLocalStateRelation& sim);
 
         //Returns true if l1 simulates l2 in lts
         inline bool simulates(int l1, int l2, int lts) const {
-            assert (l1 >= 0);
+            assert(l1 >= 0);
             assert((size_t)l1 < dominates_in.size());
-            assert (l2 >= 0);
+            assert(l2 >= 0);
             assert((size_t)l2 < dominates_in[l1].size());
 
             return dominates_in[l1][l2].contains(lts);
@@ -66,15 +65,15 @@ namespace qdominance {
         }
 
     public:
-        QualifiedLabelRelation(const fts::FTSTask & fts_task,
-                      const std::vector<std::unique_ptr<QualifiedLocalStateRelation>> &sim);
+        QualifiedLabelRelation(const fts::FTSTask& fts_task,
+                               const std::vector<std::unique_ptr<QualifiedLocalStateRelation>>& sim);
 
-        bool update(const fts::FTSTask & fts_task, const std::vector<std::unique_ptr<QualifiedLocalStateRelation>> &sim);
+        bool update(const fts::FTSTask& fts_task, const std::vector<std::unique_ptr<QualifiedLocalStateRelation>>& sim);
 
-        void dump(utils::LogProxy &log) const;
-        void dump(utils::LogProxy &log, int label) const;
-        void dump_equivalent(utils::LogProxy &log) const;
-        void dump_dominance(utils::LogProxy &log) const;
+        void dump(utils::LogProxy& log) const;
+        void dump(utils::LogProxy& log, int label) const;
+        void dump_equivalent(utils::LogProxy& log) const;
+        void dump_dominance(utils::LogProxy& log) const;
 
 
         inline int get_num_labels() const {
@@ -97,6 +96,6 @@ namespace qdominance {
         }
     };
 }
-    
+
 
 #endif

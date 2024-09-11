@@ -173,8 +173,12 @@ namespace fts {
             return transitions_label_group[label_group.group];
         }
 
-        [[nodiscard]] std::string name(int s) const {
+        [[nodiscard]] std::string state_name(int s) const {
             return fact_value_names.get_fact_value_name(s);
+        }
+
+        [[nodiscard]] std::string label_name(int label) const {
+            return fact_value_names.get_operator_name(label, false);
         }
 
         int get_initial_state() const {

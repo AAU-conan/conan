@@ -38,7 +38,7 @@ namespace qdominance {
         QualifiedLocalStateRelation(std::vector<std::vector<QualifiedSet> > && relation, int num_labels);
 
         //static LocalStateRelation get_local_distances_relation(const merge_and_shrink::TransitionSystem & ts);
-        static std::unique_ptr<QualifiedLocalStateRelation> get_local_distances_relation(const fts::LabelledTransitionSystem &ts);
+        static std::unique_ptr<QualifiedLocalStateRelation> get_local_distances_relation(const fts::LabelledTransitionSystem &ts, int num_labels);
         //TODO?: static LocalStateRelation get_identity_relation(const merge_and_shrink::TransitionSystem & ts);
 
         void cancel_simulation_computation();
@@ -83,6 +83,10 @@ namespace qdominance {
 
         int num_states() const {
             return relation.size();
+        }
+
+        int get_num_labels() const {
+            return num_labels;
         }
 
         void dump(utils::LogProxy &log, const std::vector<std::string> &names) const;

@@ -12,7 +12,13 @@ namespace fts {
             }
             for (auto &t : lts->get_transitions())
             {
-                graph.add_edge(state_to_node[t.src], state_to_node[t.target], std::to_string(t.label_group.group));
+                std::string edge_label;
+                bool first = true;
+                for (const auto label : lts->get_labels(t.label_group)) {
+                    edge_label += (first? "": "\n") + fts.get_operator_name(label, false);
+                    first = false;
+                }
+                graph.add_edge(state_to_node[t.src], state_to_node[t.target], edge_label);
             }
         }
         graph.output_graph(filename);

@@ -17,15 +17,9 @@ using fts::LabelledTransitionSystem;
 
 namespace qdominance {
 
-    unique_ptr<QualifiedLocalStateRelation> QualifiedLocalStateRelation::get_local_distances_relation(const LabelledTransitionSystem & ts) {
+    unique_ptr<QualifiedLocalStateRelation> QualifiedLocalStateRelation::get_local_distances_relation(const LabelledTransitionSystem & ts, int num_labels) {
         std::vector<std::vector<QualifiedSet> > relation;
-
-
-        size_t num_labels = 0;
-        for (int i = 0; i < ts.get_num_label_groups(); ++i) {
-            num_labels += ts.get_labels(ts.get_group_label(i)).size();
-        }
-        unordered_set<int> all_labels = unordered_set<int>();
+        QualifiedSet all_labels = QualifiedSet();
         for (int i = 0; i < num_labels; ++i) {
             all_labels.insert(i);
         }
@@ -35,7 +29,7 @@ namespace qdominance {
         const std::vector<int> &goal_distances = ts.get_goal_distances();
         relation.resize(num_states);
         for (int i = 0; i < num_states; i++) {
-            relation[i].resize(num_states, QualifiedSet());
+            relation[i].resize(num_states, all_labels);
             if (!goal_states[i]) {
                 for (int j = 0; j < num_states; j++) {
                     //TODO (efficiency): initialize with goal distances
@@ -106,20 +100,7 @@ namespace qdominance {
 
 
     void QualifiedLocalStateRelation::dump(utils::LogProxy &log) const {
-        // log << "SIMREL:" << endl;
-        // for (size_t j = 0; j < relation.size(); ++j) {
-        //     for (size_t i = 0; i < relation.size(); ++i) {
-        //         if (labels_where_simulates(j, i) && i != j) {
-        //             if (labels_where_simulates(i, j)) {
-        //                 if (j < i) {
-        //                     log << i << " <=> " << j << endl;
-        //                 }
-        //             } else {
-        //                 log << i << " <= " << j << endl;
-        //             }
-        //         }
-        //     }
-        // }
+
     }
 
 

@@ -27,6 +27,10 @@ public:
     [[nodiscard]] std::string get_fact_value_name(const int value) const {
         return fact_names->get_fact_name(FactPair(variable, value));
     }
+
+    [[nodiscard]] std::string get_operator_name(const int index, const bool is_axiom) const {
+        return fact_names->get_operator_name(index, is_axiom);
+    }
 };
 
 
