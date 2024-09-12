@@ -5,11 +5,14 @@
 #include <limits>
 #include "../plugins/options.h"
 #include "../plugins/plugin.h"
-
 #include "../factored_transition_system/fts_task.h"
 #include "../factored_transition_system/fts_task_factory.h"
 #include "../factored_transition_system/factored_state_mapping.h"
 #include "../factored_transition_system/draw_fts.h"
+
+#include <rust/cxx.h>
+#include <rust_test_cxx/lib.h>
+#include <rust_test_cxx/ltl.h>
 
 using namespace std;
 using plugins::Options;

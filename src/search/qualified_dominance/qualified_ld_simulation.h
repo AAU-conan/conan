@@ -8,6 +8,7 @@
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
 #include "../utils/logging.h"
+#include "../dominance/all_none_factor_index.h"
 
 #include "../utils/timer.h"
 #include "qualified_dominance_analysis.h"
@@ -134,7 +135,7 @@ namespace qdominance {
                                                     log << " which dominates" << std::endl;
                                                     return true;
                                                 }
-                                                log << " which does not dominate" << std::endl;
+                                                log << " which only dominates in " << to_string(label_dominance.where_dominates(trt_label, trs_label)) << std::endl;
                                             }
                                         }
                                         return false;

@@ -94,6 +94,10 @@ namespace qdominance {
         inline bool dominates(int l1, int l2, int lts) const {
             return dominates_in[l1][l2].contains_all_except(lts);
         }
+
+        [[nodiscard]] AllNoneFactorIndex where_dominates(int l1, int l2) const {
+            return dominates_in[l1][l2];
+        }
     };
 }
 

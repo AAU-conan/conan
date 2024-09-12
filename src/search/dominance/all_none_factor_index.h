@@ -2,9 +2,9 @@
 #define DOMINANCE_ALL_NONE_FACTOR_INDEX_H
 
 #include <cassert>
+#include <string>
 
 namespace dominance {
-
     // Represents whether l1 dominates l2 in all, all except "factor", or none
     class AllNoneFactorIndex {
         static const int DOMINATES_IN_ALL = -2;
@@ -66,5 +66,8 @@ namespace dominance {
     };
 
 }
+
+std::string to_string(dominance::AllNoneFactorIndex a);
+
 
 #endif

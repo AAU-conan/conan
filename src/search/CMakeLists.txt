@@ -1013,6 +1013,7 @@ create_fast_downward_library(
         dominance/label_relation
         dominance/ld_simulation
         dominance/local_state_relation
+        dominance/all_none_factor_index
         dominance/dominance_pruning_all_previous
         dominance/dominance_pruning_lower_g
         #dominance/dominance_pruning_dd
