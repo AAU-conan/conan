@@ -8,8 +8,8 @@ mod ffi {
 }
 
 pub fn test() {
-    let f = crate::ltl::conjunction(crate::ltl::atomic(String::from("A")), crate::ltl::atomic(String::from("B")));
-    let g = crate::ltl::conjunction(f, crate::ltl::atomic(String::from("C")));
+    let f = crate::ltl::conjunction(crate::ltl::atomic(8), crate::ltl::atomic(1));
+    let g = crate::ltl::conjunction(f, crate::ltl::atomic(4));
 
     println!("{}", g);
 }

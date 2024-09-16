@@ -2,13 +2,17 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use cxx;
 
-type AtomType = String;
+type AtomType = i32;
 
 pub trait CloneBoxLTL {
     fn clone_box(&self) -> Box<dyn LTLFormula>;
 }
 
-pub trait LTLFormula: Display + CloneBoxLTL + 'static { }
+pub trait LTLFormula: Display + CloneBoxLTL + 'static {
+    fn is_true(&self) -> bool {
+        false
+    }
+}
 
 impl<U: LTLFormula + Clone> CloneBoxLTL for U {
     fn clone_box(&self) -> Box<dyn LTLFormula> {
@@ -27,7 +31,6 @@ impl Display for AtomicProposition {
     }
 }
 impl LTLFormula for AtomicProposition {}
-
 
 pub struct Conjunction {
     lhs: Box<dyn LTLFormula>,
@@ -118,6 +121,26 @@ impl Clone for Always {
 impl LTLFormula for Always {}
 
 
+struct Boolean {
+    value: bool
+}
+impl Display for Boolean {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.value.fmt(f)
+    }
+}
+impl Clone for Boolean {
+    fn clone(&self) -> Self {
+        Boolean { value: self.value }
+    }
+}
+impl LTLFormula for Boolean {
+    fn is_true(&self) -> bool {
+        self.value
+    }
+}
+
+
 pub(crate) fn atomic(var: AtomType) -> Box<Box<dyn LTLFormula>> {
     Box::new(Box::new(AtomicProposition { var }))
 }
@@ -142,7 +165,15 @@ pub(crate) fn always(inner: Box<Box<dyn LTLFormula>>) -> Box<Box<dyn LTLFormula>
     Box::new(Box::new(Always { inner: inner.clone_box() }))
 }
 
-type DynLTLFormula = Box<dyn LTLFormula>;
+pub(crate) fn boolean(value: bool) -> Box<Box<dyn LTLFormula>> {
+    Box::new(Box::new(Boolean { value }))
+}
+
+pub(crate) fn is_true(formula: &Box<Box<dyn LTLFormula>>) -> bool {
+    formula.as_ref().is_true()
+}
+
+type DynLTLFormula = Box<dyn LTLFormula + 'static>;
 
 #[cxx::bridge(namespace=ltl)]
 mod ltl_ffi {
@@ -154,13 +185,16 @@ mod ltl_ffi {
         type Disjunction;
         type Negation;
         type Always;
-        fn atomic(var: String) -> Box<DynLTLFormula>;
+        type Boolean;
+        fn atomic(var: i32) -> Box<DynLTLFormula>;
         fn conjunction(lhs: Box<DynLTLFormula>, rhs: Box<DynLTLFormula>) -> Box<DynLTLFormula>;
         fn eventually(eventually: Box<DynLTLFormula>) -> Box<DynLTLFormula>;
         fn disjunction(lhs: Box<DynLTLFormula>, rhs: Box<DynLTLFormula>) -> Box<DynLTLFormula>;
         fn negation(inner: Box<DynLTLFormula>) -> Box<DynLTLFormula>;
         fn always(inner: Box<DynLTLFormula>) -> Box<DynLTLFormula>;
+        fn is_true(formula: &Box<DynLTLFormula>) -> bool;
 
+        fn boolean(value: bool) -> Box<DynLTLFormula>;
         fn to_string(self: &DynLTLFormula) -> String;
     }
 }

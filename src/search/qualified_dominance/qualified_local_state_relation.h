@@ -8,6 +8,11 @@
 #include <set>
 #include <unordered_set>
 
+#include <rust/cxx.h>
+#include <spot/tl/formula.hh>
+#include <spot/tl/print.hh>
+#include <spot/twaalgos/contains.hh>
+
 namespace merge_and_shrink{
     class TransitionSystem;
 }
@@ -20,14 +25,14 @@ namespace utils {
     class LogProxy;
 }
 
-typedef std::set<int> QualifiedSet;
+typedef spot::formula QualifiedFormula;
 
 namespace qdominance {
     // First implementation of a simulation relation.
     class QualifiedLocalStateRelation {
     protected:
         // By now we assume that the partition is unitary... we can improve this later with EquivalenceRelation
-        std::vector<std::vector<QualifiedSet> > relation;
+        std::vector<std::vector<QualifiedFormula> > relation;
 
         int num_labels;
 
@@ -35,17 +40,13 @@ namespace qdominance {
         std::vector<std::vector<int>> dominated_states, dominating_states;
         void compute_list_dominated_states();
     public:
-        QualifiedLocalStateRelation(std::vector<std::vector<QualifiedSet> > && relation, int num_labels);
+        QualifiedLocalStateRelation(std::vector<std::vector<QualifiedFormula> > && relation, int num_labels);
 
         //static LocalStateRelation get_local_distances_relation(const merge_and_shrink::TransitionSystem & ts);
         static std::unique_ptr<QualifiedLocalStateRelation> get_local_distances_relation(const fts::LabelledTransitionSystem &ts, int num_labels);
         //TODO?: static LocalStateRelation get_identity_relation(const merge_and_shrink::TransitionSystem & ts);
 
         void cancel_simulation_computation();
-
-        inline void remove(int s, int t, int a) {
-            relation[s][t].erase(a);
-        }
 
         // This should be part of the factored mapping
         // bool pruned(const State &state) const;
@@ -59,11 +60,18 @@ namespace qdominance {
         const std::vector<int> &get_dominating_states(int state);
 
         inline bool simulates(int s, int t) const {
-            return relation[s][t].size() == num_labels;
+            return spot::are_equivalent(relation[s][t], spot::formula::tt());
         }
 
-        inline QualifiedSet labels_where_simulates(int s, int t) const {
+        inline QualifiedFormula simulates_under(int s, int t) const {
             return relation[s][t];
+        }
+
+        bool set_simulates_under(int s, int t, const QualifiedFormula& f) {
+            if (spot::are_equivalent(relation[s][t], f))
+                return false;
+            relation[s][t] = f;
+            return true;
         }
 
         inline bool similar(int s, int t) const {
@@ -72,7 +80,7 @@ namespace qdominance {
                    s == t;
         }
 
-        inline const std::vector<std::vector<QualifiedSet> > &get_relation() {
+        inline const std::vector<std::vector<QualifiedFormula> > &get_relation() {
             return relation;
         }
 
@@ -81,7 +89,7 @@ namespace qdominance {
         int num_simulations(bool ignore_equivalences) const;
         int num_different_states() const;
 
-        int num_states() const {
+        [[nodiscard]] size_t num_states() const {
             return relation.size();
         }
 

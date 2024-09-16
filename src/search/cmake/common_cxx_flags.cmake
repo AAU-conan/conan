@@ -11,7 +11,7 @@ set(using_gcc_like_debug "$<AND:${using_gcc_like},$<CONFIG:DEBUG>>")
 set(should_use_glibcxx_debug "$<AND:${using_gcc_like_debug},$<BOOL:${USE_GLIBCXX_DEBUG}>>")
 
 target_compile_options(common_cxx_flags INTERFACE
-    "$<${using_gcc_like}:-O3;-g>")
+    "$<${using_gcc_like}:-O0;-g>")
 target_link_options(common_cxx_flags INTERFACE
     "$<${using_gcc_like}:-g>")
 target_compile_options(common_cxx_flags INTERFACE

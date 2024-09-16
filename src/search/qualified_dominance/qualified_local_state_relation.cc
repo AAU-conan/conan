@@ -18,24 +18,18 @@ using fts::LabelledTransitionSystem;
 namespace qdominance {
 
     unique_ptr<QualifiedLocalStateRelation> QualifiedLocalStateRelation::get_local_distances_relation(const LabelledTransitionSystem & ts, int num_labels) {
-        std::vector<std::vector<QualifiedSet> > relation;
-        QualifiedSet all_labels = QualifiedSet();
-        for (int i = 0; i < num_labels; ++i) {
-            all_labels.insert(i);
-        }
+        std::vector<std::vector<QualifiedFormula> > relation;
 
         int num_states = ts.size();
         const std::vector<bool> &goal_states = ts.get_goal_states();
-        const std::vector<int> &goal_distances = ts.get_goal_distances();
         relation.resize(num_states);
         for (int i = 0; i < num_states; i++) {
-            relation[i].resize(num_states, all_labels);
+            relation[i].resize(num_states, QualifiedFormula::tt());
             if (!goal_states[i]) {
                 for (int j = 0; j < num_states; j++) {
-                    //TODO (efficiency): initialize with goal distances
-                    if (goal_states[j] /*|| goal_distances[i] > goal_distances[j]*/) {
-                        // Set to empty set; no actions allow a non-goal state to dominate a goal state
-                        relation[i][j] = QualifiedSet();
+                    if (goal_states[j]) {
+                        // Set to false; no paths allow a non-goal state to dominate a goal state
+                        relation[i][j] = QualifiedFormula::ff();
                     }
                 }
             }
@@ -43,66 +37,6 @@ namespace qdominance {
 
         return make_unique<QualifiedLocalStateRelation> (std::move(relation), num_labels);
     }
-
-    /*
-    LocalStateRelation LocalStateRelation::get_local_distances_relation(const TransitionSystem & ts) {
-        std::vector<std::vector<bool> > relation;
-        int num_states = ts.get_size();
-        const std::vector<bool> &goal_states = ts.get_goal_states();
-
-        assert (ts.are_distances_computed());
-        const std::vector<int> &goal_distances = ts.get_goal_distances();
-        relation.resize(num_states);
-        for (int i = 0; i < num_states; i++) {
-            relation[i].resize(num_states, true);
-            if (!goal_states[i]) {
-                for (int j = 0; j < num_states; j++) {
-                    if (goal_states[j] || goal_distances[i] > goal_distances[j]) {
-                        relation[i][j] = false;
-                    }
-                }
-            }
-        }
-
-        return LocalStateRelation {std::move(relation)};
-    }
-*//*
-
-    LocalStateRelation LocalStateRelation::get_identity_relation(const TransitionSystem & ts) {
-        std::vector<std::vector<bool> > relation;
-        int num_states = ts.get_size();
-        relation.resize(num_states);
-        for (size_t i = 0; i < relation.size(); i++) {
-            relation[i].resize(num_states);
-            for (size_t j = 0; j < relation[i].size(); j++) {
-                relation[i][j] = (i == j);
-            }
-        }
-        return LocalStateRelation {std::move(relation)};
-    }*/
-
-    void QualifiedLocalStateRelation::dump(utils::LogProxy &log, const vector <string> &names) const {
-        // log << "SIMREL:" << endl;
-        // for (size_t j = 0; j < relation.size(); ++j) {
-        //     for (size_t i = 0; i < relation.size(); ++i) {
-        //         if (labels_where_simulates(j, i) && i != j) {
-        //             if (labels_where_simulates(i, j)) {
-        //                 if (j < i) {
-        //                     log << names[i] << " <=> " << names[j] << endl;
-        //                 }
-        //             } else {
-        //                 log << names[i] << " <= " << names[j] << endl;
-        //             }
-        //         }
-        //     }
-        // }
-    }
-
-
-    void QualifiedLocalStateRelation::dump(utils::LogProxy &log) const {
-
-    }
-
 
     int QualifiedLocalStateRelation::num_equivalences() const {
         int num = 0;
@@ -120,19 +54,6 @@ namespace qdominance {
         }
         return num;
     }
-
-
-    bool QualifiedLocalStateRelation::is_identity() const {
-        for (size_t i = 0; i < relation.size(); ++i) {
-            for (size_t j = i + 1; j < relation.size(); ++j) {
-                if (simulates(i, j) || simulates(j, i)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
 
     int QualifiedLocalStateRelation::num_simulations(bool ignore_equivalences) const {
         int res = 0;
@@ -218,10 +139,10 @@ namespace qdominance {
     }
 
     void QualifiedLocalStateRelation::cancel_simulation_computation() {
-        vector<vector<QualifiedSet> >().swap(relation);
+        vector<vector<QualifiedFormula> >().swap(relation);
     }
 
-    QualifiedLocalStateRelation::QualifiedLocalStateRelation(vector <std::vector<QualifiedSet>> &&relation, int num_labels) :
+    QualifiedLocalStateRelation::QualifiedLocalStateRelation(vector <std::vector<QualifiedFormula>> &&relation, int num_labels) :
         relation(std::move(relation)), num_labels(num_labels) {
 
     }
