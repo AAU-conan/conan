@@ -43,7 +43,7 @@ namespace dominance {
             }
         }
         assert(state_mapping);
-        auto maybe_affected_factors = state_mapping->update_transformation_in_place(succ_transformed, succ, updated_variables);
+        auto maybe_affected_factors = state_mapping->update_transformation_in_place(succ_transformed, succ, updated_variables); 
 
         bool must_prune = false;
         if(!maybe_affected_factors.has_value()) {
