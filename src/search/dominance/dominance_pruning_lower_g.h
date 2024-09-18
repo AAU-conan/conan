@@ -1,5 +1,5 @@
-#ifndef DOMINANCE_DOMINANCE_PRUNING_ALL_PREVIOUS_H
-#define DOMINANCE_DOMINANCE_PRUNING_ALL_PREVIOUS_H
+#ifndef DOMINANCE_DOMINANCE_PRUNING_LOWER_G_H
+#define DOMINANCE_DOMINANCE_PRUNING_LOWER_G_H
 
 #include "dominance_pruning.h"
 #include "../task_proxy.h"
@@ -10,28 +10,33 @@ typedef std::vector<int> ExplicitState;
 
 namespace dominance {
 
-    class DominancePruningAllPrevious : public DominancePruning {
+    class DominancePruningLowerG : public DominancePruning {
 
         // Store previously generated states
         std::vector<ExplicitState> previous_states;
         std::vector<ExplicitState> previous_transformed_states;
+
+        // The key is the g_value, and the value is a vector<vector<int>> with the transformed states with that value
+        std::map<int, std::vector<std::vector<int>>> previous_states_sorted;
+
 
         bool must_prune_operator(const OperatorProxy & op,
                                  const State & state,
                                  const ExplicitState & parent,
                                  const ExplicitState & parent_transformed,
                                  ExplicitState & succ,
-                                 ExplicitState & succ_transformed) ;
+                                 ExplicitState & succ_transformed,
+                                 int g_value) ;
 
-        bool compare_against_all_previous_states(const ExplicitState &succ_transformed) const;
+        bool compare_against_all_previous_states(const ExplicitState &succ_transformed, int g_value) const;
 
-        void store_state(const ExplicitState &transformed_state);
+        void store_state(const ExplicitState &transformed_state, int g_value);
 
     public:
-        DominancePruningAllPrevious(const std::shared_ptr<fts::FTSTaskFactory> & fts_factory,
+        DominancePruningLowerG(const std::shared_ptr<fts::FTSTaskFactory> & fts_factory,
                                     std::shared_ptr<DominanceAnalysis> dominance_analysis,
                                     utils::Verbosity verbosity);
-        virtual ~DominancePruningAllPrevious() = default;
+        virtual ~DominancePruningLowerG() = default;
 
         virtual void initialize(const std::shared_ptr<AbstractTask> &task) override;
         virtual void prune_generation(const State &state, const SearchNodeInfo & , std::vector<OperatorID> &op_ids) override;
@@ -43,6 +48,9 @@ namespace dominance {
             StateInfo(const std::vector<int>& ts, int g)
                 : transformed_state(ts), g_value(g) {}
         };
+
+
+
 
     };
 }

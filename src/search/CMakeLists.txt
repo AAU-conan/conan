@@ -1009,6 +1009,7 @@ create_fast_downward_library(
         dominance/ld_simulation
         dominance/local_state_relation
         dominance/dominance_pruning_all_previous
+        dominance/dominance_pruning_lower_g
         #dominance/dominance_pruning_dd
         #dominance/label_relation_identity
         #dominance/label_relation_noop
