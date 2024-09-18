@@ -106,19 +106,15 @@ namespace dominance {
         // previous_states.push_back(state);
         previous_transformed_states.push_back(transformed_state);
         previous_states_sorted[g_value].emplace_back(transformed_state);
-        // cout << "Stored state with g_value: " << g_value << ", Total states for this g: " << previous_states_sorted[g_value].size() << endl;
     }
 
 
     bool DominancePruningLowerG::compare_against_all_previous_states(const ExplicitState &succ_transformed, int g_value) const {
         // Loop over all previously generated states in the map, ordered by g_value
-        // cout << "g_value: " << g_value << endl;
         for (const auto& [stored_g_value, transformed_states] : previous_states_sorted) {
             // cout << "stored_g_value: " << stored_g_value << endl;
             // Skip states with higher g values
             if (stored_g_value > g_value) {
-                cout << "g_value: " << g_value << endl;
-                cout << "stored_g_value: " << stored_g_value << endl;
                 break;
             }
 
