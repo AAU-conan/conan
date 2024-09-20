@@ -120,36 +120,27 @@ namespace qdominance {
                                 std::vector<QualifiedFormula> t_simulates_s_trs_label;
                                 log << "    " << lts.state_name(s) << " has transition to " << lts.state_name(trs.target) << " with label " << lts.label_name(trs_label) << std::endl;
 
-                                // Not l case, simply requires s to never choose l
-                                t_simulates_s_trs_label.push_back(QF::G(QF::Not(QF::ap(lts.label_name(trs_label)))));
-
                                 // Noop case, s' <= t and noop dominates l in all other LTSs.
-                                QualifiedFormula local_noop = local_relation.simulates_under(t, trs.target);
-                                if (local_noop != QF::ff()) {
-                                    t_simulates_s_trs_label.push_back(QF::And({QF::X(QF::G(local_noop)), label_dominance.dominated_by_noop(trs_label, lts_id)}));
-                                    log << "        " << lts.state_name(trs.target) << " is noop dominated under " << t_simulates_s_trs_label.back() << std::endl;
-                                }
+                                t_simulates_s_trs_label.push_back(QF::And({local_relation.simulates_under(t, trs.target), label_dominance.dominated_by_noop(trs_label, lts_id)}));
+                                log << "        " << lts.state_name(trs.target) << " is noop dominated under " << t_simulates_s_trs_label.back() << std::endl;
 
                                 lts.applyPostSrc(t, [&](const auto &trt) {
                                     for (int trt_label: lts.get_labels(trt.label_group)) {
-                                        QualifiedFormula local_next = local_relation.simulates_under(trt.target, trs.target);
-                                        if (local_next == QF::ff())
-                                            continue;
-                                        QF f = QF::And({QF::X(QF::G(local_next)), label_dominance.dominates(trt_label, trs_label, lts_id)});
+                                        QF f = QF::And({local_relation.simulates_under(trt.target, trs.target), label_dominance.dominates(trt_label, trs_label, lts_id)});
                                         t_simulates_s_trs_label.push_back(f);
                                         log << "        " << lts.state_name(t) << " has transition to " << lts.state_name(trt.target) << " with label " << lts.label_name(trt_label) << "; dominates under " << t_simulates_s_trs_label.back() << std::endl;
                                     }
                                     return false;
                                 });
 
-                                // Disjunction of all the responses of t
-                                t_simulates_s.push_back(QF::Or(t_simulates_s_trs_label));
+                                // !l or X(disjunction of responses by t)
+                                t_simulates_s.push_back(QF::Or({QF::Not(QF::ap(lts.label_name(trs_label))), QF::X(QF::Or(t_simulates_s_trs_label))}));
                                 log << "    simulates under " << t_simulates_s.back() << std::endl;
                             }
                             return false;
                         });
                         // Conjunction of all the transitions of s
-                        changes |= local_relation.set_simulates_under(t, s, QF::And(t_simulates_s));
+                        changes |= local_relation.set_simulates_under(t, s, QF::G(QF::And(t_simulates_s)));
                         log << lts.state_name(t) << " simulates " << lts.state_name(s) << " under " << local_relation.simulates_under(t, s) << std::endl;
                     }
                 }

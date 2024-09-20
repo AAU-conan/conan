@@ -564,7 +564,7 @@ if(USE_LP)
         target_sources(lp_solver INTERFACE lp/cplex_solver_interface.h lp/cplex_solver_interface.cc)
     endif()
 
-    find_package(soplex 7.1.0 QUIET)
+    find_package(soplex 7.1.0)
     if (SOPLEX_FOUND)
         message(STATUS "Found SoPlex: ${SOPLEX_INCLUDE_DIRS}")
         target_link_libraries(lp_solver INTERFACE libsoplex)
@@ -1193,6 +1193,25 @@ include_directories(${CMAKE_BINARY_DIR}/spot/include)
 link_directories(${CMAKE_BINARY_DIR}/spot/lib)
 
 target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a)
+
+
+ExternalProject_Add(mata
+    GIT_REPOSITORY https://github.com/VeriFIT/mata
+    GIT_TAG 1.6.9
+    PREFIX ${CMAKE_BINARY_DIR}/mata
+    BUILD_COMMAND cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/mata && cmake --build build --parallel -j 16
+    INSTALL_COMMAND make install
+    BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/mata/lib/libmata.a
+    BUILD_IN_SOURCE 1
+)
+
+add_dependencies(qualified_dominance mata)
+
+include_directories(${CMAKE_BINARY_DIR}/mata/include)
+link_directories(${CMAKE_BINARY_DIR}/mata/lib)
+
+target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/mata/lib/libmata.a)
+
 
 
 find_package(Boost)

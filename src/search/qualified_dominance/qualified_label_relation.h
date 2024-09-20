@@ -100,7 +100,9 @@ namespace qdominance {
                     dominated_by_noop_not_lts.push_back(dominated_by_noop_in[l][i]);
                 }
             }
-            return QualifiedFormula::And(dominated_by_noop_not_lts);
+            return spot::are_equivalent(QualifiedFormula::And(dominated_by_noop_not_lts), QualifiedFormula::tt()) ?
+                   QualifiedFormula::tt() :
+                   QualifiedFormula::ff();
         }
 
         [[nodiscard]] QualifiedFormula dominates(int l1, int l2, int lts) const {
@@ -110,7 +112,9 @@ namespace qdominance {
                     dominates_not_lts.push_back(dominates_in[l1][l2][i]);
                 }
             }
-            return QualifiedFormula::And(dominates_not_lts);
+            return spot::are_equivalent(QualifiedFormula::And(dominates_not_lts), QualifiedFormula::tt()) ?
+                   QualifiedFormula::tt() :
+                   QualifiedFormula::ff();
         }
     };
 }

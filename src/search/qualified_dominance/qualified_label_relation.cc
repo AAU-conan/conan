@@ -86,7 +86,6 @@ namespace qdominance {
 
 // TODO (efficiency): This version is inefficient. It could be improved by iterating only the right transitions (see inside the loop)
     bool QualifiedLabelRelation::update(int i, const LabelledTransitionSystem &lts, const QualifiedLocalStateRelation &sim) {
-        using QF = QualifiedFormula;
         bool changes = false;
         for (int l1 = 0; l1 < num_labels; ++l1) {
             for (int l2 = 0; l2 < num_labels; ++l2) {
@@ -97,10 +96,7 @@ namespace qdominance {
                         std::vector<QualifiedFormula> l2_simulates_l1_tr;
                         for (const auto &tr2: lts.get_transitions_label(l2)) {
                             if (tr2.src == tr1.src) {
-                                QF sim_next = sim.simulates_under(tr2.target, tr1.target);
-                                if (sim_next != QF::ff()) {
-                                    l2_simulates_l1_tr.push_back(QF::X(QF::G(sim_next)));
-                                }
+                                l2_simulates_l1_tr.push_back(sim.simulates_under(tr2.target, tr1.target));
                             }
                         }
                         l2_simulates_l1.push_back(QualifiedFormula::Or(l2_simulates_l1_tr));
