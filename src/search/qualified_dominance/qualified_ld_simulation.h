@@ -1,6 +1,7 @@
 #ifndef DOMINANCE_LD_SIMULATION_H
 #define DOMINANCE_LD_SIMULATION_H
 
+#include <fstream>
 #include <vector>
 #include <ostream>
 #include "qualified_factored_dominance_relation.h"
@@ -15,6 +16,7 @@
 
 #include <spot/tl/nenoform.hh>
 #include <spot/tl/simplify.hh>
+
 
 namespace fts {
     class FTSTask;
@@ -72,18 +74,25 @@ namespace qdominance {
             } while (label_relation.update(task, local_relations));
             log << std::endl << "LDSimulation finished: " << t() << std::endl;
 
-            spot::tl_simplifier simp;
 
             for (auto [lts_id, lts] : std::views::enumerate(task.get_factors())) {
                 const auto& relation = local_relations[lts_id];
                 for (size_t j = 0; j < relation->num_states(); ++j) {
                     for (size_t i = 0; i < relation->num_states(); ++i) {
                         if (i != j) {
-                            auto phi = relation->simulates_under(i, j);
-                            if (phi == QualifiedFormula::tt()) {
-                                log << lts->state_name(i) << " dominates " << lts->state_name(j) << std::endl;
-                            } else if (phi != QualifiedFormula::ff()) {
-                                log << lts->state_name(i) << " dominates " << lts->state_name(j) << " under  " << simp.simplify(phi) << std::endl;
+                            auto phi = relation->get_inverted_nfa(i, j);
+                            relation->draw_transformed_nfa("inverted_nfa.dot", phi);
+                            log << lts->state_name(i) << " simulates " << lts->state_name(j) << " except " << std::flush;
+                            if (phi.is_universal(*phi.alphabet)) {
+                                log << " everything " << std::endl;
+                            } else {
+                                for (auto w : phi.get_words(phi.num_of_states() - 1)) {
+                                    for (auto l : w) {
+                                        log << lts->label_name(l) << "->";
+                                    }
+                                    log << "; ";
+                                }
+                                log << std::endl;
                             }
                         }
                     }
@@ -96,52 +105,20 @@ namespace qdominance {
     template<typename LR, typename LTS>
     void
     update_local_relation(int lts_id, const LTS &lts, const LR &label_dominance, QualifiedLocalStateRelation &local_relation, utils::LogProxy & log) {
-        using QF = QualifiedFormula;
-
         bool changes = true;
         while (changes) {
             changes = false;
             for (int s = 0; s < lts.size(); s++) {
                 for (int t = 0; t < lts.size(); t++) { //for each pair of states t, s
-                    if (s != t && !spot::are_equivalent(local_relation.simulates_under(t , s), QF::ff())) {
+                    if (s != t && !local_relation.never_simulates(t, s)) {
                         log << "Checking if " << lts.state_name(t) << " simulates " << lts.state_name(s) << std::endl;
                         //Update the actions for which t simulates s
                         //for each transition s--l->s':
                         // a) with noop t >= s' and l dominated by noop?
                         // b) exist t--l'-->t', t' >= s' and l dominated by l'?
 
-                        // Conjunctive formulas for all the transitions of s and responses from t
-                        std::vector<QualifiedFormula> t_simulates_s;
-                        lts.applyPostSrc(s, [&](const auto &trs) {
-                            for (int trs_label : lts.get_labels(trs.label_group)) {
-                                // s --l-> s'
-
-                                // Disjunctive formulas for t's responses to when s chooses s --l-> s'
-                                std::vector<QualifiedFormula> t_simulates_s_trs_label;
-                                log << "    " << lts.state_name(s) << " has transition to " << lts.state_name(trs.target) << " with label " << lts.label_name(trs_label) << std::endl;
-
-                                // Noop case, s' <= t and noop dominates l in all other LTSs.
-                                t_simulates_s_trs_label.push_back(QF::And({local_relation.simulates_under(t, trs.target), label_dominance.dominated_by_noop(trs_label, lts_id)}));
-                                log << "        " << lts.state_name(trs.target) << " is noop dominated under " << t_simulates_s_trs_label.back() << std::endl;
-
-                                lts.applyPostSrc(t, [&](const auto &trt) {
-                                    for (int trt_label: lts.get_labels(trt.label_group)) {
-                                        QF f = QF::And({local_relation.simulates_under(trt.target, trs.target), label_dominance.dominates(trt_label, trs_label, lts_id)});
-                                        t_simulates_s_trs_label.push_back(f);
-                                        log << "        " << lts.state_name(t) << " has transition to " << lts.state_name(trt.target) << " with label " << lts.label_name(trt_label) << "; dominates under " << t_simulates_s_trs_label.back() << std::endl;
-                                    }
-                                    return false;
-                                });
-
-                                // !l or X(disjunction of responses by t)
-                                t_simulates_s.push_back(QF::Or({QF::Not(QF::ap(lts.label_name(trs_label))), QF::X(QF::Or(t_simulates_s_trs_label))}));
-                                log << "    simulates under " << t_simulates_s.back() << std::endl;
-                            }
-                            return false;
-                        });
-                        // Conjunction of all the transitions of s
-                        changes |= local_relation.set_simulates_under(t, s, QF::G(QF::And(t_simulates_s)));
-                        log << lts.state_name(t) << " simulates " << lts.state_name(s) << " under " << local_relation.simulates_under(t, s) << std::endl;
+                        changes |= local_relation.update(s, t, label_dominance, lts, lts_id, log);
+                        local_relation.draw_nfa(std::format("nfa{}.dot", lts_id));
                     }
                 }
             }

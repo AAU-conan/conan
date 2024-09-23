@@ -20,6 +20,10 @@ protected:
     std::unique_ptr<FactNames> fact_names;
     int variable;
 public:
+    FactValueNames(const FactValueNames& other)
+        : fact_names(other.fact_names->clone()), variable(other.variable)
+    {}
+
     FactValueNames(const FactNames& fact_names, int variable)
      : fact_names(fact_names.clone()), variable(variable)
     { }

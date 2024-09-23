@@ -130,10 +130,10 @@ namespace fts {
         std::vector<LTSTransition> transitions;
         std::vector<std::vector<LTSTransition> > transitions_src;
         std::vector<std::vector<TSTransition> > transitions_label_group;
-        FactValueNames fact_value_names;
 
     public:
         LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, FactValueNames fact_value_names);
+        FactValueNames fact_value_names;
 
         ~LabelledTransitionSystem() {}
 

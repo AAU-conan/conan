@@ -20,15 +20,20 @@ namespace qdominance {
         int num_factors = fts_task.get_num_variables();
         num_labels = fts_task.get_num_labels();
 
+        simulates_irrelevant.resize(num_labels);
+        simulated_by_irrelevant.resize(num_labels);
+        for (int i = 0; i < num_labels; i++) {
+            simulates_irrelevant[i].resize(num_factors, true);
+            simulated_by_irrelevant[i].resize(num_factors, true);
+        }
+
         dominates_in.resize(num_labels);
-        dominated_by_noop_in.resize(num_labels, std::vector(num_factors, QualifiedFormula::tt()));
+        dominated_by_noop_in.resize(num_labels, AllNoneFactorIndex::all_factors());
         for (size_t l1 = 0; l1 < dominates_in.size(); ++l1) {
-            dominates_in[l1].resize(num_labels);
+            dominates_in[l1].resize(num_labels, AllNoneFactorIndex::all_factors());
             for (size_t l2 = 0; l2 < dominates_in[l1].size(); ++l2) {
                 if (fts_task.get_label_cost(l1) > fts_task.get_label_cost(l2)) {
-                    dominates_in[l1][l2].resize(num_factors, QualifiedFormula::ff());
-                } else {
-                    dominates_in[l1][l2].resize(num_factors, QualifiedFormula::tt());
+                    dominates_in[l1][l2] = AllNoneFactorIndex::no_factors();
                 }
             }
         }
@@ -87,28 +92,73 @@ namespace qdominance {
 // TODO (efficiency): This version is inefficient. It could be improved by iterating only the right transitions (see inside the loop)
     bool QualifiedLabelRelation::update(int i, const LabelledTransitionSystem &lts, const QualifiedLocalStateRelation &sim) {
         bool changes = false;
-        for (int l1 = 0; l1 < num_labels; ++l1) {
-            for (int l2 = 0; l2 < num_labels; ++l2) {
-                if (l1 != l2 && qualified_simulates(l2, l1, i) != QualifiedFormula::ff())  {
-                    // Construct formula for when l2 simulates l1 in i
-                    std::vector<QualifiedFormula> l2_simulates_l1;
-                    for (const auto &tr1: lts.get_transitions_label(l1)) {
-                        std::vector<QualifiedFormula> l2_simulates_l1_tr;
-                        for (const auto &tr2: lts.get_transitions_label(l2)) {
-                            if (tr2.src == tr1.src) {
-                                l2_simulates_l1_tr.push_back(sim.simulates_under(tr2.target, tr1.target));
+        for (int l2: lts.get_relevant_labels()) {
+            for (int l1: lts.get_relevant_labels()) {
+                if (l1 != l2 && simulates(l1, l2, i)) {
+                    //std::log << "Check " << l1 << " " << l2 << std::endl;
+                    //std::log << "Num transitions: " << lts.get_transitions_label(l1).size()
+                    //		    << " " << lts.get_transitions_label(l2).size() << std::endl;
+                    //Check if it really simulates
+                    //For each transition s--l2-->t, and every label l1 that dominates
+                    //l2, exist s--l1-->t', t <= t'?
+                    for (const auto &tr: lts.get_transitions_label(l2)) {
+                        bool found = false;
+                        //TODO (efficiency): for(auto tr2 : lts.get_transitions_for_label_src(l1, tr.src)){
+                        for (const auto &tr2: lts.get_transitions_label(l1)) {
+                            if (tr2.src == tr.src &&
+                                sim.simulates(tr2.target, tr.target)) {
+                                found = true;
+                                break; //Stop checking this tr
                             }
                         }
-                        l2_simulates_l1.push_back(QualifiedFormula::Or(l2_simulates_l1_tr));
+                        if (!found) {
+                            //std::log << "Not sim " << l1 << " " << l2 << " " << i << std::endl;
+                            set_not_simulates(l1, l2, i);
+                            changes = true;
+                            break; //Stop checking trs of l1
+                        }
                     }
-                    changes |= set_dominates_in(l2, l1, i, QualifiedFormula::And(l2_simulates_l1));
                 }
             }
-            std::vector<QualifiedFormula> noop_simulates_l1;
-            for (const auto &tr: lts.get_transitions_label(l1)) {
-                noop_simulates_l1.push_back(sim.simulates_under(tr.src, tr.target));
+
+            //Is l2 simulated by irrelevant_labels in lts?
+            for (auto tr: lts.get_transitions_label(l2)) {
+                if (simulated_by_irrelevant[l2][i] &&
+                    !sim.simulates(tr.src, tr.target)) {
+                    changes |= set_not_simulated_by_irrelevant(l2, i);
+                    for (int l: lts.get_irrelevant_labels()) {
+                        if (simulates(l, l2, i)) {
+                            changes = true;
+                            set_not_simulates(l, l2, i);
+                        }
+                    }
+                    break;
+                }
             }
-            changes |= set_dominated_by_noop_in(l1, i, QualifiedFormula::And(noop_simulates_l1));
+
+            //Does l2 simulates irrelevant_labels in lts?
+            if (simulates_irrelevant[l2][i]) {
+                for (int s = 0; s < lts.size(); s++) {
+                    bool found = false;
+                    for (const auto &tr: lts.get_transitions_label(l2)) {
+                        if (tr.src == s && sim.simulates(tr.target, tr.src)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        //log << "Not simulates irrelevant: " << l2  << " in " << i << endl;
+                        simulates_irrelevant[l2][i] = false;
+                        for (int l: lts.get_irrelevant_labels()) {
+                            if (simulates(l2, l, i)) {
+                                set_not_simulates(l2, l, i);
+                                changes = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         return changes;

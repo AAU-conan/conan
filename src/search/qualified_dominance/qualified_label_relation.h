@@ -1,12 +1,11 @@
-#ifndef MERGE_AND_SHRINK_LABEL_RELATION_H
-#define MERGE_AND_SHRINK_LABEL_RELATION_H
+#ifndef QUALIFIED_LABEL_RELATION_H
+#define QUALIFIED_LABEL_RELATION_H
 
 #include <iostream>
 #include <vector>
 #include <set>
 #include <cassert>
 #include "../dominance/all_none_factor_index.h"
-#include "qualified_local_state_relation.h"
 
 #include <spot/twaalgos/contains.hh>
 
@@ -23,6 +22,7 @@ namespace utils {
 }
 
 namespace qdominance {
+    class QualifiedLocalStateRelation;
     /*
      * Label relation represents the preorder relations on labels that
      * occur in a set of LTS
@@ -31,50 +31,38 @@ namespace qdominance {
         int num_labels;
         //For each lts, matrix indicating whether l1 simulates l2
         //std::vector<std::vector<std::vector<bool > > > dominates;
+        std::vector<std::vector<AllNoneFactorIndex> > dominates_in;
 
-        // For label l1, l2 and lts_i, l2 dominates l1 in lts_i under the formula
-        std::vector<std::vector<std::vector<QualifiedFormula>>> dominates_in;
+        //Indicates whether labels are dominated by noop or other irrelevant
+        //variables in theta
+        std::vector<std::vector<bool> > simulated_by_irrelevant;
+        std::vector<std::vector<bool> > simulates_irrelevant;
 
-        // For l1 and lts_i, noop dominates l1 in lts_i under the formula
-        std::vector<std::vector<QualifiedFormula>> dominated_by_noop_in;
+        std::vector<AllNoneFactorIndex> dominated_by_noop_in;
 
         bool update(int i, const fts::LabelledTransitionSystem& lts, const QualifiedLocalStateRelation& sim);
 
         //Returns true if l1 simulates l2 in lts
-        [[nodiscard]] QualifiedFormula qualified_simulates(int l1, int l2, int lts) const {
-            assert(l1 >= 0);
+        inline bool simulates(int l1, int l2, int lts) const {
+            assert (l1 >= 0);
             assert((size_t)l1 < dominates_in.size());
-            assert(l2 >= 0);
+            assert (l2 >= 0);
             assert((size_t)l2 < dominates_in[l1].size());
 
-            return dominates_in[l1][l2][lts];
+            return dominates_in[l1][l2].contains(lts);
         }
 
-        bool set_dominates_in(int l1, int l2, int lts, const QualifiedFormula& f) {
-            assert(l1 >= 0);
-            assert((size_t)l1 < dominates_in.size());
-            assert(l2 >= 0);
-            assert((size_t)l2 < dominates_in[l1].size());
-            assert(lts >= 0);
-            assert((size_t)lts < dominates_in[l1][l2].size());
-
-            if (spot::are_equivalent(dominates_in[l1][l2][lts], f))
-                return false;
-            dominates_in[l1][l2][lts] = f;
-            return true;
+        inline void set_not_simulates(int l1, int l2, int lts) {
+            //std::cout << "Not simulates: " << l1 << " to " << l2 << " in " << lts << std::endl;
+            dominates_in[l1][l2].remove(lts);
         }
 
-        bool set_dominated_by_noop_in(int l, int lts, const QualifiedFormula& f) {
-            assert(l >= 0);
-            assert((size_t)l < dominated_by_noop_in.size());
-            assert(lts >= 0);
-            assert((size_t)lts < dominated_by_noop_in[l].size());
+        inline bool set_not_simulated_by_irrelevant(int l, int lts) {
+            //std::cout << "Not simulated by irrelevant: " << l << " in " << lts << std::endl;
 
-            if (spot::are_equivalent(dominated_by_noop_in[l][lts] , f))
-                return false;
-
-            dominated_by_noop_in[l][lts] = f;
-            return true;
+            //Returns if there were changes in dominated_by_noop_in
+            simulated_by_irrelevant[l][lts] = false;
+            return dominated_by_noop_in[l].remove(lts);
         }
 
     public:
@@ -92,29 +80,17 @@ namespace qdominance {
             return num_labels;
         }
 
-
-        [[nodiscard]] QualifiedFormula dominated_by_noop(int l, int lts) const {
-            std::vector<QualifiedFormula> dominated_by_noop_not_lts;
-            for (int i = 0; i < int(dominated_by_noop_in[l].size()); ++i) {
-                if (i != lts) {
-                    dominated_by_noop_not_lts.push_back(dominated_by_noop_in[l][i]);
-                }
-            }
-            return spot::are_equivalent(QualifiedFormula::And(dominated_by_noop_not_lts), QualifiedFormula::tt()) ?
-                   QualifiedFormula::tt() :
-                   QualifiedFormula::ff();
+        [[nodiscard]] AllNoneFactorIndex get_dominated_by_noop_in(int l) const {
+            return dominated_by_noop_in[l];
         }
 
-        [[nodiscard]] QualifiedFormula dominates(int l1, int l2, int lts) const {
-            std::vector<QualifiedFormula> dominates_not_lts;
-            for (int i = 0; i < int(dominates_in[l1][l2].size()); ++i) {
-                if (i != lts) {
-                    dominates_not_lts.push_back(dominates_in[l1][l2][i]);
-                }
-            }
-            return spot::are_equivalent(QualifiedFormula::And(dominates_not_lts), QualifiedFormula::tt()) ?
-                   QualifiedFormula::tt() :
-                   QualifiedFormula::ff();
+        [[nodiscard]] bool dominated_by_noop(int l, int lts) const {
+            return dominated_by_noop_in[l].contains_all_except(lts);
+        }
+
+        //Returns true if l dominates l2 in lts (simulates l2 in all j \neq lts)
+        [[nodiscard]] bool dominates(int l1, int l2, int lts) const {
+            return dominates_in[l1][l2].contains_all_except(lts);
         }
     };
 }
