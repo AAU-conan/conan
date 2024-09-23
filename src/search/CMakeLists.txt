@@ -882,6 +882,7 @@ create_fast_downward_library(
         operator_counting/operator_counting_heuristic
         operator_counting/pho_constraints
         operator_counting/state_equation_constraints
+        operator_counting/qualified_dominance_constraints
     DEPENDS lp_solver landmark_cut_heuristic pdbs task_properties
 )
 
@@ -1158,6 +1159,8 @@ create_fast_downward_library(
 option(USE_CUDD  "Compile with support for CUDD if installed on this system." TRUE)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+
+include(rust)
 
 if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
     find_package(Cudd)

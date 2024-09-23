@@ -25,7 +25,7 @@ namespace qdominance {
         virtual ~QualifiedDominancePruningLocal() = default;
 
         virtual void initialize(const std::shared_ptr<AbstractTask> &task) override;
-        virtual void prune(const State &state, std::vector<OperatorID> &op_ids) override;
+        void prune_generation(const State &state, const SearchNodeInfo & , std::vector<OperatorID> &op_ids) override;
     };
 }
 

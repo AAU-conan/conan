@@ -63,22 +63,8 @@ namespace qdominance {
     }
 
 
-    void QualifiedDominancePruningLocal::prune(const State &state, std::vector<OperatorID> &op_ids) {
-        state.unpack();
-        vector<int> parent = state.get_unpacked_values();
-        vector<int> parent_transformed = state_mapping->transform(parent);
-
-        vector<int> succ = parent;
-        vector<int> succ_transformed = parent_transformed;
-
-        TaskProxy tp (*task);
-
-        const auto [first, last] = std::ranges::remove_if(op_ids,
-                                                          [&] (const auto & op_id) {
-            return must_prune_operator(tp.get_operators()[op_id], state, parent, parent_transformed, succ, succ_transformed);
-        });
-
-        op_ids.erase(first, last);
+    void QualifiedDominancePruningLocal::prune_generation(const State &state, const SearchNodeInfo & , std::vector<OperatorID> &op_ids) {
+        //TODO (feature): Implement pruning
     }
 
 
