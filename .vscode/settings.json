@@ -61,6 +61,12 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "bitset": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "csignal": "cpp",
+        "cstring": "cpp",
+        "chrono": "cpp",
+        "ratio": "cpp",
+        "slist": "cpp",
+        "iomanip": "cpp"
     }
 }
