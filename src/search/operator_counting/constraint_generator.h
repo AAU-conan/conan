@@ -47,8 +47,11 @@ public:
 
       Returns true if a dead end was detected and false otherwise.
     */
-    virtual bool update_constraints(
-        const State &state, lp::LPSolver &lp_solver) = 0;
+    virtual bool update_constraints(const State &state, lp::LPSolver &lp_solver) = 0;
+
+    virtual bool update_constraints_g_value(const State &state, int g_value, lp::LPSolver &lp_solver) {
+        return update_constraints(state, lp_solver);
+    }
 };
 }
 
