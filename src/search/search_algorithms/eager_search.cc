@@ -179,6 +179,7 @@ SearchStatus EagerSearch::step() {
     if (check_goal_and_set_plan(s))
         return SOLVED;
 
+    //TODO: Right now the pruned nodes are actually closed. Perhaps we should set the state of the node to pruned?
     if(pruning_method->prune_state(s, node->get_info())) {
         return IN_PROGRESS;
     }

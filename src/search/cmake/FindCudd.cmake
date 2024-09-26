@@ -13,10 +13,13 @@
 # (QUIET, REQUIRED, etc.).
 #
 # CUDD can be installed for example from here:
-# https://github.com/ivmai/cudd
+# https://github.com/alvaro-torralba/cudd
 # 
-# Important: for a 32bit build, CUDD needs to be configured as follows:
+# For a 32bit build, CUDD can be configured as follows:
 # ./configure --enable-shared --enable-obj --build=x86-pc-linux-gnu "CFLAGS=-m32 -Wall -Wextra -g -O3" "CXXFLAGS=-m32 -Wall -Wextra -g -O3" "LDFLAGS=-m32"
+#
+# For 64 bit you can use this: 
+# ./configure --enable-shared --enable-obj --build=x86-pc-linux-gnu "CFLAGS=-m64 -Wall -Wextra -g -O3" "CXXFLAGS=-m64 -Wall -Wextra -g -O3" "LDFLAGS=-m64"
 #
 # Also, don't forget to run make install.
 
