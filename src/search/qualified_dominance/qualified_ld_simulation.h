@@ -73,9 +73,14 @@ namespace qdominance {
             log << std::endl << "LDSimulation finished: " << t() << std::endl;
 
             for (const auto & [i, local_relation] : std::views::enumerate(local_relations)) {
+#ifndef NDEBUG
                 local_relation->draw_nfa(std::format("nfa_pre_reduce{}.dot", i));
+#endif
                 local_relation->reduce_nfa();
+#ifndef NDEBUG
                 local_relation->draw_transformed_nfa(std::format("nfa{}.dot", i), local_relation->get_nfa());
+                std::cout << "state to nfa state map " << local_relation->get_state_to_nfa_state() << std::endl;
+#endif
             }
 
 
@@ -115,7 +120,7 @@ namespace qdominance {
             for (int s = 0; s < lts.size(); s++) {
                 for (int t = 0; t < lts.size(); t++) { //for each pair of states t, s
                     if (s != t && !local_relation.never_simulates(t, s)) {
-                        log << "Checking if " << lts.state_name(t) << " simulates " << lts.state_name(s) << std::endl;
+                        // log << "Checking if " << lts.state_name(t) << " simulates " << lts.state_name(s) << std::endl;
                         //Update the actions for which t simulates s
                         //for each transition s--l->s':
                         // a) with noop t >= s' and l dominated by noop?

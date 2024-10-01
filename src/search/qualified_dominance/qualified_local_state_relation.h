@@ -48,21 +48,22 @@ namespace qdominance {
         // The universal accepting state of simulation_nfa
         mata::nfa::State universally_accepting;
 
+        mutable std::vector<int> universally_accepting_cache;
         bool nfa_always_simulates(const int s, const int t) const {
-            if (is_simulation_nfa_reduced) {
+            if (is_simulation_nfa_reduced)
                 return state_pair_to_nfa_state[s][t] == universally_accepting;
-            } else {
-                // draw_nfa("nfa_simulates.dot");
-                // std::println(std::cout, "{} <= {}", fact_value_names.get_fact_value_name(t), fact_value_names.get_fact_value_name(s));
-                simulation_nfa.initial.insert(state_pair_to_nfa_state[s][t]);
-                mata::nfa::Run cex;
-                const bool result = simulation_nfa.is_universal(*simulation_nfa.alphabet, &cex);
-                auto w = cex.word | std::views::transform([&](int i) { return fact_value_names.get_operator_name(i, false); });
-                // std::println(std::cout, "{}", std::ranges::fold_left(w, std::string(), [](std::string a, std::string b) { return a + " " + b; }));
-                // std::println(std::cout, "{}", result);
-                simulation_nfa.initial.clear();
-                return result;
+
+            // draw_nfa("nfa_simulates.dot");
+            // std::println(std::cout, "{} <= {}", fact_value_names.get_fact_value_name(t), fact_value_names.get_fact_value_name(s));
+            const auto nfa_state = state_pair_to_nfa_state[s][t];
+            if (universally_accepting_cache[nfa_state] != -1) {
+                return universally_accepting_cache[nfa_state];
             }
+            simulation_nfa.initial.insert(nfa_state);
+            const bool result = simulation_nfa.is_universal(*simulation_nfa.alphabet);
+            simulation_nfa.initial.clear();
+            universally_accepting_cache[nfa_state] = result;
+            return result;
         }
 
         bool nfa_never_simulates(const int s, const int t) const {
@@ -100,6 +101,10 @@ namespace qdominance {
         const std::vector<int> &get_dominated_states(int state);
         const std::vector<int> &get_dominating_states(int state);
 
+        const auto& get_state_to_nfa_state() const {
+            return state_pair_to_nfa_state;
+        }
+
         bool update(int s, int t, const QualifiedLabelRelation& label_relation, const fts::LabelledTransitionSystem& ts, int lts_i, utils::
                     LogProxy& log);
 
@@ -120,7 +125,7 @@ namespace qdominance {
         }
 
         void reduce_nfa() {
-            auto [reduced_nfa, old_to_new_state_map] = merge_non_differentiable_states(simulation_nfa);
+            auto [reduced_nfa, old_to_new_state_map] = merge_non_differentiable_states(simulation_nfa, *this);
             simulation_nfa = reduced_nfa;
             universally_accepting = old_to_new_state_map[universally_accepting];
             for (int i = 0; i < state_pair_to_nfa_state.size(); ++i) {

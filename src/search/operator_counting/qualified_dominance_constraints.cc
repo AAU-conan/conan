@@ -13,7 +13,9 @@ namespace operator_counting {
         fts::AtomicTaskFactory fts_factory;
         const auto transformed_task = fts_factory.transform_to_fts(task);
 
+#ifndef NDEBUG
         fts::draw_fts("fts.dot", *transformed_task.fts_task);
+#endif
 
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task.fts_task);
 
@@ -50,13 +52,17 @@ namespace operator_counting {
                 // Add goal variable
                 lp_variables.emplace_back(lp::LPVariable(0., 1., 0., false));
                 auto goal_var = lp_variables.size() - 1;
+#ifndef NDEBUG
                 lp_variables.set_name(goal_var, std::format("G^{}_{}", q, i));
+#endif
                 goal_variables[i].emplace_back(goal_var);
 
                 // Add init variables for each state
                 lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
                 auto i_var = lp_variables.size() - 1;
+#ifndef NDEBUG
                 lp_variables.set_name(i_var, std::format("I^{}_{}", q, i));
+#endif
                 init_variables[i].emplace_back(lp_variables.size() - 1);
 
                 // Add transition variables and collect ingoing/outgoing transitions for each state
@@ -76,7 +82,9 @@ namespace operator_counting {
                     // Add transition variable
                     lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
                     auto transition_variable = lp_variables.size() - 1;
-                    lp_variables.set_name(transition_variable, std::format("T^{}_{}_{}-{}>{}", q, i, from, fvn.get_operator_name(label, false), to));
+#ifndef NDEBUG
+                    // lp_variables.set_name(transition_variable, std::format("T^{}_{}_{}-{}>{}", q, i, from, fvn.get_operator_name(label, false), to));
+#endif
                     transition_variables.at(i).at(q).emplace_back();
 
                     // Add this transition to the list of transitions for the label
@@ -123,8 +131,6 @@ namespace operator_counting {
                 }
             }
         }
-
-        std::cout << "Number of lp variables: " << lp.get_variables().size() << std::endl;
     }
 
     bool QualifiedDominanceConstraints::update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) {
@@ -149,7 +155,6 @@ namespace operator_counting {
 
         if (!init_state_constraints.empty()) {
             LPConstraints lp_constraints;
-
             // For each set of constraints
             for (int i = 0; i < init_state_constraints.size(); ++i) {
                 // Add initial state constraints

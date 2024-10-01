@@ -2,14 +2,14 @@
 #include <print>
 
 #include "nfa_merge_non_differentiable.h"
+
+#include "qualified_local_state_relation.h"
 using namespace mata::nfa;
 
 namespace qdominance {
-    Nfa determinize(const Nfa& nfa) {
+    [[nodiscard]] Nfa determinize(const Nfa& nfa) {
         Nfa new_nfa(nfa);
         new_nfa.make_complete();
-
-        std::println("Number of states {}", nfa.num_of_states());
 
         std::unordered_map<StateSet, State> product_states;
 
@@ -21,7 +21,6 @@ namespace qdominance {
                 return *states.begin();
             }
             if (!product_states.contains(states)) {
-                std::cout << "Created state for " << states << std::endl;
                 product_states[states] = new_nfa.add_state();
 
                 // Create transitions for new product state
@@ -50,11 +49,11 @@ namespace qdominance {
     };
 
 
-    std::pair<Nfa, std::vector<State>> merge_non_differentiable_states(const Nfa& nfa) {
+    [[nodiscard]] std::pair<Nfa, std::vector<State>> merge_non_differentiable_states(const Nfa& nfa, const QualifiedLocalStateRelation& relation) {
         assert(nfa.is_complete(nfa.alphabet)); // This check is not sufficient because it only checks reachable states
         Nfa detnfa(nfa);
         detnfa.make_complete();
-        qdominance::determinize(detnfa);
+        detnfa = qdominance::determinize(detnfa);
 
         // Use Hopcroft's algorithm to merge non-differentiable states
         std::set<State> all_states = std::views::iota(0, static_cast<int>(detnfa.num_of_states())) | std::ranges::to<std::set<State>>();

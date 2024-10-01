@@ -38,7 +38,10 @@ OperatorCountingHeuristic::OperatorCountingHeuristic(
     for (const auto &generator : constraint_generators) {
         generator->initialize_constraints(task, lp);
     }
+#ifndef NDEBUG
     lp_variables = named_vector::NamedVector(lp.get_variables());
+#endif
+    std::cout << "Number of lp variables: " << lp.get_variables().size() << std::endl;
     lp_solver.load_problem(lp);
 }
 
@@ -162,16 +165,23 @@ static plugins::FeaturePlugin<OperatorCountingHeuristicFeature> _plugin;
         if (lp_solver.has_optimal_solution()) {
             double epsilon = 0.01;
             double objective_value = lp_solver.get_objective_value();
-            for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
-                std::cout << lp_variables.get_name(i) << "=" << val << " ";
-            }
-            std::cout << std::endl;
+#ifndef NDEBUG
+            // for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
+            //     if (val == 0.)
+            //         continue;
+            //     std::cout << lp_variables.get_name(i) << "=" << val << " ";
+            // }
+            // std::cout << std::endl;
+#endif
             result = static_cast<int>(ceil(objective_value - epsilon));
         } else {
             result = DEAD_END;
         }
         lp_solver.clear_temporary_constraints();
-        std::cout << "heuristic value: " << result << std::endl;
+
+#ifndef NDEBUG
+        // std::cout << state.get_unpacked_values() << " h: " << result << std::endl;
+#endif
         return result;
     }
 
