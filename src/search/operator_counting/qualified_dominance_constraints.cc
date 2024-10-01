@@ -141,8 +141,8 @@ namespace operator_counting {
         // reach a goal state to satisfy the constraint.
         std::vector<std::vector<mata::nfa::State>> init_state_constraints;
 
-        for (const auto& previous_state : std::views::reverse(previous_states)) {
-            if (previous_state.g_value < g_value) {
+        for (const auto& previous_state : previous_states) {
+            if (previous_state.g_value <= g_value) {
                 std::vector<mata::nfa::State> initial_states;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     auto fvn = (*factored_qdomrel)[i].fact_value_names;
