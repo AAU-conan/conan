@@ -28,6 +28,7 @@ namespace operator_counting {
             for (auto v : c.get_variables()) {
                 assert(v < lp.get_variables().size());
             }
+            assert(std::ranges::to<std::set<int>>(c.get_variables()).size() == c.get_variables().size());
             lp_constraints.push_back(c);
         };
 
@@ -37,75 +38,89 @@ namespace operator_counting {
             const auto& automaton = (*factored_qdomrel)[i].get_nfa();
             auto fvn = (*factored_qdomrel)[i].fact_value_names;
 
-            // Add goal variable
             auto non_final_states = mata::utils::SparseSet(automaton.final);
             non_final_states.complement(automaton.num_of_states());
             assert(non_final_states.size() == 1);
             mata::nfa::State goal_state = *non_final_states.begin();
-            lp_variables.emplace_back(lp::LPVariable(0., 1., 0., false));
-            lp_variables.set_name(lp_variables.size() - 1, std::format("G_{}", i));
-            goal_variables.emplace_back(lp_variables.size() - 1);
 
-            // Add init variables for each state
+            goal_variables.emplace_back();
             init_variables.emplace_back();
-            for (int j = 0; j < automaton.num_of_states(); ++j) {
-                lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
-                lp_variables.set_name(lp_variables.size() - 1, std::format("I_{}_{}", i, j));
-                init_variables[i].emplace_back(lp_variables.size() - 1);
-            }
-
-            // Add transition variables and collect ingoing/outgoing transitions for each state
             transition_variables.emplace_back();
-            std::vector<std::vector<int>> state_ingoing(automaton.num_of_states(), std::vector<int>());
-            std::vector<std::vector<int>> state_outgoing(automaton.num_of_states(), std::vector<int>());
-            std::vector<std::vector<int>> label_transitions(automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
+            for (int q = 0; q < automaton.num_of_states(); ++q) {
+                // Add goal variable
+                lp_variables.emplace_back(lp::LPVariable(0., 1., 0., false));
+                auto goal_var = lp_variables.size() - 1;
+                lp_variables.set_name(goal_var, std::format("G^{}_{}", q, i));
+                goal_variables[i].emplace_back(goal_var);
 
-            auto transitions = automaton.delta.transitions();
-            auto it = transitions.begin();
-            for (int j = 0; it != transitions.end(); ++j, ++it) {
-                const auto& [from, label, to] = *it;
-
-                // Add transition variable
+                // Add init variables for each state
                 lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
-                auto transition_variable = lp_variables.size() - 1;
-                lp_variables.set_name(transition_variable, std::format("T_{}_{}-{}>{}", i, from, fvn.get_operator_name(label, false), to));
-                transition_variables[i].emplace_back();
+                auto i_var = lp_variables.size() - 1;
+                lp_variables.set_name(i_var, std::format("I^{}_{}", q, i));
+                init_variables[i].emplace_back(lp_variables.size() - 1);
 
-                // Add this transition to the list of transitions for the label
-                label_transitions[label].push_back(transition_variable);
+                // Add transition variables and collect ingoing/outgoing transitions for each state
+                transition_variables.at(i).emplace_back();
+                std::vector<std::vector<int>> state_ingoing(automaton.num_of_states(), std::vector<int>());
+                std::vector<std::vector<int>> state_outgoing(automaton.num_of_states(), std::vector<int>());
+                std::vector<std::vector<int>> label_transitions(automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
 
-                // Add this transition to the list of ingoing/outgoing transitions for the target/source states
-                state_ingoing[to].push_back(transition_variable);
-                state_outgoing[from].push_back(transition_variable);
-            }
+                auto transitions = automaton.delta.transitions();
+                auto it = transitions.begin();
+                for (int j = 0; it != transitions.end(); ++j, ++it) {
+                    const auto& [from, label, to] = *it;
 
-            // Add the flow constraint for each state
-            for (int j = 0; j < automaton.num_of_states(); ++j) {
-                // Sum of ingoing transitions - sum of outgoing transitions + initial state = goal state
-                lp::LPConstraint flow_constraint(0., lp.get_infinity());
-                for (const auto& ingoing : state_ingoing[j]) {
-                    flow_constraint.insert(ingoing, 1.);
-                }
-                for (const auto& outgoing : state_outgoing[j]) {
-                    flow_constraint.insert(outgoing, -1.);
-                }
-                if (j == goal_state) {
-                    // If this is a final state, remove the value of its goal variable
-                    flow_constraint.insert(goal_variables.back(), -1.);
-                }
-                // Add initial state variable
-                flow_constraint.insert(init_variables[i][j], 1.);
-                safe_push_constraint(flow_constraint);
-            }
+                    if (from == to)
+                        continue; // Skip self-loops, they mess with flow constraints because the coefficients will be set twice, both for ingoing and outgoing transitions
 
-            // Add operator count constraints for each label
-            for (int j = 0; j < automaton.alphabet->get_alphabet_symbols().size(); ++j) {
-                lp::LPConstraint label_constraint(0., lp.get_infinity());
-                label_constraint.insert(j, 1.);
-                for (const auto& transition : label_transitions[j]) {
-                    label_constraint.insert(transition, -1.);
+                    // Add transition variable
+                    lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
+                    auto transition_variable = lp_variables.size() - 1;
+                    lp_variables.set_name(transition_variable, std::format("T^{}_{}_{}-{}>{}", q, i, from, fvn.get_operator_name(label, false), to));
+                    transition_variables.at(i).at(q).emplace_back();
+
+                    // Add this transition to the list of transitions for the label
+                    label_transitions[label].push_back(transition_variable);
+
+                    // Add this transition to the list of ingoing/outgoing transitions for the target/source states
+                    state_ingoing[to].push_back(transition_variable);
+                    state_outgoing[from].push_back(transition_variable);
                 }
-                safe_push_constraint(label_constraint);
+
+                // Add the flow constraint for each state
+                for (int j = 0; j < automaton.num_of_states(); ++j) {
+                    // Sum of ingoing transitions - sum of outgoing transitions + initial state - goal state >= 0
+                    lp::LPConstraint flow_constraint(0., lp.get_infinity());
+                    for (const auto& ingoing : state_ingoing[j]) {
+                        flow_constraint.insert(ingoing, 1.);
+                    }
+                    for (const auto& outgoing : state_outgoing[j]) {
+                        flow_constraint.insert(outgoing, -1.);
+                    }
+                    double init_var_coef = 0.0;
+                    if (j == goal_state) {
+                        // If this is a final state, subtract flow to state
+                        init_var_coef -= 1.0;
+                    }
+                    if (j == q) {
+                        // Add initial state variable flow
+                        init_var_coef += 1.0;
+                    }
+                    if (init_var_coef != 0.0) {
+                        flow_constraint.insert(init_variables[i][q], init_var_coef);
+                    }
+                    safe_push_constraint(flow_constraint);
+                }
+
+                // Add operator count constraints for each label
+                for (int j = 0; j < automaton.alphabet->get_alphabet_symbols().size(); ++j) {
+                    lp::LPConstraint label_constraint(0., lp.get_infinity());
+                    label_constraint.insert(j, 1.);
+                    for (const auto& transition : label_transitions.at(j)) {
+                        label_constraint.insert(transition, -1.);
+                    }
+                    safe_push_constraint(label_constraint);
+                }
             }
         }
 
@@ -120,20 +135,13 @@ namespace operator_counting {
         // reach a goal state to satisfy the constraint.
         std::vector<std::vector<mata::nfa::State>> init_state_constraints;
 
-        // For each factor, keep track of the number of times each state is in the constraints
-        std::vector<std::vector<int>> appearances_of_state = std::vector<std::vector<int>>(factored_qdomrel->size(), std::vector<int>());
-        for (int i = 0; i < factored_qdomrel->size(); ++i) {
-            appearances_of_state[i] = std::vector<int>((*factored_qdomrel)[i].get_nfa().num_of_states(), 0);
-        }
-
         for (const auto& previous_state : std::views::reverse(previous_states)) {
             if (previous_state.g_value < g_value) {
                 std::vector<mata::nfa::State> initial_states;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     auto fvn = (*factored_qdomrel)[i].fact_value_names;
-                    std::cout << "Adding " << fvn.get_fact_value_name(previous_state.state[i]) << " " << fvn.get_fact_value_name(explicit_state[i]) << std::endl;
+                    // std::cout << "Adding " << fvn.get_fact_value_name(previous_state.state[i]) << " " << fvn.get_fact_value_name(explicit_state[i]) << std::endl;
                     initial_states.push_back((*factored_qdomrel)[i].nfa_simulates(previous_state.state[i], explicit_state[i]));
-                    appearances_of_state[i][explicit_state[i]]++;
                 }
                 init_state_constraints.emplace_back(initial_states);
             }
@@ -148,17 +156,10 @@ namespace operator_counting {
                 lp::LPConstraint constraint(1., lp_solver.get_infinity());
                 for (int j = 0; j < init_state_constraints.at(i).size(); ++j) {
                     // Each initial state should appear with coefficient |constraints|
-                    constraint.insert(init_variables.at(j).at(init_state_constraints.at(i).at(j)), static_cast<double>(init_state_constraints.size()));
+                    constraint.insert(init_variables.at(j).at(init_state_constraints.at(i).at(j)), 1.);
                 }
                 lp_constraints.push_back(constraint);
             }
-            // Add goal variable constraint: sum of goal variables >= 1
-            lp::LPConstraint goal_constraint(1., lp_solver.get_infinity());
-            for (int goal_variable : goal_variables) {
-                goal_constraint.insert(goal_variable, 1.);
-            }
-            lp_constraints.push_back(goal_constraint);
-
             lp_solver.add_temporary_constraints(lp_constraints);
         }
 

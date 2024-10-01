@@ -38,7 +38,7 @@ OperatorCountingHeuristic::OperatorCountingHeuristic(
     for (const auto &generator : constraint_generators) {
         generator->initialize_constraints(task, lp);
     }
-    // lp_variables = named_vector::NamedVector(lp.get_variables());
+    lp_variables = named_vector::NamedVector(lp.get_variables());
     lp_solver.load_problem(lp);
 }
 
@@ -158,15 +158,14 @@ static plugins::FeaturePlugin<OperatorCountingHeuristicFeature> _plugin;
             }
         }
         int result;
-        lp_solver.write_lp("lp.txt");
         lp_solver.solve();
         if (lp_solver.has_optimal_solution()) {
             double epsilon = 0.01;
             double objective_value = lp_solver.get_objective_value();
-            // for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
-            //     std::cout << lp_variables.get_name(i) << "=" << val << " ";
-            // }
-            // std::cout << std::endl;
+            for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
+                std::cout << lp_variables.get_name(i) << "=" << val << " ";
+            }
+            std::cout << std::endl;
             result = static_cast<int>(ceil(objective_value - epsilon));
         } else {
             result = DEAD_END;

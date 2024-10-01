@@ -26,11 +26,11 @@ namespace operator_counting {
         };
         std::vector<GValuedState> previous_states;
 
-        // For factor i, and transition j in the NFA, the variable that represents the transition
-        std::vector<std::vector<int>> transition_variables;
-        // For factor i, the variable that represent the goal variable for the unique final state
-        std::vector<int> goal_variables;
-        // For factor i, and state j in the NFA, the variable that represents starting in the state j
+        // For factor i, flow from state j, and transition k in the NFA, the variable that represents the transition
+        std::vector<std::vector<std::vector<int>>> transition_variables;
+        // For factor i, flow from state j, the variable that represent the goal variable for the unique final state
+        std::vector<std::vector<int>> goal_variables;
+        // For factor i, and state j in the NFA, the variable that represents that there should be flow from state q
         std::vector<std::vector<int>> init_variables;
     };
 }
