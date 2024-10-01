@@ -45,7 +45,7 @@ public:
     }
 
     void set_name(int index, const std::string &name) {
-        assert(index >= 0 && index < size());
+         assert(index >= 0 && index < size());
         int num_names = names.size();
         if (index >= num_names) {
             if (name.empty()) {

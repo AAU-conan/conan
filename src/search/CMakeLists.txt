@@ -1036,6 +1036,7 @@ create_fast_downward_library(
         qualified_dominance/qualified_dominance_pruning_local
         qualified_dominance/qualified_ld_simulation
         qualified_dominance/qualified_label_relation
+        qualified_dominance/nfa_merge_non_differentiable
         DEPENDS
         dominance
         factored_transition_system
@@ -1176,26 +1177,25 @@ if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
 endif()
 
-message(${CMAKE_BINARY_DIR}/spot)
 
-# Requires swig
 include(ExternalProject)
-ExternalProject_Add(spot
-        URL http://www.lrde.epita.fr/dload/spot/spot-2.12.tar.gz
-        URL_HASH MD5=1a9b7231575744b35e3998da61e4b89f
-        PREFIX ${CMAKE_BINARY_DIR}/spot
-        CONFIGURE_COMMAND ./configure --prefix=${CMAKE_BINARY_DIR}/spot CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} --disable-python --disable-devel --disable-debug --disable-shared --enable-static --enable-c++20 CFLAGS=-flto CXXFLAGS=-flto LDFLAGS=-fuse-linker-plugin
-        BUILD_COMMAND make
-        INSTALL_COMMAND make install
-        BUILD_IN_SOURCE 1
-        BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a
-)
-add_dependencies(qualified_dominance spot)
-
-include_directories(${CMAKE_BINARY_DIR}/spot/include)
-link_directories(${CMAKE_BINARY_DIR}/spot/lib)
-
-target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a)
+# Requires swig
+#ExternalProject_Add(spot
+#        URL http://www.lrde.epita.fr/dload/spot/spot-2.12.tar.gz
+#        URL_HASH MD5=1a9b7231575744b35e3998da61e4b89f
+#        PREFIX ${CMAKE_BINARY_DIR}/spot
+#        CONFIGURE_COMMAND ./configure --prefix=${CMAKE_BINARY_DIR}/spot CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} --disable-python --disable-devel --disable-debug --disable-shared --enable-static --enable-c++20 CFLAGS=-flto CXXFLAGS=-flto LDFLAGS=-fuse-linker-plugin
+#        BUILD_COMMAND make
+#        INSTALL_COMMAND make install
+#        BUILD_IN_SOURCE 1
+#        BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a
+#)
+#add_dependencies(qualified_dominance spot)
+#
+#include_directories(${CMAKE_BINARY_DIR}/spot/include)
+#link_directories(${CMAKE_BINARY_DIR}/spot/lib)
+#
+#target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a)
 
 
 ExternalProject_Add(mata
@@ -1219,5 +1219,6 @@ target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/mata/lib
 
 find_package(Boost)
 if(Boost_FOUND)
+    message("FOUND BOOST")
     include_directories(${Boost_INCLUDE_DIRS})
 endif()

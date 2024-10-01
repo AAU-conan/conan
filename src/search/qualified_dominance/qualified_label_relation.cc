@@ -1,14 +1,12 @@
 #include "qualified_label_relation.h"
 
 #include <numeric>
+#include <vector>
+#include <memory>
 
 #include "qualified_local_state_relation.h"
-#include "qualified_factored_dominance_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
-#include "../utils/logging.h"
-#include "../merge_and_shrink/labels.h"
-#include "../factored_transition_system/label_map.h"
 
 using namespace std;
 using namespace fts;
@@ -58,28 +56,7 @@ namespace qdominance {
 */
     }
 
-    void QualifiedLabelRelation::dump(utils::LogProxy &log) const {
-        for (size_t l = 0; l < dominates_in.size(); ++l) {
-            //if (labels->is_label_reduced(l)) log << "reduced";
-            if (l < 10) {
-                log << "l" << l << ": ";
-                dump(log, l);
-            } else {
-                log << "l" << l << ":";
-                dump(log, l);
-            }
-        }
-    }
 
-    void QualifiedLabelRelation::dump(utils::LogProxy &, int ) const {
-        //log << "Dump l: " << label << "; " << " Dominated by noop: " << dominated_by_noop_in[label] << ", labels: ";
-
-/*        for (size_t l2 = 0; l2 < dominates_in[label].size(); ++l2) {
-            if (dominates_in[l2][label] >= 0 && dominates_in[l2][label] <= 9) log << " ";
-            log << dominates_in[l2][label] << " ";
-        }*/
-        //log << endl;
-    }
 
     bool QualifiedLabelRelation::update(const FTSTask & task, const std::vector<std::unique_ptr<QualifiedLocalStateRelation>> &sim) {
         bool changes = false;

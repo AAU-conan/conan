@@ -3,19 +3,14 @@
 
 #include <vector>
 #include <string>
-#include <iostream>
 #include <memory>
-#include <set>
-#include <unordered_set>
 
 #include <rust/cxx.h>
-#include <spot/tl/formula.hh>
-#include <spot/tl/print.hh>
-#include <spot/twaalgos/contains.hh>
 #include <mata/nfa/nfa.hh>
 #include <mata/nfa/types.hh>
-#include <boost/algorithm/string.hpp>
+#include <unordered_map>
 
+#include "nfa_merge_non_differentiable.h"
 #include "../factored_transition_system/fact_names.h"
 
 namespace qdominance {
@@ -38,10 +33,13 @@ namespace qdominance {
     // First implementation of a simulation relation.
     class QualifiedLocalStateRelation {
     protected:
-        fts::FactValueNames fact_value_names;
 
         // NFA representing the simulation relation
         mutable mata::nfa::Nfa simulation_nfa;
+
+        // Whether the simulation_nfa has been reduced. When it is reduced, we are guaranteed that the universally_accepting state
+        // is the only state that is universally accepting.
+        bool is_simulation_nfa_reduced = false;
 
         // for s_i and s_j, the state in the NFA that represents when s_i simulates s_j
         std::vector<std::vector<mata::nfa::State>> state_pair_to_nfa_state;
@@ -51,16 +49,20 @@ namespace qdominance {
         mata::nfa::State universally_accepting;
 
         bool nfa_always_simulates(const int s, const int t) const {
-            // draw_nfa("nfa_simulates.dot");
-            // std::println(std::cout, "{} <= {}", fact_value_names.get_fact_value_name(t), fact_value_names.get_fact_value_name(s));
-            simulation_nfa.initial.insert(state_pair_to_nfa_state[s][t]);
-            mata::nfa::Run cex;
-            const bool result = simulation_nfa.is_universal(*simulation_nfa.alphabet, &cex);
-            auto w = cex.word | std::views::transform([&](int i) { return fact_value_names.get_operator_name(i, false); });
-            // std::println(std::cout, "{}", std::ranges::fold_left(w, std::string(), [](std::string a, std::string b) { return a + " " + b; }));
-            // std::println(std::cout, "{}", result);
-            simulation_nfa.initial.clear();
-            return result;
+            if (is_simulation_nfa_reduced) {
+                return state_pair_to_nfa_state[s][t] == universally_accepting;
+            } else {
+                // draw_nfa("nfa_simulates.dot");
+                // std::println(std::cout, "{} <= {}", fact_value_names.get_fact_value_name(t), fact_value_names.get_fact_value_name(s));
+                simulation_nfa.initial.insert(state_pair_to_nfa_state[s][t]);
+                mata::nfa::Run cex;
+                const bool result = simulation_nfa.is_universal(*simulation_nfa.alphabet, &cex);
+                auto w = cex.word | std::views::transform([&](int i) { return fact_value_names.get_operator_name(i, false); });
+                // std::println(std::cout, "{}", std::ranges::fold_left(w, std::string(), [](std::string a, std::string b) { return a + " " + b; }));
+                // std::println(std::cout, "{}", result);
+                simulation_nfa.initial.clear();
+                return result;
+            }
         }
 
         bool nfa_never_simulates(const int s, const int t) const {
@@ -70,17 +72,13 @@ namespace qdominance {
             return result;
         }
 
-        mata::nfa::State nfa_simulates(const int s, const int t) const {
-            return state_pair_to_nfa_state[s][t];
-        }
-
         int num_labels;
 
         // Vectors of states dominated/dominating by each state. Lazily computed when needed.
         std::vector<std::vector<int>> dominated_states, dominating_states;
         void compute_list_dominated_states();
-
     public:
+        fts::FactValueNames fact_value_names;
         QualifiedLocalStateRelation(mata::nfa::Nfa& simulation_nfa, std::vector<std::vector<mata::nfa::State> > && relation, std::unordered_map<mata::nfa::State, std::pair<int,int>>& nfa_state_to_state_pair, int num_labels, mata::nfa::State universally_accepting, fts::FactValueNames fact_value_names);
 
         //static LocalStateRelation get_local_distances_relation(const merge_and_shrink::TransitionSystem & ts);
@@ -117,16 +115,22 @@ namespace qdominance {
             return simulates(s, t) && simulates(t, s);
         }
 
-        [[nodiscard]] mata::nfa::Nfa get_inverted_nfa(int s, int t) const {
-            auto complement = mata::nfa::Nfa(simulation_nfa);
-            complement.initial.insert(state_pair_to_nfa_state[s][t]);
-            complement = determinize(complement); // These actions remove the alphabet for some reason
-            complement = minimize(complement);
-            complement.make_complete(simulation_nfa.alphabet);
-            complement.swap_final_nonfinal();
-            complement.alphabet = simulation_nfa.alphabet;
-            return complement;
+        mata::nfa::State nfa_simulates(const int s, const int t) const {
+            return state_pair_to_nfa_state[s][t];
         }
+
+        void reduce_nfa() {
+            auto [reduced_nfa, old_to_new_state_map] = merge_non_differentiable_states(simulation_nfa);
+            simulation_nfa = reduced_nfa;
+            universally_accepting = old_to_new_state_map[universally_accepting];
+            for (int i = 0; i < state_pair_to_nfa_state.size(); ++i) {
+                for (int j = 0; j < state_pair_to_nfa_state[i].size(); ++j) {
+                    state_pair_to_nfa_state[i][j] = old_to_new_state_map[state_pair_to_nfa_state[i][j]];
+                }
+            }
+        }
+
+        [[nodiscard]]
 
         bool is_identity() const;
         int num_equivalences() const;

@@ -32,8 +32,6 @@ namespace qdominance {
         fts::TransformedFTSTask transformed_task = fts_factory->transform_to_fts(task);
         state_mapping = std::move(transformed_task.factored_state_mapping);
 
-        std::cout << "drawing graph" << std::endl;
-        fts::draw_fts("fts.dot", *transformed_task.fts_task);
 
         dominance_relation = dominance_analysis->compute_dominance_relation(*transformed_task.fts_task);
 

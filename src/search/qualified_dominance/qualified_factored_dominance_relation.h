@@ -59,10 +59,12 @@ namespace qdominance {
         }
 
         QualifiedLocalStateRelation &operator[](int index) {
+            assert(index >= 0 && index < local_relations.size());
             return *(local_relations[index]);
         }
 
         const QualifiedLocalStateRelation &operator[](int index) const {
+            assert(index >= 0 && index < local_relations.size());
             return *(local_relations[index]);
         }
 

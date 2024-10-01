@@ -5,9 +5,10 @@
 #include <vector>
 #include <set>
 #include <cassert>
+#include <memory>
+
 #include "../dominance/all_none_factor_index.h"
 
-#include <spot/twaalgos/contains.hh>
 
 using namespace dominance;
 

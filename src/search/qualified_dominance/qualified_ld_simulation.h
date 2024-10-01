@@ -11,11 +11,9 @@
 #include "../utils/logging.h"
 #include "../dominance/all_none_factor_index.h"
 
-#include "../utils/timer.h"
 #include "qualified_dominance_analysis.h"
-
-#include <spot/tl/nenoform.hh>
-#include <spot/tl/simplify.hh>
+#include "../utils/timer.h"
+#include "../utils/logging.h"
 
 
 namespace fts {
@@ -74,30 +72,36 @@ namespace qdominance {
             } while (label_relation.update(task, local_relations));
             log << std::endl << "LDSimulation finished: " << t() << std::endl;
 
-
-            for (auto [lts_id, lts] : std::views::enumerate(task.get_factors())) {
-                const auto& relation = local_relations[lts_id];
-                for (size_t j = 0; j < relation->num_states(); ++j) {
-                    for (size_t i = 0; i < relation->num_states(); ++i) {
-                        if (i != j) {
-                            auto phi = relation->get_inverted_nfa(i, j);
-                            relation->draw_transformed_nfa("inverted_nfa.dot", phi);
-                            log << lts->state_name(i) << " simulates " << lts->state_name(j) << " except " << std::flush;
-                            if (phi.is_universal(*phi.alphabet)) {
-                                log << " everything " << std::endl;
-                            } else {
-                                for (auto w : phi.get_words(phi.num_of_states() - 1)) {
-                                    for (auto l : w) {
-                                        log << lts->label_name(l) << "->";
-                                    }
-                                    log << "; ";
-                                }
-                                log << std::endl;
-                            }
-                        }
-                    }
-                }
+            for (const auto & [i, local_relation] : std::views::enumerate(local_relations)) {
+                local_relation->draw_nfa(std::format("nfa_pre_reduce{}.dot", i));
+                local_relation->reduce_nfa();
+                local_relation->draw_transformed_nfa(std::format("nfa{}.dot", i), local_relation->get_nfa());
             }
+
+
+            // for (auto [lts_id, lts] : std::views::enumerate(task.get_factors())) {
+            //     const auto& relation = local_relations[lts_id];
+            //     for (size_t j = 0; j < relation->num_states(); ++j) {
+            //         for (size_t i = 0; i < relation->num_states(); ++i) {
+            //             if (i != j) {
+            //                 auto phi = relation->get_inverted_nfa(i, j);
+            //                 relation->draw_transformed_nfa("inverted_nfa.dot", phi);
+            //                 log << lts->state_name(i) << " simulates " << lts->state_name(j) << " except " << std::flush;
+            //                 if (phi.is_universal(*phi.alphabet)) {
+            //                     log << " everything " << std::endl;
+            //                 } else {
+            //                     for (auto w : phi.get_words(phi.num_of_states() - 1)) {
+            //                         for (auto l : w) {
+            //                             log << lts->label_name(l) << "->";
+            //                         }
+            //                         log << "; ";
+            //                     }
+            //                     log << std::endl;
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
 
         return std::make_unique<QualifiedFactoredDominanceRelation>(std::move(local_relations));
     }
@@ -118,7 +122,6 @@ namespace qdominance {
                         // b) exist t--l'-->t', t' >= s' and l dominated by l'?
 
                         changes |= local_relation.update(s, t, label_dominance, lts, lts_id, log);
-                        local_relation.draw_nfa(std::format("nfa{}.dot", lts_id));
                     }
                 }
             }
