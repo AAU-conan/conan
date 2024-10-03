@@ -1203,7 +1203,7 @@ ExternalProject_Add(mata
     GIT_TAG 1.6.9
     PREFIX ${CMAKE_BINARY_DIR}/mata
     BUILD_COMMAND cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/mata && cmake --build build --parallel -j 16
-    INSTALL_COMMAND make install
+    INSTALL_COMMAND cd build && make install
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/mata/lib/libmata.a
     BUILD_IN_SOURCE 1
 )
