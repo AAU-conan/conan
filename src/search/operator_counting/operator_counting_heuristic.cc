@@ -29,6 +29,7 @@ OperatorCountingHeuristic::OperatorCountingHeuristic(
     double infinity = lp_solver.get_infinity();
     for (OperatorProxy op : task_proxy.get_operators()) {
         int op_cost = op.get_cost();
+        std::cout << "Operator " << op.get_name() << " cost: " << op_cost << std::endl;
         variables.push_back(lp::LPVariable(0, infinity, op_cost, use_integer_operator_counts));
 #ifndef NDEBUG
         variables.set_name(op.get_id(), op.get_name());
@@ -166,12 +167,12 @@ static plugins::FeaturePlugin<OperatorCountingHeuristicFeature> _plugin;
             double epsilon = 0.01;
             double objective_value = lp_solver.get_objective_value();
 #ifndef NDEBUG
-            // for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
-            //     if (val == 0.)
-            //         continue;
-            //     std::cout << lp_variables.get_name(i) << "=" << val << " ";
-            // }
-            // std::cout << std::endl;
+            for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
+                if (val == 0.)
+                    continue;
+                std::cout << lp_variables.get_name(i) << "=" << val << " ";
+            }
+            std::cout << std::endl;
 #endif
             result = static_cast<int>(ceil(objective_value - epsilon));
         } else {
@@ -180,7 +181,7 @@ static plugins::FeaturePlugin<OperatorCountingHeuristicFeature> _plugin;
         lp_solver.clear_temporary_constraints();
 
 #ifndef NDEBUG
-        // std::cout << state.get_unpacked_values() << " h: " << result << std::endl;
+        std::cout << "h: " << result << std::endl;
 #endif
         return result;
     }

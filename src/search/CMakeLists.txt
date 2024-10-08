@@ -33,6 +33,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+
 # Path containing custom CMake modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(common_cxx_flags)
@@ -883,6 +884,7 @@ create_fast_downward_library(
         operator_counting/pho_constraints
         operator_counting/state_equation_constraints
         operator_counting/qualified_dominance_constraints
+        operator_counting/contrastive_landmarks
     DEPENDS lp_solver landmark_cut_heuristic pdbs task_properties
 )
 
