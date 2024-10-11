@@ -1,5 +1,5 @@
-#ifndef QUALIFIED_DOMINANCE_CONSTRAINTS_H
-#define QUALIFIED_DOMINANCE_CONSTRAINTS_H
+#ifndef QDOM_LANDMARK_CONSTRAINTS_H
+#define QDOM_LANDMARK_CONSTRAINTS_H
 
 #include "constraint_generator.h"
 #include "../dominance/dominance_pruning_all_previous.h"
@@ -13,7 +13,7 @@ namespace qdominance {
 }
 
 namespace operator_counting {
-    class QualifiedDominanceConstraints final : public ConstraintGenerator {
+    class QualifiedDominanceLandmarkConstraints final : public ConstraintGenerator {
     public:
         void initialize_constraints(const std::shared_ptr<AbstractTask> &task, lp::LinearProgram &lp) override;
         bool update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) override;
@@ -26,13 +26,18 @@ namespace operator_counting {
         };
         std::vector<GValuedState> previous_states;
 
-        // For factor i, flow from state j, and transition k in the NFA, the variable that represents the transition
-        std::vector<std::vector<std::vector<int>>> transition_variables;
-        // For factor i, flow from state j, the variable that represent the goal variable for the unique final state
-        // std::vector<std::vector<int>> goal_variables;
-        // For factor i, and state j in the NFA, the variable that represents that there should be flow from state q
-        std::vector<std::vector<int>> init_variables;
+        // For factor i, state q, the operators from the stratum of q to the next stratum
+        std::vector<std::vector<std::vector<int>>> landmark_ops;
+
+        // For factor i, state q, the states that q can reach
+        std::vector<std::vector<std::set<mata::nfa::State>>> reachable;
+
+        // For factor i, state q, the stratum q belongs to
+        std::vector<std::vector<int>> state_to_stratum;
+
+        // For factor i, the stratum j, the states that belong to stratum j
+        std::vector<std::vector<std::vector<mata::nfa::State>>> stratification;
     };
 }
 
-#endif //QUALIFIED_DOMINANCE_CONSTRAINTS_H
+#endif //QDOM_LANDMARK_CONSTRAINTS_H

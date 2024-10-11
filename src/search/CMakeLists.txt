@@ -884,6 +884,7 @@ create_fast_downward_library(
         operator_counting/pho_constraints
         operator_counting/state_equation_constraints
         operator_counting/qualified_dominance_constraints
+        operator_counting/qdom_lm_constraints
         operator_counting/contrastive_landmarks
     DEPENDS lp_solver landmark_cut_heuristic pdbs task_properties
 )

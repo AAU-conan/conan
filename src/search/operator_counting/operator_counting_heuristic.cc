@@ -29,7 +29,6 @@ OperatorCountingHeuristic::OperatorCountingHeuristic(
     double infinity = lp_solver.get_infinity();
     for (OperatorProxy op : task_proxy.get_operators()) {
         int op_cost = op.get_cost();
-        std::cout << "Operator " << op.get_name() << " cost: " << op_cost << std::endl;
         variables.push_back(lp::LPVariable(0, infinity, op_cost, use_integer_operator_counts));
 #ifndef NDEBUG
         variables.set_name(op.get_id(), op.get_name());

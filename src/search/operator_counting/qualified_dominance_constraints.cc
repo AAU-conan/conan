@@ -9,6 +9,53 @@
 #include <print>
 
 namespace operator_counting {
+
+    [[nodiscard]] std::pair<mata::nfa::Nfa, std::vector<std::vector<int>>> label_group_nfa(const mata::nfa::Nfa& nfa) {
+        // Start with all labels in the same group
+        std::vector<int> label_to_group(nfa.alphabet->get_alphabet_symbols().size(), 0);
+        int next_label_group = 1;
+
+        // Iterate through all transitions and split the group into two group where one has the transition and another doesn't
+        for (const auto& [from, label, to] : nfa.delta.transitions()) {
+            int lg = label_to_group[label];
+            for (const auto& symbol_post : nfa.delta.state_post(from)) {
+                if (label_to_group.at(symbol_post.symbol) != lg)
+                    continue;
+
+                for (const auto& tgt : symbol_post.targets) {
+                    if (tgt == to) {
+                        // Put all labels in this label group that have this transition in the next group
+                        label_to_group.at(symbol_post.symbol) = next_label_group;
+                    }
+                }
+            }
+            ++next_label_group;
+        }
+
+        // The label groups may be sparse now, so compact them
+        auto used_groups = label_to_group | std::ranges::to<std::set<int>>();
+        std::vector<std::vector<int>> label_groups(used_groups.size());
+
+        for (auto [ng, og] : std::views::enumerate(used_groups)) {
+            for (const auto& [label, lg] : std::views::enumerate(label_to_group)) {
+                if (lg == og) {
+                    label_groups[ng].push_back(label);
+                    label_to_group[label] = ng;
+                }
+            }
+        }
+
+        mata::nfa::Nfa new_nfa(nfa.num_of_states(), mata::nfa::StateSet(nfa.initial), mata::nfa::StateSet(nfa.final), nullptr);
+        auto all_labels = std::views::iota(0ul, used_groups.size());
+        new_nfa.alphabet = new mata::EnumAlphabet(all_labels.begin(), all_labels.end());
+        for (const auto& [from, label, to] : nfa.delta.transitions()) {
+            new_nfa.delta.add(from, label_to_group[label], to);
+        }
+
+        return std::make_pair(new_nfa, label_groups);
+    }
+
+
     void QualifiedDominanceConstraints::initialize_constraints(const std::shared_ptr<AbstractTask>& task, lp::LinearProgram& lp) {
         fts::AtomicTaskFactory fts_factory;
         const auto transformed_task = fts_factory.transform_to_fts(task);
@@ -34,18 +81,25 @@ namespace operator_counting {
             lp_constraints.push_back(c);
         };
 
-
         // Create all the LP variables
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
-            const auto& automaton = (*factored_qdomrel)[i].get_nfa();
+            const auto& [automaton, label_groups] = label_group_nfa((*factored_qdomrel)[i].get_nfa());
             auto fvn = (*factored_qdomrel)[i].fact_value_names;
+
+            for (auto [i, lg] : std::views::enumerate(label_groups)) {
+                std::cout << "Label group " << i << ": ";
+                for (auto label : lg) {
+                    std::cout << fvn.get_operator_name(label, false) << " ";
+                }
+                std::cout << std::endl;
+            }
 
             auto non_final_states = mata::utils::SparseSet(automaton.final);
             non_final_states.complement(automaton.num_of_states());
             assert(non_final_states.size() == 1);
             mata::nfa::State goal_state = *non_final_states.begin();
 
-            goal_variables.emplace_back();
+            // goal_variables.emplace_back();
             init_variables.emplace_back();
             transition_variables.emplace_back();
             for (int q = 0; q < automaton.num_of_states(); ++q) {
@@ -55,7 +109,7 @@ namespace operator_counting {
 #ifndef NDEBUG
                 lp_variables.set_name(goal_var, std::format("G^{}_{}", q, i));
 #endif
-                goal_variables[i].emplace_back(goal_var);
+                // goal_variables[i].emplace_back(goal_var);
 
                 // Add init variables for each state
                 lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
@@ -69,7 +123,7 @@ namespace operator_counting {
                 transition_variables.at(i).emplace_back();
                 std::vector<std::vector<int>> state_ingoing(automaton.num_of_states(), std::vector<int>());
                 std::vector<std::vector<int>> state_outgoing(automaton.num_of_states(), std::vector<int>());
-                std::vector<std::vector<int>> label_transitions(automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
+                std::vector<std::vector<int>> label_group_transitions(automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
 
                 auto transitions = automaton.delta.transitions();
                 auto it = transitions.begin();
@@ -88,7 +142,7 @@ namespace operator_counting {
                     transition_variables.at(i).at(q).emplace_back();
 
                     // Add this transition to the list of transitions for the label
-                    label_transitions[label].push_back(transition_variable);
+                    label_group_transitions[label].push_back(transition_variable);
 
                     // Add this transition to the list of ingoing/outgoing transitions for the target/source states
                     state_ingoing[to].push_back(transition_variable);
@@ -120,11 +174,13 @@ namespace operator_counting {
                     safe_push_constraint(flow_constraint);
                 }
 
-                // Add operator count constraints for each label
-                for (int j = 0; j < automaton.alphabet->get_alphabet_symbols().size(); ++j) {
+                // Add operator count constraints for each label group
+                for (auto [lg_i, lg] : std::views::enumerate(label_groups)) {
                     lp::LPConstraint label_constraint(0., lp.get_infinity());
-                    label_constraint.insert(j, 1.);
-                    for (const auto& transition : label_transitions.at(j)) {
+                    for (auto label : lg) {
+                        label_constraint.insert(label, 1.);
+                    }
+                    for (const auto& transition : label_group_transitions.at(lg_i)) {
                         label_constraint.insert(transition, -1.);
                     }
                     safe_push_constraint(label_constraint);
