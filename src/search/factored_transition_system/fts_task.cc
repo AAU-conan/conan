@@ -1,7 +1,6 @@
 #include "fts_task.h"
 
 #include <cassert>
-#include <format>
 
 #include "../utils/system.h"
 #include "labelled_transition_system.h"

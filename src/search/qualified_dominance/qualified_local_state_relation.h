@@ -135,8 +135,6 @@ namespace qdominance {
             }
         }
 
-        [[nodiscard]]
-
         bool is_identity() const;
         int num_equivalences() const;
         int num_simulations(bool ignore_equivalences) const;

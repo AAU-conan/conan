@@ -2,7 +2,6 @@
 #define GRAPHVIZ_H
 
 #include <cassert>
-#include <format>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -26,7 +25,7 @@ namespace graphviz {
         class EdgeContainer {
         protected:
             static std::string format_attrs(const std::string& label, const std::string &attrs) {
-                return std::format("label=\"{}\"{}{}", label, attrs.empty()? "": ",", attrs);
+                return "label=\"" + label + (attrs.empty()? "": ",") + attrs + "\"";
             }
         public:
             virtual ~EdgeContainer() = default;
@@ -59,7 +58,7 @@ namespace graphviz {
                     if (attrs != it->second.second) {
                         std::cerr << "Warning: Different attributes for the same edge: " << from << " -> " << to << std::endl;
                     }
-                    it->second = std::make_pair(std::format("{},\n{}", it->second.first, label), attrs);
+                    it->second = std::make_pair(it->second.first + ",\n" + label, attrs);
                 } else {
                     edges[p] = std::make_pair(label, attrs);
                 }

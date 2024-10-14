@@ -9,7 +9,6 @@
 
 #include <cmath>
 #include <print>
-#include <format>
 #include <vector>
 #include <ranges>
 

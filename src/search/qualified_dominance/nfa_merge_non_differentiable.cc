@@ -8,11 +8,76 @@
 
 #include "qualified_local_state_relation.h"
 #include "../algorithms/dynamic_bitset.h"
+#include "../utils/logging.h"
 
 
 using namespace mata::nfa;
 
 namespace qdominance {
+
+    [[nodiscard]] Nfa determinize2(const Nfa& aut) {
+        Nfa result{};
+        result.alphabet = aut.alphabet;
+        //assuming all sets targets are non-empty
+        std::vector<std::pair<State, StateSet>> worklist{};
+        std::unordered_map<StateSet, State> subset_map_local{};
+        auto subset_map = &subset_map_local;
+
+        for (mata::nfa::State s{0}; s < aut.num_of_states(); ++s) {
+            const StateSet S{ s };
+            const State Sid{ result.add_state() };
+
+            if (aut.final.intersects_with(S)) {
+                result.final.insert(Sid);
+            }
+            worklist.emplace_back(Sid, S);
+            (*subset_map)[mata::utils::OrdVector<State>(S)] = Sid;
+        }
+        if (aut.delta.empty()) { return result; }
+
+        using Iterator = mata::utils::OrdVector<SymbolPost>::const_iterator;
+        SynchronizedExistentialSymbolPostIterator synchronized_iterator;
+
+        while (!worklist.empty()) {
+            const auto Spair = worklist.back();
+            worklist.pop_back();
+            const StateSet S = Spair.second;
+            const State Sid = Spair.first;
+            if (S.empty()) {
+                // This should not happen assuming all sets targets are non-empty.
+                break;
+            }
+
+            // add moves of S to the sync ex iterator
+            synchronized_iterator.reset();
+            for (State q: S) {
+                mata::utils::push_back(synchronized_iterator, aut.delta[q]);
+            }
+
+            while (synchronized_iterator.advance()) {
+                // extract post from the synchronized_iterator iterator
+                const std::vector<Iterator>& symbol_posts = synchronized_iterator.get_current();
+                mata::Symbol currentSymbol = (*symbol_posts.begin())->symbol;
+                StateSet T = synchronized_iterator.unify_targets();
+
+                const auto existingTitr = subset_map->find(T);
+                State Tid;
+                if (existingTitr != subset_map->end()) {
+                    Tid = existingTitr->second;
+                } else {
+                    Tid = result.add_state();
+                    (*subset_map)[mata::utils::OrdVector<State>(T)] = Tid;
+                    if (aut.final.intersects_with(T)) {
+                        result.final.insert(Tid);
+                    }
+                    worklist.emplace_back(Tid, T);
+                }
+                result.delta.mutable_state_post(Sid).insert(SymbolPost(currentSymbol, Tid));
+            }
+        }
+        return result;
+    }
+
     [[nodiscard]] Nfa determinize(const Nfa& nfa) {
         Nfa new_nfa(nfa);
         new_nfa.make_complete();
@@ -52,7 +117,34 @@ namespace qdominance {
             }
         }
         return new_nfa;
-    };
+    }
+
+
+    [[nodiscard]] Nfa revert2(const Nfa& aut) {
+        Nfa result;
+        result.clear();
+
+        const size_t num_of_states{ aut.num_of_states() };
+        result.delta.allocate(num_of_states);
+
+        for (State sourceState{ 0 }; sourceState < num_of_states; ++sourceState) {
+            for (const SymbolPost &transition: aut.delta[sourceState]) {
+                for (const State targetState: transition.targets) {
+                    result.delta.add(targetState, transition.symbol, sourceState);
+                }
+            }
+        }
+
+        result.initial = aut.final;
+        result.final = aut.initial;
+
+        return result;
+
+    }
+
+    [[nodiscard]] Nfa minimize2(const Nfa& nfa) {
+        return determinize2(revert2(determinize2(revert2(nfa))));
+    }
 
 
     [[nodiscard]] std::pair<Nfa, std::vector<State>> merge_non_differentiable_states(const Nfa& nfa, const QualifiedLocalStateRelation& relation) {
@@ -60,7 +152,7 @@ namespace qdominance {
         std::println("Pre determinization size {}", nfa.num_of_states());
         Nfa detnfa(nfa);
         detnfa.make_complete();
-        detnfa = qdominance::determinize(detnfa);
+        detnfa = qdominance::determinize2(detnfa);
         std::println("Post determinization size {}", detnfa.num_of_states());
 
         // Use Hopcroft's algorithm to merge non-differentiable states
@@ -153,5 +245,107 @@ namespace qdominance {
 
         std::println("Post merging step {}", new_nfa.num_of_states());
         return {new_nfa, old_to_new};
+    }
+
+    // Minimize NFA by combining minimization and merging non-differentiable states steps
+    [[nodiscard]] std::pair<mata::nfa::Nfa, std::vector<State>> minimize3(const mata::nfa::Nfa& nfa) {
+        utils::g_log << "Final constraint" << std::endl;
+        // Compute a simulation relation over the states of the NFA
+        // for q, and p, whether q simulates p, i.e. p <= q
+        std::vector<std::vector<bool>> simulates(nfa.num_of_states(), std::vector<bool>(nfa.num_of_states(), true));
+        // First, apply the final state constraint: q <= p => (q ∈ F => p ∈ F)
+        for (State q = 0; q < nfa.num_of_states(); ++q) {
+            for (State p = 0; p < nfa.num_of_states(); ++p) {
+                if (nfa.final.contains(q) && !nfa.final.contains(p)) {
+                    simulates[q][p] = false;
+                }
+            }
+        }
+
+
+        utils::g_log << "Transition constraint" << std::endl;
+        // Now apply the transition constraint, i.e. q <= p => (q --l-> q' => (p --l-> p' and q' <= p'))
+        bool change = false;
+        do {
+            change = false;
+            for (State q = 0; q < nfa.num_of_states(); ++q) {
+                for (State p = 0; p < nfa.num_of_states(); ++p) {
+                    if (!simulates[q][p]) {
+                        continue;
+                    }
+                    for (const SymbolPost& q_post : nfa.delta[q]) {
+                        for (State q_target : q_post.targets) {
+                            bool found = false;
+                            for (const SymbolPost& p_post : nfa.delta[p]) {
+                                if (p_post.symbol == q_post.symbol) {
+                                    for (State p_target : p_post.targets) {
+                                        if (simulates[q_target][p_target]) {
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (!found) {
+                                simulates[q][p] = false;
+                                change = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        } while(change);
+
+        auto new_nfa = Nfa();
+        new_nfa.alphabet = nfa.alphabet;
+
+        utils::g_log << "Merge bisimilar states" << std::endl;
+        // Merge bisimilar states, i.e. merge p,q if p <= q and q <= p
+        std::vector<State> old_to_new(nfa.num_of_states(), -1);
+        std::vector<State> new_to_old;
+        // Create new states for the combined states
+        for (State q = 0; q < nfa.num_of_states(); ++q) {
+            if (old_to_new[q] != -1) {
+                continue;
+            }
+            old_to_new[q] = new_nfa.add_state();
+            new_to_old.push_back(q);
+            if (nfa.final.contains(q)) {
+                new_nfa.final.insert(old_to_new[q]);
+            }
+            if (nfa.initial.contains(q)) {
+                new_nfa.initial.insert(old_to_new[q]);
+            }
+            for (State p = q + 1; p < nfa.num_of_states(); ++p) {
+                if (simulates[q][p] && simulates[p][q]) {
+                    old_to_new[p] = old_to_new[q];
+                }
+            }
+        }
+
+        utils::g_log << "Simplify transitions" << std::endl;
+        // Now apply simplification. Whenever q --l-> q' and q --l--> q'' where q' <= q'', then remove q --l-> q'
+        for (State q = 0; q < nfa.num_of_states(); ++q) {
+            for (const SymbolPost& q_post : nfa.delta.state_post(q)) {
+                for (State q_target : q_post.targets) {
+                    bool is_simulated = false;
+                    for (State q_target2 : q_post.targets) {
+                        if (simulates[q_target2][q_target] && (!simulates[q_target][q_target2] || q_target < q_target2)) {
+                            is_simulated = true;
+                            break;
+                        }
+                    }
+                    if (!is_simulated) {
+                        new_nfa.delta.add(q, q_post.symbol, q_target);
+                    }
+                }
+            }
+        }
+
+        utils::g_log << "Pre determinization size " << new_nfa.num_of_states() << std::endl;
+        auto res = qdominance::determinize(new_nfa);
+        utils::g_log << "Post determinization size " << res.num_of_states() << std::endl;
+        return {res, old_to_new};
     }
 }
