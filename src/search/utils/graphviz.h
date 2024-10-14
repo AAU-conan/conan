@@ -8,7 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <generator>
+#include <ranges>
 
 #include "../lp/soplex_solver_interface.h"
 
@@ -30,7 +30,7 @@ namespace graphviz {
         public:
             virtual ~EdgeContainer() = default;
             virtual void add_edge(size_t from, size_t to, const std::string &label, const std::string &attrs) = 0;
-            [[nodiscard]] virtual std::generator<const std::tuple<size_t, size_t, const std::string&>> get_edges() const = 0;
+            [[nodiscard]] virtual std::vector<std::tuple<size_t, size_t, const std::string&>> get_edges() const = 0;
         };
 
         class SeparateEdgeContainer : public EdgeContainer {
@@ -41,10 +41,13 @@ namespace graphviz {
                 edges.emplace_back(from, to, format_attrs(label, attrs));
             }
 
-            [[nodiscard]] std::generator<const std::tuple<size_t, size_t, const std::string&>> get_edges() const override {
+            [[nodiscard]] std::vector<std::tuple<size_t, size_t, const std::string&>> get_edges() const override {
+                std::vector<std::tuple<size_t, size_t, const std::string&>> result;
+                result.reserve(edges.size());
                 for (const auto &edge : edges) {
-                    co_yield edge;
+                    result.emplace_back(edge);
                 }
+                return result;
             }
         };
 
@@ -64,10 +67,10 @@ namespace graphviz {
                 }
             }
 
-            [[nodiscard]] std::generator<const std::tuple<size_t, size_t, const std::string&>> get_edges() const override {
-                for (const auto &[pair, label_attrs] : edges) {
-                    co_yield std::make_tuple(pair.first, pair.second, format_attrs(label_attrs.first, label_attrs.second));
-                }
+            [[nodiscard]] std::vector<std::tuple<size_t, size_t, const std::string&>> get_edges() const override {
+                return edges | std::views::transform([](const auto &pair) {
+                    return std::make_tuple(pair.first.first, pair.first.second, format_attrs(pair.second.first, pair.second.second));
+                }) | std::ranges::to<std::vector<std::tuple<size_t, size_t, const std::string&>>>();
             }
         };
 
