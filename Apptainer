@@ -1,0 +1,51 @@
+Bootstrap: docker
+From: ubuntu:23.10
+Stage: build
+
+%files
+    src
+    build.py
+
+%post
+    apt-get update
+    apt-get -y install --no-install-recommends cmake make g++ python3 g++-multilib
+
+    ./build.py
+    
+# Stage 2: Run the planner
+Bootstrap: docker
+From: ubuntu:23.10
+Stage: run
+
+# Copy planner binary and required files from Stage 1.
+%files
+    src/plan
+    src/translate
+    src/search/downward
+    src/search/unitcost
+    
+%files from build
+    /src/search/downward-release
+    /src/preprocess/preprocess
+        
+%post
+    apt-get update
+    apt-get -y install --no-install-recommends python3 time gawk
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+
+%runscript
+    #! /bin/bash
+
+
+    if [[ "$#" -lt 3 ]]; then
+        die "usage: DOMAIN_FILE PROBLEM_FILE PLAN_FILE SEARCH_OPTIONS"
+    fi
+
+    ./fast-downward.py  "$1" "$2" --plan-file "$3" "${@:4}" 
+
+   
+
+%labels
+Name        Dominance
+Authors     Alvaro Torralba <alto@cs.aau.dk>
