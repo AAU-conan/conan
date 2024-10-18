@@ -66,8 +66,6 @@ namespace operator_counting {
 
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task.fts_task);
 
-        utils::g_log << "Qualified dominance relation computed" << std::endl;
-
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
             assert((*factored_qdomrel)[i].get_nfa().final.size() == (*factored_qdomrel)[i].get_nfa().num_of_states() - 1);
         }
@@ -85,7 +83,9 @@ namespace operator_counting {
 
         // Create all the LP variables
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
-            const auto& [automaton, label_groups] = label_group_nfa((*factored_qdomrel)[i].get_nfa());
+            auto [automaton, label_groups] = label_group_nfa((*factored_qdomrel)[i].get_nfa());
+            automaton.swap_final_nonfinal(); // Swap final and non-final states; automaton should already be deterministic and completes
+
             auto fvn = (*factored_qdomrel)[i].fact_value_names;
 
             // for (auto [i, lg] : std::views::enumerate(label_groups)) {
@@ -96,21 +96,14 @@ namespace operator_counting {
             //     std::cout << std::endl;
             // }
 
-            auto non_final_states = mata::utils::SparseSet(automaton.final);
-            non_final_states.complement(automaton.num_of_states());
-            assert(non_final_states.size() == 1);
-
-            // goal_variables.emplace_back();
             init_variables.emplace_back();
             transition_variables.emplace_back();
-            for (mata::nfa::State q = 0; q < automaton.num_of_states(); ++q) {
-                auto q_automaton = mata::nfa::Nfa(automaton);
-                q_automaton.initial = mata::utils::SparseSet{q};
-                q_automaton.final = non_final_states;
-                q_automaton = minimize(q_automaton);
-                q_automaton.alphabet = automaton.alphabet;
+            for (int q = 0; q < automaton.num_of_states(); ++q) {
+                automaton.initial = {static_cast<mata::nfa::State>(q)};
+                auto reduced_automaton = minimize(automaton);
+                reduced_automaton.alphabet = automaton.alphabet;
 
-                // Add init variables for each state
+                // Add init variable
                 lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
                 auto i_var = lp_variables.size() - 1;
 #ifndef NDEBUG
@@ -118,36 +111,22 @@ namespace operator_counting {
 #endif
                 init_variables[i].emplace_back(lp_variables.size() - 1);
 
-
                 // Make sure to make transition variables vector, even if it is trivially empty
                 transition_variables.at(i).emplace_back();
 
-                if (q_automaton.final.empty()) {
-                    // If the automaton is the empty language, make it unsolvable
-                    lp::LPConstraint not_q(0., 0.);
-                    not_q.insert(i_var, 1.);
-                    safe_push_constraint(not_q);
-                    // std::println("Factor {} state {} is unsolvable", i, q);
-                    continue;
+                // If the language of reduced_automaton is empty, i.e. there is no final state, add unsolvable constraint when i_var >= 1
+                if (reduced_automaton.final.empty()) {
+                    lp::LPConstraint unsolvable_constraint(0., lp.get_infinity());
+                    unsolvable_constraint.insert(i_var, -1.);
+                    safe_push_constraint(unsolvable_constraint);
                 }
-                mata::nfa::State goal_state = *q_automaton.final.begin();
-                mata::nfa::State initial_state = *q_automaton.initial.begin();
-
-//                 // Add goal variable
-//                 lp_variables.emplace_back(lp::LPVariable(0., 1., 0., false));
-//                 auto goal_var = lp_variables.size() - 1;
-// #ifndef NDEBUG
-//                 lp_variables.set_name(goal_var, std::format("G^{}_{}", q, i));
-// #endif
-//                 goal_variables[i].emplace_back(goal_var);
-//
 
                 // Add transition variables and collect ingoing/outgoing transitions for each state
-                std::vector<std::vector<int>> state_ingoing(q_automaton.num_of_states(), std::vector<int>());
-                std::vector<std::vector<int>> state_outgoing(q_automaton.num_of_states(), std::vector<int>());
-                std::vector<std::vector<int>> label_group_transitions(q_automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
+                std::vector<std::vector<int>> state_ingoing(reduced_automaton.num_of_states(), std::vector<int>());
+                std::vector<std::vector<int>> state_outgoing(reduced_automaton.num_of_states(), std::vector<int>());
+                std::vector<std::vector<int>> label_group_transitions(reduced_automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
 
-                auto transitions = q_automaton.delta.transitions();
+                auto transitions = reduced_automaton.delta.transitions();
                 auto it = transitions.begin();
                 for (int j = 0; it != transitions.end(); ++j, ++it) {
                     const auto& [from, label, to] = *it;
@@ -172,7 +151,7 @@ namespace operator_counting {
                 }
 
                 // Add the flow constraint for each state
-                for (int j = 0; j < q_automaton.num_of_states(); ++j) {
+                for (int j = 0; j < reduced_automaton.num_of_states(); ++j) {
                     // Sum of ingoing transitions - sum of outgoing transitions + initial state - goal state >= 0
                     lp::LPConstraint flow_constraint(0., lp.get_infinity());
                     for (const auto& ingoing : state_ingoing[j]) {
@@ -182,11 +161,11 @@ namespace operator_counting {
                         flow_constraint.insert(outgoing, -1.);
                     }
                     double init_var_coef = 0.0;
-                    if (j == goal_state) {
+                    if (reduced_automaton.final.contains(j)) {
                         // If this is a final state, subtract flow to state
                         init_var_coef -= 1.0;
                     }
-                    if (j == initial_state) {
+                    if (reduced_automaton.initial.contains(j)) {
                         // Add initial state variable flow
                         init_var_coef += 1.0;
                     }

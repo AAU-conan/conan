@@ -65,7 +65,7 @@ namespace qdominance {
             log << "Init LDSim in " << t() << ":" << std::endl << std::flush;
             do {
                 for (size_t i = 0; i < local_relations.size(); i++) {
-                    log << "Updating local relation " << i << std::endl;
+                    // log << "Updating local relation " << i << std::endl;
                     update_local_relation(i, task.get_factor(i), label_relation, *(local_relations[i]), log);
                 }
                 log << " " << t() << std::flush;
@@ -74,12 +74,12 @@ namespace qdominance {
 
             for (const auto & [i, local_relation] : std::views::enumerate(local_relations)) {
 #ifndef NDEBUG
-                local_relation->draw_nfa(std::format("nfa_pre_reduce{}.dot", i));
+                // local_relation->draw_nfa(std::format("nfa_pre_reduce{}.dot", i));
 #endif
                 local_relation->reduce_nfa();
 #ifndef NDEBUG
-                local_relation->draw_transformed_nfa(std::format("nfa{}.dot", i), local_relation->get_nfa());
-                std::cout << "state to nfa state map " << local_relation->get_state_to_nfa_state() << std::endl;
+                // local_relation->draw_transformed_nfa(std::format("nfa{}.dot", i), local_relation->get_nfa());
+                // std::cout << "state to nfa state map " << local_relation->get_state_to_nfa_state() << std::endl;
 #endif
             }
 

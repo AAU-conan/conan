@@ -2,9 +2,10 @@
 #define QDOM_LANDMARK_CONSTRAINTS_H
 
 #include "constraint_generator.h"
-#include "../dominance/dominance_pruning_all_previous.h"
 #include "../lp/lp_solver.h"
 #include "../qualified_dominance/qualified_ld_simulation.h"
+
+#include <mata/nfa/nfa.hh>
 
 namespace qdominance {
     class QualifiedDominanceAnalysis;

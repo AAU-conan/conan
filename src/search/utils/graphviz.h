@@ -10,8 +10,6 @@
 #include <vector>
 #include <ranges>
 
-#include "../lp/soplex_solver_interface.h"
-
 namespace graphviz {
     class Graph {
     private:
