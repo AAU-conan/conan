@@ -28,7 +28,7 @@ namespace graphviz {
         public:
             virtual ~EdgeContainer() = default;
             virtual void add_edge(size_t from, size_t to, const std::string &label, const std::string &attrs) = 0;
-            [[nodiscard]] virtual std::vector<std::tuple<size_t, size_t, const std::string&>> get_edges() const = 0;
+            [[nodiscard]] virtual std::vector<std::tuple<size_t, size_t, std::string>> get_edges() const = 0;
         };
 
         class SeparateEdgeContainer : public EdgeContainer {
@@ -39,8 +39,8 @@ namespace graphviz {
                 edges.emplace_back(from, to, format_attrs(label, attrs));
             }
 
-            [[nodiscard]] std::vector<std::tuple<size_t, size_t, const std::string&>> get_edges() const override {
-                std::vector<std::tuple<size_t, size_t, const std::string&>> result;
+            [[nodiscard]] std::vector<std::tuple<size_t, size_t, std::string>> get_edges() const override {
+                std::vector<std::tuple<size_t, size_t, std::string>> result;
                 result.reserve(edges.size());
                 for (const auto &edge : edges) {
                     result.emplace_back(edge);
@@ -65,10 +65,10 @@ namespace graphviz {
                 }
             }
 
-            [[nodiscard]] std::vector<std::tuple<size_t, size_t, const std::string&>> get_edges() const override {
+            [[nodiscard]] std::vector<std::tuple<size_t, size_t, std::string>> get_edges() const override {
                 return edges | std::views::transform([](const auto &pair) {
                     return std::make_tuple(pair.first.first, pair.first.second, format_attrs(pair.second.first, pair.second.second));
-                }) | std::ranges::to<std::vector<std::tuple<size_t, size_t, const std::string&>>>();
+                }) | std::ranges::to<std::vector<std::tuple<size_t, size_t, std::string>>>();
             }
         };
 

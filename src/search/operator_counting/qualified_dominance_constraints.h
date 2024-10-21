@@ -15,8 +15,16 @@ namespace qdominance {
 namespace operator_counting {
     class QualifiedDominanceConstraints final : public ConstraintGenerator {
     public:
+        void add_automaton_to_lp(const mata::nfa::Nfa& automaton, lp::LinearProgram& lp, mata::nfa::State state,
+                                 int factor,
+                                 const std::vector<std::vector<int>>& label_groups);
         void initialize_constraints(const std::shared_ptr<AbstractTask> &task, lp::LinearProgram &lp) override;
         bool update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) override;
+
+        bool only_pruning;
+
+        explicit QualifiedDominanceConstraints(const bool only_pruning = false) : only_pruning(only_pruning)
+        {}
 
     private:
         std::unique_ptr<qdominance::QualifiedFactoredDominanceRelation> factored_qdomrel = nullptr;
@@ -28,8 +36,6 @@ namespace operator_counting {
 
         // For factor i, flow from state j, and transition k in the NFA, the variable that represents the transition
         std::vector<std::vector<std::vector<int>>> transition_variables;
-        // For factor i, flow from state j, the variable that represent the goal variable for the unique final state
-        // std::vector<std::vector<int>> goal_variables;
         // For factor i, and state j in the NFA, the variable that represents that there should be flow from state q
         std::vector<std::vector<int>> init_variables;
     };

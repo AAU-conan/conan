@@ -884,6 +884,7 @@ create_fast_downward_library(
         operator_counting/qualified_dominance_constraints
         operator_counting/qdom_lm_constraints
         operator_counting/contrastive_landmarks
+        operator_counting/factored_constraints
     DEPENDS lp_solver landmark_cut_heuristic pdbs task_properties
 )
 
@@ -1152,7 +1153,7 @@ create_fast_downward_library(
 # TODO: partial grounding
 # TODO: pruning rules ILP bad actions
 
-# If any enabled plugin requires the CUDD library, compile with it.
+# If any enabled plugin requires the s library, compile with it.
 # If CUDD is not installed, the planner will still compile, but
 # using components that depend on CUDD will cause an error.
 # This behavior can be overwritten by setting the
@@ -1171,13 +1172,25 @@ endif()
 include(ExternalProject)
 
 if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
-    ExternalProject_Add(cudd,
-            GIT_REPOSITORY https://github.com/alvaro-torralba/cudd
-            PREFIX ${CMAKE_CXX_FLAGS}/cudd
-            BUILD_COMMAND ./configure && make
+    ExternalProject_Add(cudd
+            GIT_REPOSITORY https://github.com/ivmai/cudd
+            GIT_TAG release
+            PATCH_COMMAND
+                COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
+            PREFIX ${CMAKE_BINARY_DIR}/cudd
+            CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS="-std=c++98" --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
+            BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
             INSTALL_COMMAND make install
-            BUILD_BYPRODUCTS
+            BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
+            BUILD_IN_SOURCE 1
     )
+
+    add_dependencies(qualified_dominance cudd)
+
+    include_directories(${CMAKE_BINARY_DIR}/cudd/include)
+    link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
+
+    target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
 endif()
 
 # Requires swig

@@ -2,6 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <fstream>
+#include <print>
 
 namespace graphviz {
     size_t Graph::add_node(const std::string &label, const std::string &attrs) {

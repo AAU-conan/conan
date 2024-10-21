@@ -53,8 +53,6 @@ namespace qdominance {
             if (is_simulation_nfa_reduced)
                 return state_pair_to_nfa_state[s][t] == universally_accepting;
 
-            // draw_nfa("nfa_simulates.dot");
-            // std::println(std::cout, "{} <= {}", fact_value_names.get_fact_value_name(t), fact_value_names.get_fact_value_name(s));
             const auto nfa_state = state_pair_to_nfa_state[s][t];
             if (universally_accepting_cache[nfa_state] != -1) {
                 return universally_accepting_cache[nfa_state];
@@ -103,6 +101,10 @@ namespace qdominance {
 
         const auto& get_state_to_nfa_state() const {
             return state_pair_to_nfa_state;
+        }
+
+        const auto& get_state_pair_from_nfa_state(mata::nfa::State q) const {
+            return nfa_state_to_state_pair.at(q);
         }
 
         bool update(int s, int t, const QualifiedLabelRelation& label_relation, const fts::LabelledTransitionSystem& ts, int lts_i, utils::

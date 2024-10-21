@@ -165,12 +165,12 @@ static plugins::FeaturePlugin<OperatorCountingHeuristicFeature> _plugin;
             double epsilon = 0.01;
             double objective_value = lp_solver.get_objective_value();
 #ifndef NDEBUG
-            // for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
-            //     if (val == 0.)
-            //         continue;
-            //     std::cout << lp_variables.get_name(i) << "=" << val << " ";
-            // }
-            // std::cout << std::endl;
+            for (const auto& [i, val] : std::views::enumerate(lp_solver.extract_solution())) {
+                if (val == 0.)
+                    continue;
+                std::cout << lp_variables.get_name(i) << "=" << val << " ";
+            }
+            std::cout << std::endl;
 #endif
             result = static_cast<int>(ceil(objective_value - epsilon));
         } else {
@@ -179,7 +179,7 @@ static plugins::FeaturePlugin<OperatorCountingHeuristicFeature> _plugin;
         lp_solver.clear_temporary_constraints();
 
 #ifndef NDEBUG
-        // std::cout << "h: " << result << std::endl;
+        std::cout << "h: " << result << std::endl;
 #endif
         return result;
     }

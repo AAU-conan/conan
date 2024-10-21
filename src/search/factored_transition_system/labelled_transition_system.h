@@ -211,6 +211,10 @@ namespace fts {
             return false;
         }
 
+        [[nodiscard]] const std::vector<std::vector<int>>& get_label_groups() const {
+            return label_groups;
+        }
+
         const std::vector<int> &get_labels(LabelGroup label_group) const {
             return label_groups[label_group.group];
         }

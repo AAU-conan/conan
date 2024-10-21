@@ -74,12 +74,12 @@ namespace qdominance {
 
             for (const auto & [i, local_relation] : std::views::enumerate(local_relations)) {
 #ifndef NDEBUG
-                // local_relation->draw_nfa(std::format("nfa_pre_reduce{}.dot", i));
+                local_relation->draw_nfa(std::format("nfa_pre_reduce{}.dot", i));
 #endif
                 local_relation->reduce_nfa();
 #ifndef NDEBUG
-                // local_relation->draw_transformed_nfa(std::format("nfa{}.dot", i), local_relation->get_nfa());
-                // std::cout << "state to nfa state map " << local_relation->get_state_to_nfa_state() << std::endl;
+                local_relation->draw_transformed_nfa(std::format("nfa{}.dot", i), local_relation->get_nfa());
+                std::cout << "state to nfa state map " << local_relation->get_state_to_nfa_state() << std::endl;
 #endif
             }
 
