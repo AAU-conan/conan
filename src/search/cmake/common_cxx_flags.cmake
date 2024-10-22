@@ -15,7 +15,7 @@ target_compile_options(common_cxx_flags INTERFACE
 target_link_options(common_cxx_flags INTERFACE
     "$<${using_gcc_like}:-g>")
 target_compile_options(common_cxx_flags INTERFACE
-    "$<${using_gcc_like_release}:-O3,-DNDEBUG;-fomit-frame-pointer>")
+    "$<${using_gcc_like_release}:-O3;-DNDEBUG;-fomit-frame-pointer>")
 target_compile_definitions(common_cxx_flags INTERFACE
     "$<${should_use_glibcxx_debug}:_GLIBCXX_DEBUG>")
 # Enable exceptions for MSVC.

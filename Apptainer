@@ -16,7 +16,7 @@ Stage: build
     apt-get -y install --no-install-recommends cmake make g++-14 python3 g++-multilib git ca-certificates rustc cargo libboost-all-dev
 
     export cplex_DIR=/cplex
-    ./build.py -j4
+    ./build.py -j 4
     
 # Stage 2: Run the planner
 Bootstrap: docker

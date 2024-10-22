@@ -108,7 +108,7 @@ namespace operator_counting {
     class FactoredConstraintsFeature : public plugins::TypedFeature<ConstraintGenerator, FactoredConstraints> {
     public:
         FactoredConstraintsFeature() : TypedFeature("factored_constraints") {
-            document_title("Qualified Dominance constraints");
+            document_title("Factored Abstraction Constraints");
             document_synopsis("");
         }
 

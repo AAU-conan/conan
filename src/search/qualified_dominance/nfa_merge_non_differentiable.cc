@@ -10,88 +10,87 @@
 #include "../algorithms/dynamic_bitset.h"
 #include "../utils/logging.h"
 
-#include <cuddObj.hh>
 
 
 using namespace mata::nfa;
 
 namespace qdominance {
 
-    [[nodiscard]] Nfa determinize_bdd(const Nfa& nfa) {
-        // Create a BDD manager
-        Cudd mgr;
-        // Create a BDD variable for each state
-        std::vector<BDD> state_vars_1;
-        std::vector<BDD> state_vars_2;
-        std::vector<BDD> state_vars_3;
-        std::vector<BDD> state_vars_4;
-        for (State s = 0; s < nfa.num_of_states(); ++s) {
-            state_vars_1.push_back(mgr.bddVar(s + 0 * nfa.num_of_states()));
-            state_vars_2.push_back(mgr.bddVar(s + 1 * nfa.num_of_states()));
-            state_vars_3.push_back(mgr.bddVar(s + 2 * nfa.num_of_states()));
-            state_vars_4.push_back(mgr.bddVar(s + 3 * nfa.num_of_states()));
-        }
-
-        BDD state_vars_1_cube = mgr.computeCube(state_vars_1);
-        BDD state_vars_2_cube = mgr.computeCube(state_vars_2);
-        BDD state_vars_3_cube = mgr.computeCube(state_vars_3);
-        BDD state_vars_4_cube = mgr.computeCube(state_vars_4);
-
-        // Create a BDD variable for each symbol
-        std::vector<BDD> symbol_vars;
-        for (mata::Symbol l : nfa.alphabet->get_alphabet_symbols()) {
-            symbol_vars.push_back(mgr.bddVar(l + 4 * nfa.num_of_states()));
-        }
-
-        // Create transition relation BDD
-        BDD transition_relation = mgr.bddZero();
-        for (State q = 0; q < nfa.num_of_states(); ++q) {
-            for (const auto& symbol_post : nfa.delta.state_post(q)) {
-                BDD transition = mgr.bddOne();
-                for (State s = 0; s < nfa.num_of_states(); ++s) {
-                    if (s == q)
-                        transition &= state_vars_1[s];
-                    else
-                        transition &= !state_vars_1[s];
-
-                    if (symbol_post.targets.contains(s))
-                        transition &= state_vars_2[s];
-                    else
-                        transition &= !state_vars_2[s];
-                }
-
-                for (const mata::Symbol& l : nfa.alphabet->get_alphabet_symbols()) {
-                    if (l == symbol_post.symbol)
-                        transition &= symbol_vars[l];
-                    else
-                        transition &= !symbol_vars[l];
-                }
-                transition_relation |= transition;
-            }
-        }
-
-        BDD powerset_relation = transition_relation;
-
-        while (true) {
-            BDD powerset_relation_2 = powerset_relation.SwapVariables(state_vars_2, state_vars_3);
-            BDD union_2_3 = (state_vars_4_cube & (state_vars_2_cube | state_vars_3_cube)) | (!state_vars_4_cube & !(state_vars_2_cube | state_vars_3_cube));
-            powerset_relation = !(powerset_relation & powerset_relation_2) | union_2_3;
-        }
-
-        // Create a BDD that represents the partitioning of the states, one with all final states and one with all non-final states
-        BDD final_partition = mgr.bddOne();
-        BDD non_final_partition = mgr.bddOne();
-        for (State s = 0; s < nfa.num_of_states(); ++s) {
-            if (nfa.final.contains(s)) {
-                final_partition &= state_vars_1[s];
-            } else {
-                non_final_partition &= state_vars_1[s];
-            }
-        }
-
-        BDD partition = final_partition | non_final_partition;
-
-    }
+    // [[nodiscard]] Nfa determinize_bdd(const Nfa& nfa) {
+    //     // Create a BDD manager
+    //     Cudd mgr;
+    //     // Create a BDD variable for each state
+    //     std::vector<BDD> state_vars_1;
+    //     std::vector<BDD> state_vars_2;
+    //     std::vector<BDD> state_vars_3;
+    //     std::vector<BDD> state_vars_4;
+    //     for (State s = 0; s < nfa.num_of_states(); ++s) {
+    //         state_vars_1.push_back(mgr.bddVar(s + 0 * nfa.num_of_states()));
+    //         state_vars_2.push_back(mgr.bddVar(s + 1 * nfa.num_of_states()));
+    //         state_vars_3.push_back(mgr.bddVar(s + 2 * nfa.num_of_states()));
+    //         state_vars_4.push_back(mgr.bddVar(s + 3 * nfa.num_of_states()));
+    //     }
+    //
+    //     BDD state_vars_1_cube = mgr.computeCube(state_vars_1);
+    //     BDD state_vars_2_cube = mgr.computeCube(state_vars_2);
+    //     BDD state_vars_3_cube = mgr.computeCube(state_vars_3);
+    //     BDD state_vars_4_cube = mgr.computeCube(state_vars_4);
+    //
+    //     // Create a BDD variable for each symbol
+    //     std::vector<BDD> symbol_vars;
+    //     for (mata::Symbol l : nfa.alphabet->get_alphabet_symbols()) {
+    //         symbol_vars.push_back(mgr.bddVar(l + 4 * nfa.num_of_states()));
+    //     }
+    //
+    //     // Create transition relation BDD
+    //     BDD transition_relation = mgr.bddZero();
+    //     for (State q = 0; q < nfa.num_of_states(); ++q) {
+    //         for (const auto& symbol_post : nfa.delta.state_post(q)) {
+    //             BDD transition = mgr.bddOne();
+    //             for (State s = 0; s < nfa.num_of_states(); ++s) {
+    //                 if (s == q)
+    //                     transition &= state_vars_1[s];
+    //                 else
+    //                     transition &= !state_vars_1[s];
+    //
+    //                 if (symbol_post.targets.contains(s))
+    //                     transition &= state_vars_2[s];
+    //                 else
+    //                     transition &= !state_vars_2[s];
+    //             }
+    //
+    //             for (const mata::Symbol& l : nfa.alphabet->get_alphabet_symbols()) {
+    //                 if (l == symbol_post.symbol)
+    //                     transition &= symbol_vars[l];
+    //                 else
+    //                     transition &= !symbol_vars[l];
+    //             }
+    //             transition_relation |= transition;
+    //         }
+    //     }
+    //
+    //     BDD powerset_relation = transition_relation;
+    //
+    //     while (true) {
+    //         BDD powerset_relation_2 = powerset_relation.SwapVariables(state_vars_2, state_vars_3);
+    //         BDD union_2_3 = (state_vars_4_cube & (state_vars_2_cube | state_vars_3_cube)) | (!state_vars_4_cube & !(state_vars_2_cube | state_vars_3_cube));
+    //         powerset_relation = !(powerset_relation & powerset_relation_2) | union_2_3;
+    //     }
+    //
+    //     // Create a BDD that represents the partitioning of the states, one with all final states and one with all non-final states
+    //     BDD final_partition = mgr.bddOne();
+    //     BDD non_final_partition = mgr.bddOne();
+    //     for (State s = 0; s < nfa.num_of_states(); ++s) {
+    //         if (nfa.final.contains(s)) {
+    //             final_partition &= state_vars_1[s];
+    //         } else {
+    //             non_final_partition &= state_vars_1[s];
+    //         }
+    //     }
+    //
+    //     BDD partition = final_partition | non_final_partition;
+    //
+    // }
 
     [[nodiscard]] Nfa determinize2(const Nfa& aut) {
         Nfa result{};
