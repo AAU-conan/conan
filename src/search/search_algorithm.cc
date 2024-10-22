@@ -122,7 +122,10 @@ void SearchAlgorithm::search() {
     }
     // TODO: Revise when and which search times are logged.
     log << "Actual search time: " << timer.get_elapsed_time() << endl;
+
+#ifndef NDEBUG
     draw_search_space(task, "search_space.dot");
+#endif
 }
 
 bool SearchAlgorithm::check_goal_and_set_plan(const State &state) {

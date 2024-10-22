@@ -84,7 +84,9 @@ void EagerSearch::initialize() {
     for (Evaluator *evaluator : path_dependent_evaluators) {
         evaluator->notify_initial_state(initial_state);
     }
+#ifndef NDEBUG
     set_initial_state(initial_state);
+#endif
 
     /*
       Note: we consider the initial state as reached by a preferred
@@ -219,7 +221,9 @@ SearchStatus EagerSearch::step() {
         for (Evaluator *evaluator : path_dependent_evaluators) {
             evaluator->notify_state_transition(s, op_id, succ_state);
         }
+#ifndef NDEBUG
         add_successor(s, op, succ_state);
+#endif
 
         // Previously encountered dead end. Don't re-evaluate.
         if (succ_node.is_dead_end())

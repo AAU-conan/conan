@@ -82,7 +82,9 @@ EvaluationResult Heuristic::compute_result(EvaluationContext &eval_context) {
 
     assert(heuristic == DEAD_END || heuristic >= 0);
 
+#ifndef NDEBUG
     set_heuristic_value(eval_context.get_state(), heuristic);
+#endif
 
     if (heuristic == DEAD_END) {
         /*
