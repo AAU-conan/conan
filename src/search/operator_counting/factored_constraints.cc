@@ -89,7 +89,7 @@ namespace operator_counting {
         }
     }
 
-    bool FactoredConstraints::update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) {
+    bool FactoredConstraints::update_constraints(const State& state, lp::LPSolver& lp_solver) {
         state.unpack();
         const auto& explicit_state = state.get_unpacked_values();
 

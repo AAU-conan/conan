@@ -12,7 +12,7 @@ namespace operator_counting {
     class FactoredConstraints final : public ConstraintGenerator {
     public:
         void initialize_constraints(const std::shared_ptr<AbstractTask> &task, lp::LinearProgram &lp) override;
-        bool update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) override;
+        bool update_constraints(const State& state, lp::LPSolver& lp_solver) override;
         void add_factor_lts_to_lp(const fts::LabelledTransitionSystem& lts, lp::LinearProgram& lp, int factor);
 
     private:
