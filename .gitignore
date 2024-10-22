@@ -8,4 +8,6 @@ __pycache__/
 .idea
 src/cmake-build-debug
 src/search/cmake-build-debug
+src/search/rust_test/target
+**/Cargo.lock
 sas-files

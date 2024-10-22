@@ -435,6 +435,7 @@ create_fast_downward_library(
     HELP "Eager search"
     SOURCES
         search_algorithms/eager_search
+        utils/search_space_draw
     DEPENDS
         null_pruning_method
         ordered_set

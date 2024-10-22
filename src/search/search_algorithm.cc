@@ -17,6 +17,8 @@
 #include <iostream>
 #include <limits>
 
+#include "utils/search_space_draw.h"
+
 using namespace std;
 using utils::ExitCode;
 
@@ -120,6 +122,7 @@ void SearchAlgorithm::search() {
     }
     // TODO: Revise when and which search times are logged.
     log << "Actual search time: " << timer.get_elapsed_time() << endl;
+    draw_search_space(task, "search_space.dot");
 }
 
 bool SearchAlgorithm::check_goal_and_set_plan(const State &state) {

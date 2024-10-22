@@ -16,6 +16,8 @@
 #include <optional>
 #include <set>
 
+#include "../utils/search_space_draw.h"
+
 using namespace std;
 
 namespace eager_search {
@@ -82,6 +84,7 @@ void EagerSearch::initialize() {
     for (Evaluator *evaluator : path_dependent_evaluators) {
         evaluator->notify_initial_state(initial_state);
     }
+    set_initial_state(initial_state);
 
     /*
       Note: we consider the initial state as reached by a preferred
@@ -216,6 +219,7 @@ SearchStatus EagerSearch::step() {
         for (Evaluator *evaluator : path_dependent_evaluators) {
             evaluator->notify_state_transition(s, op_id, succ_state);
         }
+        add_successor(s, op, succ_state);
 
         // Previously encountered dead end. Don't re-evaluate.
         if (succ_node.is_dead_end())
