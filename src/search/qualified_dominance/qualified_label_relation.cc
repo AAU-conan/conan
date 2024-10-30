@@ -164,18 +164,20 @@ namespace qdominance {
 
     void QualifiedLabelRelation::set_not_simulates(int l1, int l2, int factor) {
         // Figure out which caches to invalidate
-        if (dominates_in[l1].at(l2).is_all()) {
-            // If it currently dominates in all, invalidate all caches other than factor
-            for (int i = 0; i < label_group_simulation_relations.size(); ++i) {
-                if (i != factor) {
-                    label_group_simulation_relations[i].invalidate_label_cache(l1, l2);
+        if (dominates_in[l1].contains(l2)) {
+            if (dominates_in[l1].at(l2).is_all()) {
+                // If it currently dominates in all, invalidate all caches other than factor
+                for (int i = 0; i < label_group_simulation_relations.size(); ++i) {
+                    if (i != factor) {
+                        label_group_simulation_relations[i].invalidate_label_cache(l1, l2);
+                    }
                 }
+                dominates_in[l1].at(l2).remove(factor);
+            } else if (dominates_in[l1].at(l2).is_factor()) {
+                // There is one factor in which it currently dominates, invalidate the cache for that factor
+                label_group_simulation_relations[dominates_in[l1].at(l2).get_not_present_factor()].invalidate_label_cache(l1, l2);
+                dominates_in[l1].erase(l2);
             }
-            dominates_in[l1].at(l2).remove(factor);
-        } else if (dominates_in[l1].at(l2).is_factor()) {
-            // There is one factor in which it currently dominates, invalidate the cache for that factor
-            label_group_simulation_relations[dominates_in[l1].at(l2).get_not_present_factor()].invalidate_label_cache(l1, l2);
-            dominates_in[l1].erase(l2);
         }
     }
 
