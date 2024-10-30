@@ -6,7 +6,7 @@
 
 namespace qdominance {
     class QualifiedLocalStateRelation;
-    std::pair<mata::nfa::Nfa, std::vector<mata::nfa::State>> merge_non_differentiable_states(const mata::nfa::Nfa& detnfa, const QualifiedLocalStateRelation& relation);
+    std::pair<mata::nfa::Nfa, std::vector<mata::nfa::State>> merge_non_differentiable_states(const mata::nfa::Nfa& nfa);
 
     [[nodiscard]] mata::nfa::Nfa minimize2(const mata::nfa::Nfa& nfa);
 

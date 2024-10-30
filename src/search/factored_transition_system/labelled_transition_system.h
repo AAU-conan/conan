@@ -7,6 +7,7 @@
 #include <string>
 #include <algorithm>    // std::find
 #include <cassert>
+#include <generator>
 #include <ranges>
 #include <iostream>
 #include <memory>
@@ -121,7 +122,7 @@ namespace fts {
         int num_states;
         std::vector<bool> goal_states;
         AbstractStateRef init_state;
-        std::vector<int> relevant_labels;
+        std::unordered_set<int> relevant_label_groups;
         std::vector<int> goal_distances; // TODO: Possibly unify with merge_and_shrink::Distances
 
 
@@ -130,6 +131,9 @@ namespace fts {
         std::vector<LTSTransition> transitions;
         std::vector<std::vector<LTSTransition> > transitions_src;
         std::vector<std::vector<TSTransition> > transitions_label_group;
+
+
+        bool is_self_loop_everywhere_label(LabelGroup lg) const;
 
     public:
         LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, FactValueNames fact_value_names);
@@ -181,25 +185,28 @@ namespace fts {
             return fact_value_names.get_operator_name(label, false);
         }
 
+        [[nodiscard]] std::string label_group_name(const LabelGroup& lg) const {
+            return fact_value_names.get_common_operators_name(get_labels(lg));
+        }
+
         int get_initial_state() const {
             return init_state;
         }
 
         bool is_relevant_label(int label) const {
-            /*
-            bool is_irrelevant_label_group = abs_tr.size() == (size_t)num_states && std::ranges::all_of(abs_tr,[](const auto & tr) {
-                return tr.src == tr.target;
-            });
-*/
-            //TODO (efficiency): Improve how irrelevant labels are handled.
-            return std::find(relevant_labels.begin(), relevant_labels.end(), label) != relevant_labels.end();
+            return is_relevant_label_group(label_group_of_label.at(label));
         }
 
-        bool is_self_loop_everywhere_label(int label) const;
+        bool is_relevant_label_group(const LabelGroup &label_group) const {
+            return relevant_label_groups.contains(label_group.group);
+        }
 
-
-        const std::vector<int> &get_relevant_labels() const {
-            return relevant_labels;
+        std::generator<int> get_relevant_labels() const {
+            for (int lg : relevant_label_groups) {
+                for (int label : label_groups[lg]) {
+                    co_yield label;
+                }
+            }
         }
 
         //For each transition labelled with l, applya a function. If returns true, applies a break

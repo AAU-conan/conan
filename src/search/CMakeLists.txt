@@ -1039,6 +1039,8 @@ create_fast_downward_library(
         qualified_dominance/qualified_ld_simulation
         qualified_dominance/qualified_label_relation
         qualified_dominance/nfa_merge_non_differentiable
+        qualified_dominance/qualified_local_state_relation2
+        qualified_dominance/label_group_relation
         DEPENDS
         dominance
         factored_transition_system
@@ -1172,27 +1174,27 @@ endif()
 
 include(ExternalProject)
 
-if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
-    ExternalProject_Add(cudd
-            GIT_REPOSITORY https://github.com/ivmai/cudd
-            GIT_TAG release
-            PATCH_COMMAND
-                COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
-            PREFIX ${CMAKE_BINARY_DIR}/cudd
-            CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS="-std=c++98" --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
-            BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
-            INSTALL_COMMAND make install
-            BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
-            BUILD_IN_SOURCE 1
-    )
-
-    add_dependencies(qualified_dominance cudd)
-
-    include_directories(${CMAKE_BINARY_DIR}/cudd/include)
-    link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
-
-    target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
-endif()
+#if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
+#    ExternalProject_Add(cudd
+#            GIT_REPOSITORY https://github.com/ivmai/cudd
+#            GIT_TAG release
+#            PATCH_COMMAND
+#                COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
+#            PREFIX ${CMAKE_BINARY_DIR}/cudd
+#            CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS="-std=c++98" --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
+#            BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
+#            INSTALL_COMMAND make install
+#            BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
+#            BUILD_IN_SOURCE 1
+#    )
+#
+#    add_dependencies(qualified_dominance cudd)
+#
+#    include_directories(${CMAKE_BINARY_DIR}/cudd/include)
+#    link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
+#
+#    target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
+#endif()
 
 # Requires swig
 #ExternalProject_Add(spot

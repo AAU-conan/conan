@@ -238,7 +238,7 @@ namespace qdominance {
                 if (trt.target == tp) {
                     for (const auto& l : ts.get_labels(trt.label_group)) {
                         // log << "        " << ts.state_name(t) << " has transition to " << ts.state_name(tp) << " with label " << ts.label_name(l);
-                        if (label_relation.dominates(l, int(label), lts_i)) {
+                        if (label_relation.simulates(l, int(label), lts_i)) {
                             // log << " which dominates" << std::endl;
                             return true;
                         }

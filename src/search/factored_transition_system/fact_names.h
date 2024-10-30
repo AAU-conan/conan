@@ -2,6 +2,13 @@
 #define FACT_NAMES_H
 #include <memory>
 #include <string>
+#include <map>
+#include <ranges>
+#include <set>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/join.hpp>
+
 #include "../abstract_task.h"
 
 namespace fts {
@@ -34,6 +41,30 @@ public:
 
     [[nodiscard]] std::string get_operator_name(const int index, const bool is_axiom) const {
         return fact_names->get_operator_name(index, is_axiom);
+    }
+
+    [[nodiscard]] std::string get_common_operators_name(const std::vector<int>& ops) const {
+        // operator name is space separated, for each word position store the set of strings that are at that position
+        std::map<long, std::set<std::string>> op_index_to_names;
+
+        for (const auto& op : ops) {
+            auto op_name = fact_names->get_operator_name(op, false);
+            std::vector<std::string> op_name_vec;
+            boost::split(op_name_vec, op_name, boost::is_any_of(" "));
+            for (const auto& [i, word] : std::views::enumerate(op_name_vec)) {
+                op_index_to_names[i].insert(word);
+            }
+        }
+
+        std::string result;
+        for (long i = 0; op_index_to_names.contains(i); ++i) {
+            if (i == 0) {
+                result += boost::join(op_index_to_names[i], "|");
+            } else {
+                result += " " + (op_index_to_names[i].size() == 1? *op_index_to_names[i].begin(): "_");
+            }
+        }
+        return result;
     }
 };
 

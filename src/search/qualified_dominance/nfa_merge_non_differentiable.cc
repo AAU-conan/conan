@@ -224,7 +224,7 @@ namespace qdominance {
     }
 
 
-    [[nodiscard]] std::pair<Nfa, std::vector<State>> merge_non_differentiable_states(const Nfa& nfa, const QualifiedLocalStateRelation& relation) {
+    [[nodiscard]] std::pair<Nfa, std::vector<State>> merge_non_differentiable_states(const Nfa& nfa) {
         assert(nfa.is_complete(nfa.alphabet)); // This check is not sufficient because it only checks reachable states
         std::println("Pre determinization size {}", nfa.num_of_states());
         Nfa detnfa(nfa);

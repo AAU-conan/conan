@@ -127,7 +127,7 @@ namespace qdominance {
         }
 
         void reduce_nfa() {
-            auto [reduced_nfa, old_to_new_state_map] = merge_non_differentiable_states(simulation_nfa, *this);
+            auto [reduced_nfa, old_to_new_state_map] = merge_non_differentiable_states(simulation_nfa);
             simulation_nfa = reduced_nfa;
             universally_accepting = old_to_new_state_map[universally_accepting];
             for (int i = 0; i < state_pair_to_nfa_state.size(); ++i) {

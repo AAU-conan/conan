@@ -34,6 +34,9 @@ namespace operator_counting {
         };
         std::vector<GValuedState> previous_states;
 
+        // For factor i, the map from state s, t to the state in the automaton that represents that t simulates s
+        std::vector<std::vector<std::vector<mata::nfa::State>>> state_pair_to_nfa_state;
+
         // For factor i, flow from state j, and transition k in the NFA, the variable that represents the transition
         std::vector<std::vector<std::vector<int>>> transition_variables;
         // For factor i, and state j in the NFA, the variable that represents that there should be flow from state q

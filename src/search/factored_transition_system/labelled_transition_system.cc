@@ -35,7 +35,6 @@ namespace fts {
                     if(maybe_new_label_id.has_value()) {
                         int new_label_id = maybe_new_label_id.value();
                         new_label_group.push_back(new_label_id);
-                        relevant_labels.push_back(new_label_id);
                         label_group_of_label[new_label_id] = new_label_group_id;
                     }
                 }
@@ -53,13 +52,11 @@ namespace fts {
             }
         }
 
-#ifndef NDEBUG
-        for (int label_no = 0; label_no < num_labels; label_no++) {
-            is_relevant_label(label_no);
+        for (const auto& [lg_i, _] : std::views::enumerate(label_groups)) {
+            if (const auto lg = LabelGroup(static_cast<int>(lg_i)); !is_self_loop_everywhere_label(lg)) {
+                relevant_label_groups.insert(lg.group);
+            }
         }
-#endif
-
-        //TODO: get distances if they are already computed.
     }
 
     void LabelledTransitionSystem::dump() const {
@@ -76,9 +73,8 @@ namespace fts {
 
     }
 
-    bool LabelledTransitionSystem::is_self_loop_everywhere_label(int label) const {
-        if (!is_relevant_label(label)) return true;
-        const auto &trs = get_transitions_label(label);
+    bool LabelledTransitionSystem::is_self_loop_everywhere_label(LabelGroup lg) const {
+        const auto &trs = get_transitions_label_group(lg);
         if (trs.size() < (size_t) num_states) return false;
 
         // This assumes that there is no repeated transition
