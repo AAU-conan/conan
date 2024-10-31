@@ -42,12 +42,11 @@ namespace qdominance {
             simulates_irrelevant.at(i) = all_label_groups;
 
             label_group_simulation_relations.emplace_back(lts, i);
-            label_state_transition_map[i].resize(lts.get_num_label_groups());
+            label_state_transition_map[i].resize(lts.get_num_label_groups(), std::vector<std::vector<int>>(lts.size()));
 
-            for (const auto [tr_i, tr] : std::views::enumerate(lts.get_transitions())) {
+            for (const auto tr : lts.get_transitions()) {
                 auto& state_transitions = label_state_transition_map[i][tr.label_group.group];
-                state_transitions.try_emplace(tr.src); // Create vector for transition if it does not already exist
-                state_transitions.at(tr.src).push_back(tr_i);
+                state_transitions[tr.src].push_back(tr.target);
             }
         }
     }
@@ -81,8 +80,8 @@ namespace qdominance {
         const auto &lts = fts_task.get_factor(factor);
         LabelGroup lg1 = lts.get_group_label(l1);
         for (const auto &tr: lts.get_transitions_label(l2)) {
-            if (!std::ranges::any_of(transitions_for_label_group_state(factor, lg1, tr.src, lts),
-                [&](const auto& tr2) { return sim.simulates(tr2.target, tr.target); }))
+            if (!std::ranges::any_of(targets_for_label_group_state(factor, lg1, tr.src),
+                [&](const auto& tgt) { return sim.simulates(tgt, tr.target); }))
             {
                 set_not_simulates(l1, l2, factor);
                 return true;
@@ -121,8 +120,8 @@ namespace qdominance {
         // transition s -l-> s', and s' simulates s. I.e., the l-transition is better than just staying in s.
         changes |= 0 < std::erase_if(simulates_irrelevant.at(factor), [&](const LabelGroup lg) {
             for (int s = 0; s < lts.size(); s++) {
-                if (!std::ranges::any_of(transitions_for_label_group_state(factor, lg, s, lts), [&](const auto& tr) {
-                        return sim.simulates(tr.target, s);
+                if (!std::ranges::any_of(targets_for_label_group_state(factor, lg, s), [&](const auto& tgt) {
+                        return sim.simulates(tgt, s);
                     })) {
                     for (const int li: lts.get_irrelevant_labels()) {
                         for (const int l2 : lts.get_labels(lg)) {
@@ -159,6 +158,7 @@ namespace qdominance {
             changes |= update_irrelevant(factor, *sims[factor]);
         }
 
+        std::println("Removals: {}/{}", necessary_removals, unnecessary_removals);
         return changes;
     }
 
@@ -178,6 +178,9 @@ namespace qdominance {
                 label_group_simulation_relations[dominates_in[l1].at(l2).get_not_present_factor()].invalidate_label_cache(l1, l2);
                 dominates_in[l1].erase(l2);
             }
+            necessary_removals += 1;
+        } else {
+            unnecessary_removals += 1;
         }
     }
 

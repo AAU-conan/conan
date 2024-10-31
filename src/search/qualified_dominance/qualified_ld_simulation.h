@@ -71,6 +71,7 @@ namespace qdominance {
             log << " " << t() << std::flush;
         } while (label_relation.update(local_relations));
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
+        exit(0);
 
 
         return std::make_unique<QualifiedFactoredDominanceRelation>(std::move(local_relations));

@@ -39,18 +39,13 @@ namespace qdominance {
         std::vector<LabelGroupSimulationRelation> label_group_simulation_relations;
 
         // For each label l1, a map from label to the factors in which l1 dominates l2. If l2 is not present, it dominates in none.
-        std::vector<std::map<int, AllNoneFactorIndex> > dominates_in;
+        std::vector<std::unordered_map<int, AllNoneFactorIndex> > dominates_in;
 
-        // For each factor i, label group lg, a map from a state s to the transition indices that correspond to s -lg-> s'
-        std::vector<std::vector<std::unordered_map<int, std::vector<TransitionIndex>>>> label_state_transition_map;
+        // For each factor i, label group lg, state s, the states s' such that s -lg-> s'
+        std::vector<std::vector<std::vector<std::vector<int>>>> label_state_transition_map;
 
-        [[nodiscard]] std::generator<fts::LTSTransition> transitions_for_label_group_state(int factor, fts::LabelGroup lg, int s, const fts::LabelledTransitionSystem& lts) const {
-            const auto& state_transitions = label_state_transition_map.at(factor).at(lg.group);
-            if (state_transitions.contains(s)) {
-                for (const auto tr_i : state_transitions.at(s)) {
-                    co_yield lts.get_transitions()[tr_i];
-                }
-            }
+        [[nodiscard]] const std::vector<int>& targets_for_label_group_state(int factor, fts::LabelGroup lg, int s) const {
+            return label_state_transition_map[factor][lg.group][s];
         }
 
         // For factor i, the label groups which are simulated by/simulates irrelevant labels
@@ -63,6 +58,9 @@ namespace qdominance {
         void set_not_simulates(int l1, int l2, int factor);
 
         void set_not_simulated_by_noop(int l, int factor);
+
+        int necessary_removals = 0;
+        int unnecessary_removals = 0;
 
     public:
         explicit QualifiedLabelRelation(const fts::FTSTask& fts_task);
