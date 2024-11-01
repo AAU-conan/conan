@@ -26,28 +26,11 @@ using fts::LabelledTransitionSystem;
 namespace qdominance {
 
     int QualifiedLocalStateRelation2::num_equivalences() const {
-        int num = 0;
-        for (int s = 0; s < simulations.size(); ++s) {
-            for (int t : simulations.at(s)) {
-                if (simulates(t, s) && s < t) {
-                    // Only count each equivalence once
-                    ++num;
-                }
-            }
-        }
-        return num;
+        return std::ranges::count_if(simulations, [&](const auto p) { return simulations.contains({p.second, p.first}); });
     }
 
     int QualifiedLocalStateRelation2::num_simulations(bool ignore_equivalences) const {
-        int res = 0;
-        for (int s = 0; s < simulations.size(); ++s) {
-            for (int t : simulations.at(s)) {
-                if (!simulates(t, s) || !ignore_equivalences) {
-                    ++res;
-                }
-            }
-        }
-        return res;
+        return simulations.size();
     }
 
     int QualifiedLocalStateRelation2::num_different_states() const {
@@ -105,111 +88,64 @@ namespace qdominance {
 
     bool QualifiedLocalStateRelation2::update(const QualifiedLabelRelation& label_relation) {
         bool any_changes = false;
-        bool changes;
+        bool changes = false;
         do {
-            changes = false;
-            for (int t = 0; t < lts.size(); t++) {
-                for (int s = 0; s < lts.size(); s++) {
-                    if (!lts.is_goal(s) || lts.is_goal(t)) { // TODO: Can avoid s == t
-                        changes |= update_pair(s, t, label_relation);
-                    }
-                }
-            }
+            changes = update_pairs(label_relation);
             any_changes |= changes;
         } while (changes);
+#ifndef NDEBUG
+        // std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.state_name(p.second), lts.state_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
+#endif
         return any_changes;
     }
 
+    bool QualifiedLocalStateRelation2::noop_simulates_tr(int t, LTSTransition s_tr, const QualifiedLabelRelation& label_relation) const {
+        return label_relation.noop_simulates_in_all_other(factor, s_tr.label_group) && simulates(t, s_tr.target);
+    }
+
+    bool QualifiedLocalStateRelation2::tr_simulates_tr(const LTSTransition& t_tr, const LTSTransition& s_tr, const QualifiedLabelRelation& label_relation) const {
+        return label_relation.simulates_in_all_other(factor, t_tr.label_group, s_tr.label_group) && simulates(t_tr.target, s_tr.target);
+    }
+
     // Update the simulation relation for when t simulates s
-    bool QualifiedLocalStateRelation2::update_pair(int s, int t, const QualifiedLabelRelation& label_relation) {
-        // Remove all t-transitions for which it is not the case the label group of t-transition simulates the label group of the s-transition w.r.t. label_relation.
-        // L simulates L' if for all l' in L', there exists l in L s.t. l' <=_i l, with <= being the label_relation for factor i
-        bool changes = false;
-
-        const auto& s_transitions = lts.get_transitions(s);
-        const auto& t_transitions = lts.get_transitions(t);
-        for (size_t s_tr_i = 0; s_tr_i < transition_responses[s][t].size(); ++s_tr_i) {
-            const auto& s_tr = s_transitions[s_tr_i];
-            auto& t_transitions_indices = transition_responses[s][t][s_tr_i];
-            auto before = t_transitions_indices.size();
-
-            changes |= 0 < std::erase_if(t_transitions_indices,
-                [&](const int t_tr_i) {
-                    if (t_tr_i == NOOP_TRANSITION) {
-                        return !label_relation.label_group_simulated_by_noop(factor, s_tr.label_group);
-                    } else {
-                        const auto& t_tr = t_transitions[t_tr_i];
-                        return !label_relation.label_group_simulates(factor, t_tr.label_group, s_tr.label_group);
-                    }
+    bool QualifiedLocalStateRelation2::update_pairs(const QualifiedLabelRelation& label_relation) {
+        // Remove all simulation pairs (s, t) where it is not the case that
+        // ∀s -lg-> s'( ∃t -lg'-> t' s.t. s' simulates t' and lg' simulates lg in all other factors or t simulates s' and noop simulates lg in all other factors)
+        return 0 < erase_if(simulations, [&](const auto p) {
+            const auto [t, s] = p;
+#ifndef NDEBUG
+            // std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
+#endif
+            const auto& s_transitions = lts.get_transitions(s);
+            const auto& t_transitions = lts.get_transitions(t);
+            return !std::ranges::all_of(s_transitions, [&](const LTSTransition& s_tr) {
+#ifndef NDEBUG
+                // std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
+#endif
+                bool res = !lts.is_relevant_label_group(s_tr.label_group) || noop_simulates_tr(t, s_tr, label_relation) ||
+                    std::ranges::any_of(t_transitions, [&](const LTSTransition& t_tr) {
+                        bool res =  tr_simulates_tr(t_tr, s_tr, label_relation);
+#ifndef NDEBUG
+                        // std::println("        {} --{}-> {} does {}simulate", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target), res? "" : "not ");
+#endif
+                        return res;
+                });
+#ifndef NDEBUG
+                // std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
+#endif
+                return res;
             });
-        }
-
-        if (changes && simulations[t].contains(s)) {
-            // Check if t still simulates s, i.e. for each of the s-transitions, there must be a t response s.t. the target
-            // dominates the target of the s-transition
-            for (size_t s_tr_i = 0; s_tr_i < transition_responses[s][t].size(); ++s_tr_i) {
-                if (!lts.is_relevant_label_group(s_transitions.at(s_tr_i).label_group))
-                    continue;
-                if (!std::ranges::any_of(transition_responses[s][t][s_tr_i], [&](int t_tr_i) {
-                    if (t_tr_i == NOOP_TRANSITION) {
-                        return simulations.at(t).contains(s_transitions.at(s_tr_i).target);
-                    }
-                    return simulations.at(t_transitions.at(t_tr_i).target).contains(s_transitions.at(s_tr_i).target);
-                })) {
-                    simulations[t].erase(s);
-                    break;
-                }
-            }
-        }
-
-        return changes;
+        });
     }
 
-    bool QualifiedLocalStateRelation2::relation_initialize(int s, int t, const QualifiedLabelRelation& label_relation) {
-        // Add to the s, t relation the t-transitions that simulate each s-transition, i.e. c(t_t) <= c(t_s)
-        const auto& s_transitions = lts.get_transitions(s); // s -L> s'
-        const auto& t_transitions = lts.get_transitions(t); // t -L'> t'
-        for (size_t s_tr_i = 0; s_tr_i < s_transitions.size(); ++s_tr_i) {
-            // Ignore irrelevant labels. Any state can simulate any irrelevant label with the same label, so we don't care about them
-            if (!lts.is_relevant_label_group(s_transitions.at(s_tr_i).label_group)) {
-                // std::println("Skip {}", lts.label_group_name(s_transitions.at(s_tr_i).label_group));
-                continue;
-            }
-            for (size_t t_tr_i = 0; t_tr_i < t_transitions.size(); ++t_tr_i) {
-                // Check that the t-transition simulates the s-transition, and that the target satisfies the goal condition
-                if (label_relation.label_group_simulates(factor, t_transitions[t_tr_i].label_group, s_transitions[s_tr_i].label_group)
-                    && (!lts.is_goal(s_transitions.at(s_tr_i).target) || lts.is_goal(t_transitions.at(t_tr_i).target)))  {
-                    transition_responses[s][t][s_tr_i].emplace_back(t_tr_i);
-                }
-            }
-
-            // Handle noop, i.e. t -noop-> t
-            if (label_relation.label_group_simulated_by_noop(factor, s_transitions[s_tr_i].label_group)
-                && (!lts.is_goal(s_transitions.at(s_tr_i).target) || lts.is_goal(t))) {
-                transition_responses[s][t][s_tr_i].emplace_back(NOOP_TRANSITION);
-            }
-        }
-        return true;
-    }
-
-    QualifiedLocalStateRelation2::QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const fts::FTSTask& fts_task, const QualifiedLabelRelation& label_relation)
+    QualifiedLocalStateRelation2::QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const FTSTask& fts_task, const QualifiedLabelRelation& label_relation)
         : lts(lts), factor(factor), fts_task(fts_task) {
-
-        // Initialize the relation. For each pair of states s_i, s_j and an s_i transition, the s_j transitions which dominate it
-        // First, ensure that no non-goal state has a transition that dominates a goal states transition
-        // Second, s -l> s' simulates t -l'> t' if c(l) <= c(l') (since we have no label relation yet)
-
-        // Resize relation
-        transition_responses.resize(lts.size());
-        simulations.resize(lts.size());
+        // Add all pairs that satisfy the goal condition
         for (int s = 0; s < lts.size(); ++s) {
-            transition_responses[s].resize(lts.size());
             for (int t = 0; t < lts.size(); ++t) {
-                transition_responses[s][t].resize(lts.get_transitions(s).size());
                 if (!lts.is_goal(s) || lts.is_goal(t)) {
                     // Only add t-transition responses if goal(s) => goal(t)
-                    relation_initialize(s, t, label_relation);
-                    simulations[t].insert(s);
+                    simulations.emplace(t, s);
                 }
             }
         }

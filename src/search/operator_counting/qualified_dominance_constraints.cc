@@ -13,21 +13,25 @@
 
 namespace operator_counting {
 
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const fts::LabelledTransitionSystem& lts, qdominance::QualifiedLocalStateRelation2 rel) {
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation2& rel, const qdominance::QualifiedLabelRelation& label_relation) {
         mata::nfa::Nfa nfa;
         auto all_label_groups = std::views::iota(0, lts.get_num_label_groups()) | std::ranges::to<std::vector>();
         nfa.alphabet = new mata::EnumAlphabet(all_label_groups.begin(), all_label_groups.end());
         std::vector<std::vector<mata::nfa::State>> state_pair_to_nfa_state(rel.num_states(), std::vector<mata::nfa::State>(rel.num_states()));
         // We know that all states where t simulates s, are in the same equivalence class, i.e. t always has a response to s
-        auto universally_true = nfa.add_state();
-        auto universally_false = nfa.add_state();
+        const auto universally_true = nfa.add_state();
+        const auto universally_false = nfa.add_state();
         nfa.final.insert(universally_true);
-        for (int t = 0; t < rel.num_states(); ++t) {
-            for (int s = 0; s < rel.num_states(); ++s) {
+        for (const auto& label : nfa.alphabet->get_alphabet_symbols()) {
+            nfa.delta.add(universally_true, label, universally_true);
+            nfa.delta.add(universally_false, label, universally_false);
+        }
+        for (int t = 0; t < lts.size(); ++t) {
+            for (int s = 0; s < lts.size(); ++s) {
                 if (rel.simulates(t, s)) {
                     state_pair_to_nfa_state[s][t] = universally_true;
-                } else if (rel.never_simulates(t, s)) {
-                    state_pair_to_nfa_state[s][t] = universally_false;
+                // } else if (rel.never_simulates(t, s)) {
+                //     state_pair_to_nfa_state[s][t] = universally_false;
                 } else {
                     state_pair_to_nfa_state[s][t] = nfa.add_state();
                     nfa.final.insert(state_pair_to_nfa_state[s][t]);
@@ -35,23 +39,27 @@ namespace operator_counting {
             }
         }
 
-        for (int t = 0; t < rel.num_states(); ++t) {
-            for (int s = 0; s < rel.num_states(); ++s) {
+        for (int t = 0; t < lts.size(); ++t) {
+            for (int s = 0; s < lts.size(); ++s) {
                 if (state_pair_to_nfa_state[s][t] != universally_true) {
                     const auto& s_transitions = lts.get_transitions(s);
                     const auto& t_transitions = lts.get_transitions(t);
-                    for (const auto& [s_tr_i, t_tr_is] : std::views::enumerate(rel.transition_responses[s][t])) {
-                        const auto& s_tr = s_transitions[s_tr_i];
+                    std::unordered_set<int> unused_labels(all_label_groups.begin(), all_label_groups.end());
+                    for (const auto& s_tr : s_transitions) {
+                        unused_labels.erase(s_tr.label_group.group);
                         if (!lts.is_relevant_label_group(s_tr.label_group))
                             continue;
 
-                        mata::nfa::StateSet t_targets = std::views::transform(t_tr_is, [&](int t_tr_i) {
-                            if (t_tr_i == qdominance::NOOP_TRANSITION) {
-                                return state_pair_to_nfa_state[s_tr.target][t];
-                            } else {
-                                return state_pair_to_nfa_state[s_tr.target][t_transitions[t_tr_i].target];
+                        mata::nfa::StateSet t_targets;
+                        for (const auto t_tr : t_transitions) {
+                            if (label_relation.simulates_in_all_other(factor, t_tr.label_group, s_tr.label_group)) {
+                                t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t_tr.target));
                             }
-                        }) | std::ranges::to<mata::nfa::StateSet>();
+                        }
+
+                        if (label_relation.noop_simulates_in_all_other(factor, s_tr.label_group)) {
+                            t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t));
+                        }
 
                         if (t_targets.empty()) {
                             // No t-responses, add a transition to universally false
@@ -62,6 +70,10 @@ namespace operator_counting {
                         } else {
                             nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, t_targets);
                         }
+                    }
+                    for (const auto& label : unused_labels) {
+                        // If there is no s-transition for a label, t can trivially simulate it
+                        nfa.delta.add(state_pair_to_nfa_state[s][t], label, universally_true);
                     }
                 }
             }
@@ -224,6 +236,25 @@ namespace operator_counting {
         }
     }
 
+    void draw_nfa(const std::string& file_name, const mata::nfa::Nfa& nfa, const fts::LabelledTransitionSystem& lts, const std::vector<std::vector<unsigned long>>& state_pair_to_nfa_state) {
+        graphviz::Graph g(true);
+        for (size_t i = 0; i < nfa.num_of_states(); ++i) {
+            std::vector<std::string> state_pairs;
+            for (size_t s = 0; s < lts.size(); ++s) {
+                for (size_t t = 0; t < lts.size(); ++t) {
+                    if (state_pair_to_nfa_state[s][t] == i) {
+                        state_pairs.emplace_back(std::format("{} <= {}", lts.state_name(s), lts.state_name(t)));
+                    }
+                }
+            }
+            g.add_node(state_pairs.empty()? std::format("{}", i): boost::algorithm::join(state_pairs, "\n"), nfa.final.contains(i)? "shape=doublecircle": "");
+        }
+        for (auto const& [from, label, to] : nfa.delta.transitions()) {
+            g.add_edge(from, to, lts.label_group_name(LabelGroup(label)));
+        }
+        g.output_graph(file_name);
+    }
+
     void QualifiedDominanceConstraints::initialize_constraints(const std::shared_ptr<AbstractTask>& task, lp::LinearProgram& lp) {
         fts::AtomicTaskFactory fts_factory;
         const auto transformed_task = fts_factory.transform_to_fts(task);
@@ -235,50 +266,50 @@ namespace operator_counting {
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task.fts_task);
 
 #ifndef NDEBUG
-        for (int i = 0; i < factored_qdomrel->size(); ++i) {
-            std::println("Factor {}", i);
-            graphviz::Graph graph;
-            const auto& rel = *factored_qdomrel->get_local_relations().at(i);
-            const auto& lts = transformed_task.fts_task->get_factor(i);
-
-            auto no_response_node = graph.add_node("no response", "shape=doublecircle");
-
-            std::map<std::pair<int,int>,size_t> state_pair_to_node;
-            for (int s = 0; s < lts.size(); ++s) {
-                for (int t = 0; t < lts.size(); ++t) {
-                    state_pair_to_node[{s,t}] = graph.add_node(std::format("{} <= {}:", lts.state_name(s), lts.state_name(t)));
-                }
-            }
-            for (int s = 0; s < lts.size(); ++s) {
-                for (int t = 0; t < lts.size(); ++t) {
-                    std::println("{} <= {}:", lts.state_name(s), lts.state_name(t));
-                    for (const auto& [s_tr_i, t_tr_is] : std::views::enumerate(rel.transition_responses[s][t])) {
-                        auto s_tr = lts.get_transitions(s).at(s_tr_i);
-                        std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
-                        if (t_tr_is.empty()) {
-                            graph.add_edge(state_pair_to_node[{s,t}], no_response_node, std::format("{}<>none", lts.label_group_name(s_tr.label_group)));
-                        }
-                        for (auto t_tr_i : t_tr_is) {
-                            if (t_tr_i == qdominance::NOOP_TRANSITION) {
-                                std::println("        noop");
-                                graph.add_edge(state_pair_to_node[{s,t}], state_pair_to_node[{s_tr.target,t}], std::format("{}<>{}", lts.label_group_name(s_tr.label_group), "noop"));
-                            } else {
-                                auto t_tr = lts.get_transitions(t).at(t_tr_i);
-                                std::println("        {} --{}-> {}", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target));
-                                graph.add_edge(state_pair_to_node[{s,t}], state_pair_to_node[{s_tr.target,t_tr.target}], std::format("{}<>{}", lts.label_group_name(s_tr.label_group), lts.label_group_name(t_tr.label_group)));
-                            }
-                        }
-                    }
-                }
-            }
-            graph.output_graph(std::format("response_graph_{}.dot", i));
-        }
+        // for (int i = 0; i < factored_qdomrel->size(); ++i) {
+        //     std::println("Factor {}", i);
+        //     graphviz::Graph graph;
+        //     const auto& rel = *factored_qdomrel->get_local_relations().at(i);
+        //     const auto& lts = transformed_task.fts_task->get_factor(i);
+        //
+        //     auto no_response_node = graph.add_node("no response", "shape=doublecircle");
+        //
+        //     std::map<std::pair<int,int>,size_t> state_pair_to_node;
+        //     for (int s = 0; s < lts.size(); ++s) {
+        //         for (int t = 0; t < lts.size(); ++t) {
+        //             state_pair_to_node[{s,t}] = graph.add_node(std::format("{} <= {}:", lts.state_name(s), lts.state_name(t)));
+        //         }
+        //     }
+        //     for (int s = 0; s < lts.size(); ++s) {
+        //         for (int t = 0; t < lts.size(); ++t) {
+        //             std::println("{} <= {}:", lts.state_name(s), lts.state_name(t));
+        //             for (const auto& [s_tr_i, t_tr_is] : std::views::enumerate(rel.transition_responses[s][t])) {
+        //                 auto s_tr = lts.get_transitions(s).at(s_tr_i);
+        //                 std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
+        //                 if (t_tr_is.empty()) {
+        //                     graph.add_edge(state_pair_to_node[{s,t}], no_response_node, std::format("{}<>none", lts.label_group_name(s_tr.label_group)));
+        //                 }
+        //                 for (auto t_tr_i : t_tr_is) {
+        //                     if (t_tr_i == qdominance::NOOP_TRANSITION) {
+        //                         std::println("        noop");
+        //                         graph.add_edge(state_pair_to_node[{s,t}], state_pair_to_node[{s_tr.target,t}], std::format("{}<>{}", lts.label_group_name(s_tr.label_group), "noop"));
+        //                     } else {
+        //                         auto t_tr = lts.get_transitions(t).at(t_tr_i);
+        //                         std::println("        {} --{}-> {}", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target));
+        //                         graph.add_edge(state_pair_to_node[{s,t}], state_pair_to_node[{s_tr.target,t_tr.target}], std::format("{}<>{}", lts.label_group_name(s_tr.label_group), lts.label_group_name(t_tr.label_group)));
+        //                     }
+        //                 }
+        //             }
+        //         }
+        //     }
+        //     graph.output_graph(std::format("response_graph_{}.dot", i));
+        // }
 #endif
 
         // Create all the LP variables
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
             const auto& lts = transformed_task.fts_task->get_factor(i);
-            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(lts, (*factored_qdomrel)[i]);
+            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation());
             {
                 auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton);
                 for (int s = 0; s < lts.size(); ++s) {
@@ -292,6 +323,8 @@ namespace operator_counting {
             state_pair_to_nfa_state.push_back(local_state_pair_to_nfa_state);
 
 #ifndef NDEBUG
+            draw_nfa(std::format("nfa_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
+
             std::println("Label groups for factor {}", i);
             for (auto [j, lg] : std::views::enumerate(lts.get_label_groups())) {
                 std::print("{}: ", j);

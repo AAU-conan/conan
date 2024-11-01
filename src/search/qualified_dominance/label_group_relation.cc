@@ -1,26 +1,42 @@
 #include "label_group_relation.h"
 #include "qualified_label_relation.h"
+#include "qualified_local_state_relation2.h"
 
 namespace qdominance {
-    bool LabelGroupSimulationRelation::label_group_simulates_compute(fts::LabelGroup lg1, fts::LabelGroup lg2, const QualifiedLabelRelation& label_relation) const {
-        // ∀l2 ∈ lg2. ∃l1 ∈ lg1. l1 simulates l2
-        for (const auto& l2 : lts.get_labels(lg2)) {
-            for (const auto& l1 : lts.get_labels(lg1)) {
-                if (label_relation.simulates(l1, l2, factor)) {
-                    goto dominates;
-                }
-            }
-            return false; // No label of lg1 simulates l2
-            dominates:;
-        }
-        return true;
+    bool LabelGroupSimulationRelation::compute_simulates(const LabelGroup lg1, const LabelGroup lg2, const QualifiedLocalStateRelation2 &sim) const {
+        // Check if lg1 simulates lg2 in lts
+        // ∀s -lg2--> s'. ∃s -lg1-> s''. s'' simulates s'
+        return std::ranges::all_of(lts.get_transitions_label_group(lg2), [&](const TSTransition& tr_2) {
+            return std::ranges::any_of(targets_for_label_group_state(lg1, tr_2.src), [&](const int& tr_1_tgt) {
+                return sim.simulates(tr_1_tgt, tr_2.target);
+            });
+        });
     }
 
-    bool LabelGroupSimulationRelation::label_group_simulated_by_noop_compute(fts::LabelGroup lg, const QualifiedLabelRelation& label_relation) const {
-        // ∀l ∈ lg. l is simulated by noop
-        return std::ranges::all_of(lts.get_labels(lg), [&](const auto& l) {
-            return label_relation.dominated_by_noop(l, factor);
+    bool LabelGroupSimulationRelation::compute_noop_simulates(const LabelGroup lg, const QualifiedLocalStateRelation2 &sim) const {
+        return std::ranges::all_of(lts.get_transitions_label_group(lg), [&](const auto& tr) {
+            return sim.simulates(tr.src, tr.target);
         });
+    }
+
+    bool LabelGroupSimulationRelation::compute_simulates_noop(const LabelGroup lg, const QualifiedLocalStateRelation2 &sim) const {
+        // This assumes that lg has a transition in every state!
+        return std::ranges::all_of(lts.get_transitions_label_group(lg), [&](const auto& tr) {
+            return sim.simulates(tr.target, tr.src);
+        });
+    }
+
+    bool LabelGroupSimulationRelation::update(const QualifiedLocalStateRelation2& sim) {
+        bool changes = false;
+        changes |= 0 < erase_if(simulations, [&](const std::pair<LabelGroup, LabelGroup> p) { return !compute_simulates(p.first, p.second, sim);});
+        changes |= 0 < erase_if(noop_simulations, [&](const LabelGroup lg) { return !compute_noop_simulates(lg, sim);});
+        changes |= 0 < erase_if(simulations_noop, [&](const LabelGroup lg) { return !compute_simulates_noop(lg, sim);});
+#ifndef NDEBUG
+        // std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.label_group_name(p.second), lts.label_group_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
+        // std::println("{} simulations_noop: {}", factor, boost::algorithm::join(std::views::transform(simulations_noop, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+        // std::println("{} noop_simulations: {}", factor, boost::algorithm::join(std::views::transform(noop_simulations, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+#endif
+        return changes;
     }
 }
 

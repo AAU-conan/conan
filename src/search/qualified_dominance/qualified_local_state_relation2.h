@@ -32,16 +32,12 @@ namespace qdominance {
     class QualifiedLocalStateRelation2 {
     protected:
 
-        fts::LabelledTransitionSystem lts;
+        LabelledTransitionSystem lts;
         int factor;
-        const fts::FTSTask& fts_task;
+        const FTSTask& fts_task;
     public:
-
-        // For each pair of states s_i, s_j and an s_i transition, if s_i is relevant the s_j transitions which simulate it otherwise none
-        std::vector<std::vector<std::vector<std::vector<TransitionIndex>>>> transition_responses;
-
         // For each state, the set of states that it simulates
-        std::vector<std::set<int>> simulations;
+        std::unordered_set<std::pair<int, int>> simulations;
 
         // Vectors of states dominated/dominating by each state. Lazily computed when needed.
         std::vector<std::vector<int>> dominated_states, dominating_states;
@@ -49,24 +45,17 @@ namespace qdominance {
 
         void cancel_simulation_computation();
 
-
         bool update(const QualifiedLabelRelation& label_relation);
-        bool update_pair(int s, int t, const QualifiedLabelRelation& label_relation);
+        bool noop_simulates_tr(int t, LTSTransition s_tr, const QualifiedLabelRelation& label_relation) const;
+        bool tr_simulates_tr(const LTSTransition& t_tr, const LTSTransition& s_tr,
+                             const QualifiedLabelRelation& label_relation) const;
+        bool update_pairs(const QualifiedLabelRelation& label_relation);
         bool relation_initialize(int s, int t, const QualifiedLabelRelation& label_relation);
-        QualifiedLocalStateRelation2(const fts::LabelledTransitionSystem& lts, int factor, const fts::FTSTask& fts_task,
+        QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const FTSTask& fts_task,
                                      const QualifiedLabelRelation& label_relation);
 
-
-
         [[nodiscard]] bool simulates(int t, int s) const {
-            return simulations.at(t).contains(s);
-        }
-
-        [[nodiscard]] bool never_simulates(int t, int s) const {
-            // t never simulates s if all transitions from s has no response from t
-            return std::ranges::all_of(transition_responses[s][t], [](const auto& trs) {
-                return trs.empty();
-            });
+            return s == t || simulations.contains({t, s});
         }
 
         [[nodiscard]] bool similar(int s, int t) const {

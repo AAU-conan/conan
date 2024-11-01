@@ -1,6 +1,7 @@
 #ifndef QUALIFIED_DOMINANCE_DOMINANCE_RELATION_H
 #define QUALIFIED_DOMINANCE_DOMINANCE_RELATION_H
 
+#include <utility>
 #include <vector>
 #include <memory>
 #include <set>
@@ -22,9 +23,10 @@ namespace qdominance {
     class QualifiedFactoredDominanceRelation {
     protected:
         std::vector<std::unique_ptr<QualifiedLocalStateRelation2> > local_relations;
+        QualifiedLabelRelation label_relation;
     public:
-        explicit QualifiedFactoredDominanceRelation(std::vector<std::unique_ptr<QualifiedLocalStateRelation2>> &&_local_relations) :
-            local_relations (std::move(_local_relations)){
+        explicit QualifiedFactoredDominanceRelation(std::vector<std::unique_ptr<QualifiedLocalStateRelation2>> &&_local_relations, QualifiedLabelRelation  _label_relation)
+                : local_relations (std::move(_local_relations)), label_relation(std::move(_label_relation)){
         }
 
 
@@ -52,6 +54,10 @@ namespace qdominance {
         //Methods to access the underlying simulation relations
         const std::vector<std::unique_ptr<QualifiedLocalStateRelation2> > &get_local_relations() const {
             return local_relations;
+        }
+
+        [[nodiscard]] const QualifiedLabelRelation& get_label_relation() const {
+            return label_relation;
         }
 
         size_t size() const {

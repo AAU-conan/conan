@@ -63,18 +63,19 @@ namespace qdominance {
                   << std::endl;
 
         log << "Init LDSim in " << t() << ":" << std::endl << std::flush;
+        bool changes;
         do {
-            for (const auto & local_relation : local_relations) {
-                // log << "Updating local relation " << i << std::endl;
-                local_relation->update(label_relation);
+            changes = false;
+            for (const auto & [factor, local_relation] : std::views::enumerate(local_relations)) {
+                if (local_relation->update(label_relation))
+                    changes |= label_relation.update(factor, *local_relation);
             }
             log << " " << t() << std::flush;
-        } while (label_relation.update(local_relations));
+        } while (changes);
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
-        exit(0);
 
 
-        return std::make_unique<QualifiedFactoredDominanceRelation>(std::move(local_relations));
+        return std::make_unique<QualifiedFactoredDominanceRelation>(std::move(local_relations), std::move(label_relation));
     }
 }
 

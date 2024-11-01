@@ -21,8 +21,6 @@ namespace merge_and_shrink {
 }
 
 namespace fts {
-
-
     typedef int AbstractStateRef;
 
     class LabelMap;
@@ -55,7 +53,20 @@ namespace fts {
             return group == -1;
         }
     };
+}
 
+namespace std {
+    template <>
+    struct hash<fts::LabelGroup>
+    {
+        std::size_t operator()(const fts::LabelGroup& lg) const noexcept {
+            return std::hash<int>()(lg.group);
+        }
+    };
+}
+
+
+namespace fts {
     class LTSTransition {
     public:
         AbstractStateRef src, target;
@@ -122,7 +133,7 @@ namespace fts {
         int num_states;
         std::vector<bool> goal_states;
         AbstractStateRef init_state;
-        std::unordered_set<int> relevant_label_groups;
+        std::unordered_set<LabelGroup> relevant_label_groups;
         std::vector<int> goal_distances; // TODO: Possibly unify with merge_and_shrink::Distances
 
 
@@ -189,21 +200,25 @@ namespace fts {
             return fact_value_names.get_common_operators_name(get_labels(lg));
         }
 
-        int get_initial_state() const {
-            return init_state;
-        }
-
         bool is_relevant_label(int label) const {
             return is_relevant_label_group(label_group_of_label.at(label));
         }
 
         bool is_relevant_label_group(const LabelGroup &label_group) const {
-            return relevant_label_groups.contains(label_group.group);
+            return relevant_label_groups.contains(label_group);
+        }
+
+        const std::unordered_set<LabelGroup>& get_relevant_label_groups() const {
+            return relevant_label_groups;
+        }
+
+        AbstractStateRef get_initial_state() const {
+            return init_state;
         }
 
         std::generator<int> get_relevant_labels() const {
-            for (int lg : relevant_label_groups) {
-                for (int label : label_groups[lg]) {
+            for (const auto& lg : relevant_label_groups) {
+                for (int label : label_groups[lg.group]) {
                     co_yield label;
                 }
             }
@@ -250,4 +265,6 @@ namespace fts {
         }
     };
 }
+
+
 #endif

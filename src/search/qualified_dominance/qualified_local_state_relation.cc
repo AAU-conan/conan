@@ -229,19 +229,19 @@ namespace qdominance {
             auto [tp, sp] = nfa_state_to_state_pair.at(target);
             // log << "    (" << ts.state_name(t) << ", " << ts.state_name(s) << ") has an edge to (" << ts.state_name(tp) << ", " << ts.state_name(sp) << ") with label " << ts.label_name(label) << std::endl;
 
-            if (t == tp && label_relation.dominated_by_noop(int(label), lts_i)) {
-                // log << "        " << "which is dominated by noop" << std::endl;
-                continue;
-            }
+            // if (t == tp && label_relation.noop_simulates_in_all_other(int(label), lts_i)) {
+            //     // log << "        " << "which is dominated by noop" << std::endl;
+            //     continue;
+            // }
 
             bool found = ts.applyPostSrc(t, [&](const auto& trt) {
                 if (trt.target == tp) {
                     for (const auto& l : ts.get_labels(trt.label_group)) {
                         // log << "        " << ts.state_name(t) << " has transition to " << ts.state_name(tp) << " with label " << ts.label_name(l);
-                        if (label_relation.simulates(l, int(label), lts_i)) {
-                            // log << " which dominates" << std::endl;
-                            return true;
-                        }
+                        // if (label_relation.simulates(l, int(label), lts_i)) {
+                        //     // log << " which dominates" << std::endl;
+                        //     return true;
+                        // }
                         // log << " which does not dominate" << std::endl;
                     }
                 }
@@ -265,7 +265,7 @@ namespace qdominance {
         return !to_remove.empty();
     }
 
-    QualifiedLocalStateRelation::QualifiedLocalStateRelation(mata::nfa::Nfa& simulation_nfa, vector <std::vector<mata::nfa::State>> && state_pair_to_nfa_state, std::unordered_map<mata::nfa::State, std::pair<int,int>>& nfa_state_to_state_pair, int num_labels, mata::nfa::State universally_accepting, fts::FactValueNames fact_value_names) :
+qdominance::QualifiedLocalStateRelation::QualifiedLocalStateRelation(mata::nfa::Nfa& simulation_nfa, vector <std::vector<mata::nfa::State>> && state_pair_to_nfa_state, std::unordered_map<mata::nfa::State, std::pair<int,int>>& nfa_state_to_state_pair, int num_labels, mata::nfa::State universally_accepting, fts::FactValueNames fact_value_names) :
         simulation_nfa(std::move(simulation_nfa)), state_pair_to_nfa_state(std::move(state_pair_to_nfa_state)), nfa_state_to_state_pair(std::move(nfa_state_to_state_pair)), universally_accepting(universally_accepting), num_labels(num_labels), fact_value_names(fact_value_names), universally_accepting_cache(this->simulation_nfa.num_of_states(), -1) {
 
     }
