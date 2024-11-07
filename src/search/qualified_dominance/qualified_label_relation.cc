@@ -47,6 +47,7 @@ namespace qdominance {
     }
 
     bool QualifiedLabelRelation::update(int factor, const QualifiedLocalStateRelation2& sim) {
+        std::println("Updating {} label group relation", factor);
         return label_group_simulation_relations.at(factor).update(sim);
     }
 }

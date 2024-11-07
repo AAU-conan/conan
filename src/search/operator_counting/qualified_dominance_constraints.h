@@ -6,6 +6,10 @@
 #include "../lp/lp_solver.h"
 #include "../qualified_dominance/qualified_ld_simulation.h"
 
+namespace fts {
+    struct TransformedFTSTask;
+}
+
 namespace qdominance {
     class QualifiedDominanceAnalysis;
     class QualifiedLDSimulation;
@@ -27,6 +31,7 @@ namespace operator_counting {
         {}
 
     private:
+        std::unique_ptr<TransformedFTSTask> transformed_task;
         std::unique_ptr<qdominance::QualifiedFactoredDominanceRelation> factored_qdomrel = nullptr;
         struct GValuedState {
             std::vector<int> state;

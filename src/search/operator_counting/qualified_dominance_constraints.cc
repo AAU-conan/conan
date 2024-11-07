@@ -34,7 +34,9 @@ namespace operator_counting {
                 //     state_pair_to_nfa_state[s][t] = universally_false;
                 } else {
                     state_pair_to_nfa_state[s][t] = nfa.add_state();
-                    nfa.final.insert(state_pair_to_nfa_state[s][t]);
+                    if (!lts.is_goal(s) || lts.is_goal(t)) {
+                        nfa.final.insert(state_pair_to_nfa_state[s][t]);
+                    }
                 }
             }
         }
@@ -47,8 +49,10 @@ namespace operator_counting {
                     std::unordered_set<int> unused_labels(all_label_groups.begin(), all_label_groups.end());
                     for (const auto& s_tr : s_transitions) {
                         unused_labels.erase(s_tr.label_group.group);
-                        if (!lts.is_relevant_label_group(s_tr.label_group))
+                        if (!lts.is_relevant_label_group(s_tr.label_group)) {
+                            // If the label group is not relevant, t can trivially simulate it
                             continue;
+                        }
 
                         mata::nfa::StateSet t_targets;
                         for (const auto t_tr : t_transitions) {
@@ -165,6 +169,10 @@ namespace operator_counting {
             lp::LPConstraint unsolvable_constraint(0., lp.get_infinity());
             unsolvable_constraint.insert(i_var, -1.);
             lp_constraints.push_back(unsolvable_constraint);
+#ifndef NDEBUG
+            lp_constraints.set_name(lp_constraints.size() - 1, std::format("Unsolvable[q={},f={}]", state, factor));
+#endif
+            return;
         } else if (only_pruning) {
             // If we are only doing pruning, then add no constraints for non-dominated states
             return;
@@ -199,28 +207,37 @@ namespace operator_counting {
         // Add the flow constraint for each state
         for (int j = 0; j < automaton.num_of_states(); ++j) {
             // Sum of ingoing transitions - sum of outgoing transitions + initial state - goal state >= 0
-            lp::LPConstraint flow_constraint(0., lp.get_infinity());
+            lp::LPConstraint flow_constraint(0., automaton.final.contains(j)? 1.: 0.);
+#ifndef NDEBUG
+            std::string flow_constraint_string = std::format("{} <= ", 0.);
+#endif
             for (const auto& ingoing : state_ingoing[j]) {
-                if (!state_outgoing[j].contains(ingoing))
+                if (!state_outgoing[j].contains(ingoing)) {
                     flow_constraint.insert(ingoing, 1.);
+#ifndef NDEBUG
+                    flow_constraint_string += std::format("+{} ", lp_variables.get_name(ingoing));
+#endif
+                }
             }
             for (const auto& outgoing : state_outgoing[j]) {
-                if (!state_ingoing[j].contains(outgoing))
+                if (!state_ingoing[j].contains(outgoing)) {
                     flow_constraint.insert(outgoing, -1.);
-            }
-            double init_var_coef = 0.0;
-            if (automaton.final.contains(j)) {
-                // If this is a final state, subtract flow to state
-                init_var_coef -= 1.0;
+#ifndef NDEBUG
+                    flow_constraint_string += std::format("-{} ", lp_variables.get_name(outgoing));
+#endif
+                }
             }
             if (automaton.initial.contains(j)) {
-                // Add initial state variable flow
-                init_var_coef += 1.0;
-            }
-            if (init_var_coef != 0.0) {
-                flow_constraint.insert(init_variables[factor][state], init_var_coef);
+                flow_constraint.insert(init_variables[factor][state], 1.);
+#ifndef NDEBUG
+                flow_constraint_string += std::format("+{} ", lp_variables.get_name(init_variables[factor][state]));
+#endif
             }
             lp_constraints.push_back(flow_constraint);
+#ifndef NDEBUG
+            flow_constraint_string += std::format("<= {}", automaton.final.contains(j)? 1.: 0.);
+            lp_constraints.set_name(lp_constraints.size() - 1, std::format("Flow[q={},f={},q'={}] {}", state, factor, j, flow_constraint_string));
+#endif
         }
 
         // Add operator count constraints for each label group
@@ -233,6 +250,9 @@ namespace operator_counting {
                 label_constraint.insert(transition, -1.);
             }
             lp_constraints.push_back(label_constraint);
+#ifndef NDEBUG
+            lp_constraints.set_name(lp_constraints.size() - 1, std::format("LabelGroup[q={},f={},lg={}]", state, factor, lg_i));
+#endif
         }
     }
 
@@ -247,7 +267,7 @@ namespace operator_counting {
                     }
                 }
             }
-            g.add_node(state_pairs.empty()? std::format("{}", i): boost::algorithm::join(state_pairs, "\n"), nfa.final.contains(i)? "shape=doublecircle": "");
+            g.add_node(state_pairs.empty()? std::format("{}", i): boost::algorithm::join(state_pairs, "\n"), nfa.final.contains(i)? "peripheries=2": "");
         }
         for (auto const& [from, label, to] : nfa.delta.transitions()) {
             g.add_edge(from, to, lts.label_group_name(LabelGroup(label)));
@@ -257,13 +277,13 @@ namespace operator_counting {
 
     void QualifiedDominanceConstraints::initialize_constraints(const std::shared_ptr<AbstractTask>& task, lp::LinearProgram& lp) {
         fts::AtomicTaskFactory fts_factory;
-        const auto transformed_task = fts_factory.transform_to_fts(task);
+        transformed_task = std::make_unique<TransformedFTSTask>(fts_factory.transform_to_fts(task));
 
 #ifndef NDEBUG
-        fts::draw_fts("fts.dot", *transformed_task.fts_task);
+        fts::draw_fts("fts.dot", *transformed_task->fts_task);
 #endif
 
-        factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task.fts_task);
+        factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task->fts_task);
 
 #ifndef NDEBUG
         // for (int i = 0; i < factored_qdomrel->size(); ++i) {
@@ -308,7 +328,7 @@ namespace operator_counting {
 
         // Create all the LP variables
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
-            const auto& lts = transformed_task.fts_task->get_factor(i);
+            const auto& lts = transformed_task->fts_task->get_factor(i);
             auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation());
             {
                 auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton);
@@ -334,7 +354,7 @@ namespace operator_counting {
                 std::println();
             }
 #endif
-            auto lts_nfa = lts_to_nfa(transformed_task.fts_task->get_factor(i));
+            auto lts_nfa = lts_to_nfa(transformed_task->fts_task->get_factor(i));
 
             init_variables.emplace_back();
             transition_variables.emplace_back();
@@ -342,10 +362,17 @@ namespace operator_counting {
                 automaton.initial = {static_cast<mata::nfa::State>(q)};
                 auto reduced_automaton = minimize(automaton);
                 reduced_automaton.alphabet = automaton.alphabet;
+                reduced_automaton.make_complete();
 
                 add_automaton_to_lp(reduced_automaton, lp, q, i, lts.get_label_groups());
             }
         }
+
+#ifndef NDEBUG
+        for (int i = 0; i < lp.get_constraints().size(); ++i) {
+            std::cout << lp.get_constraints().get_name(i) << std::endl;
+        }
+#endif
     }
 
     bool QualifiedDominanceConstraints::update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) {
@@ -357,7 +384,7 @@ namespace operator_counting {
 #ifndef NDEBUG
         // Print state
         for (int i = 0; i < explicit_state.size(); ++i) {
-            // std::cout << .get_fact_value_name(explicit_state[i]) << ", ";
+            std::cout << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << ", ";
         }
         std::cout << std::endl;
 #endif
@@ -371,7 +398,9 @@ namespace operator_counting {
                 std::vector<mata::nfa::State> initial_states;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
-                    // std::cout << "Adding " << fvn.get_fact_value_name(previous_state.state[i]) << " " << fvn.get_fact_value_name(explicit_state[i]) << std::endl;
+#ifndef NDEBUG
+                    std::cout << "Adding " << state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]) << ": " << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << " <= " << transformed_task->fts_task->get_factor(i).state_name(previous_state.state[i]) << std::endl;
+#endif
                     initial_states.push_back(state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]));
                 }
                 init_state_constraints.emplace_back(initial_states);
@@ -388,6 +417,9 @@ namespace operator_counting {
                     constraint.insert(init_variables.at(j).at(init_state_constraints.at(i).at(j)), 1.);
                 }
                 lp_constraints.push_back(constraint);
+#ifndef NDEBUG
+                lp_constraints.set_name(lp_constraints.size() - 1, std::format("InitStateConstraint[{}]", i));
+#endif
             }
         }
 

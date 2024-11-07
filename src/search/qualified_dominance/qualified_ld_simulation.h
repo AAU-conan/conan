@@ -42,7 +42,8 @@ namespace qdominance {
         local_relations.reserve(task.get_num_variables());
 
         for (const auto & [factor, lts]: std::views::enumerate(task.get_factors())) {
-            local_relations.push_back(std::make_unique<QualifiedLocalStateRelation2>(*lts, factor, task, label_relation));
+            local_relations.push_back(std::make_unique<QualifiedLocalStateRelation2>(*lts, factor, task));
+            label_relation.update(factor, *local_relations.back()); // Make sure to update the label relation at least once per factor
         }
 
         log << "Initialize qualified label dominance: " << task.get_num_labels() << " labels " << task.get_num_variables() << " systems." << std::endl;
@@ -70,10 +71,10 @@ namespace qdominance {
                 if (local_relation->update(label_relation))
                     changes |= label_relation.update(factor, *local_relation);
             }
-            log << " " << t() << std::flush;
+
+            log << changes << " " << t() << std::endl;
         } while (changes);
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
-
 
         return std::make_unique<QualifiedFactoredDominanceRelation>(std::move(local_relations), std::move(label_relation));
     }

@@ -50,9 +50,7 @@ namespace qdominance {
         bool tr_simulates_tr(const LTSTransition& t_tr, const LTSTransition& s_tr,
                              const QualifiedLabelRelation& label_relation) const;
         bool update_pairs(const QualifiedLabelRelation& label_relation);
-        bool relation_initialize(int s, int t, const QualifiedLabelRelation& label_relation);
-        QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const FTSTask& fts_task,
-                                     const QualifiedLabelRelation& label_relation);
+        QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const FTSTask& fts_task);
 
         [[nodiscard]] bool simulates(int t, int s) const {
             return s == t || simulations.contains({t, s});

@@ -114,31 +114,31 @@ namespace qdominance {
         return 0 < erase_if(simulations, [&](const auto p) {
             const auto [t, s] = p;
 #ifndef NDEBUG
-            // std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
+            std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
 #endif
             const auto& s_transitions = lts.get_transitions(s);
             const auto& t_transitions = lts.get_transitions(t);
             return !std::ranges::all_of(s_transitions, [&](const LTSTransition& s_tr) {
 #ifndef NDEBUG
-                // std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
+                std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
 #endif
                 bool res = !lts.is_relevant_label_group(s_tr.label_group) || noop_simulates_tr(t, s_tr, label_relation) ||
                     std::ranges::any_of(t_transitions, [&](const LTSTransition& t_tr) {
                         bool res =  tr_simulates_tr(t_tr, s_tr, label_relation);
 #ifndef NDEBUG
-                        // std::println("        {} --{}-> {} does {}simulate", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target), res? "" : "not ");
+                        std::println("        {} --{}-> {} does {}simulate", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target), res? "" : "not ");
 #endif
                         return res;
                 });
 #ifndef NDEBUG
-                // std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
+                std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
 #endif
                 return res;
             });
         });
     }
 
-    QualifiedLocalStateRelation2::QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const FTSTask& fts_task, const QualifiedLabelRelation& label_relation)
+    QualifiedLocalStateRelation2::QualifiedLocalStateRelation2(const LabelledTransitionSystem& lts, int factor, const FTSTask& fts_task)
         : lts(lts), factor(factor), fts_task(fts_task) {
         // Add all pairs that satisfy the goal condition
         for (int s = 0; s < lts.size(); ++s) {
