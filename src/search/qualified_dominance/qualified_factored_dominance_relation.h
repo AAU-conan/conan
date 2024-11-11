@@ -30,6 +30,14 @@ namespace qdominance {
         }
 
 
+        void print_simulations() {
+            for (const auto &[factor, sim] : std::views::enumerate(local_relations)) {
+                std::println("Factor {}", factor);
+                sim->print_simulations();
+            }
+        }
+
+
         //Statistics of the factored simulation
         void dump_statistics(utils::LogProxy &log) const;
 

@@ -206,7 +206,7 @@ namespace operator_counting {
 
         // Add the flow constraint for each state
         for (int j = 0; j < automaton.num_of_states(); ++j) {
-            // Sum of ingoing transitions - sum of outgoing transitions + initial state - goal state >= 0
+            // 0 <= Sum of ingoing transitions - sum of outgoing transitions + initial state <= goal state? 1: 0
             lp::LPConstraint flow_constraint(0., automaton.final.contains(j)? 1.: 0.);
 #ifndef NDEBUG
             std::string flow_constraint_string = std::format("{} <= ", 0.);
@@ -383,6 +383,7 @@ namespace operator_counting {
 
 #ifndef NDEBUG
         // Print state
+        std::print("g-value: {}, ", g_value);
         for (int i = 0; i < explicit_state.size(); ++i) {
             std::cout << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << ", ";
         }
@@ -396,12 +397,20 @@ namespace operator_counting {
         for (const auto& previous_state : previous_states) {
             if (previous_state.g_value <= g_value) {
                 std::vector<mata::nfa::State> initial_states;
+                bool same_state = previous_state.g_value == g_value;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
 #ifndef NDEBUG
-                    std::cout << "Adding " << state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]) << ": " << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << " <= " << transformed_task->fts_task->get_factor(i).state_name(previous_state.state[i]) << std::endl;
+                    std::cout << "    Adding " << state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]) << ": " << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << " <= " << transformed_task->fts_task->get_factor(i).state_name(previous_state.state[i]) << std::endl;
 #endif
                     initial_states.push_back(state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]));
+                    same_state &= explicit_state[i] == previous_state.state[i];
+                }
+                if (same_state) {
+                    std::println("Break");
+                    // If the state is the same as the previous state, stop here, as we cannot allow comparing against
+                    // nodes that are later or equal in the evaluation order.
+                    break;
                 }
                 init_state_constraints.emplace_back(initial_states);
             }

@@ -62,7 +62,7 @@ namespace qdominance {
                 return std::ranges::any_of(fts_task.get_factor(factor).get_labels(lg1), [&](const int l1) {
                     return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const unsigned long& i) {
                         const auto& lts = fts_task.get_factor(i);
-                        return i == factor || label_group_simulates(i, lts.get_group_label(l1), lts.get_group_label(l2));
+                        return i == factor || (label_group_simulates(i, lts.get_group_label(l1), lts.get_group_label(l2)) && fts_task.get_label_cost(l1) <= fts_task.get_label_cost(l2));
                     });
                 });
             });

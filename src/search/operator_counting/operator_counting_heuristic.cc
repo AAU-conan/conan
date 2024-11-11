@@ -246,12 +246,14 @@ public:
         const utils::Context &context) const override {
         plugins::verify_list_non_empty<shared_ptr<ConstraintGenerator>>(
             context, opts, "constraint_generators");
+        auto new_opts = opts;
+        // new_opts.set("cache_estimates", false);
         return plugins::make_shared_from_arg_tuples<GDependentOperatorCountingHeuristic>(
             opts.get_list<shared_ptr<ConstraintGenerator>>(
                 "constraint_generators"),
             opts.get<bool>("use_integer_operator_counts"),
-            lp::get_lp_solver_arguments_from_options(opts),
-            get_heuristic_arguments_from_options(opts)
+            lp::get_lp_solver_arguments_from_options(new_opts),
+            get_heuristic_arguments_from_options(new_opts)
             );
     }
 };

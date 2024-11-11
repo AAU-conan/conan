@@ -54,8 +54,8 @@ namespace operator_counting {
 
         // Add the flow constraint for each state
         for (int s = 0; s < lts.size(); ++s) {
-            // Sum of ingoing transitions - sum of outgoing transitions + initial state - goal state <= 0
-            lp::LPConstraint flow_constraint(-lp.get_infinity(), lts.is_goal(s)? 1. : 0.);
+            // 0 <= Sum of ingoing transitions - sum of outgoing transitions + initial state <= goal state? 1: 0
+            lp::LPConstraint flow_constraint(0., lts.is_goal(s)? 1. : 0.);
             for (const auto& ingoing : state_ingoing[s]) {
                 flow_constraint.insert(ingoing, 1.);
             }
