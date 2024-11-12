@@ -283,8 +283,11 @@ namespace operator_counting {
         fts::draw_fts("fts.dot", *transformed_task->fts_task);
 #endif
 
+
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task->fts_task);
 
+        std::println("Number of simulations: ", factored_qdomrel->num_simulations());
+        std::println("Percentage simulations: ", factored_qdomrel->get_percentage_simulations(false));
 #ifndef NDEBUG
         // for (int i = 0; i < factored_qdomrel->size(); ++i) {
         //     std::println("Factor {}", i);
