@@ -57,7 +57,7 @@ namespace qdominance {
         }
 
         // ∀l2 ∈ lg2. ∃l1 ∈ lg1. ∀i != factor. l1 simulates l2 in factor i
-        [[nodiscard]] bool simulates_in_all_other(const int factor, const LabelGroup lg1, const LabelGroup lg2) const {
+        [[nodiscard]] bool label_group_simulates_label_group_in_all_other(const int factor, const LabelGroup lg1, const LabelGroup lg2) const {
             auto res = std::ranges::all_of(fts_task.get_factor(factor).get_labels(lg2), [&](const int l2) {
                 return std::ranges::any_of(fts_task.get_factor(factor).get_labels(lg1), [&](const int l1) {
                     return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const unsigned long& i) {
@@ -73,7 +73,7 @@ namespace qdominance {
         }
 
         // ∀l ∈ lg. ∀i != factor. noop simulates l in factor i
-        [[nodiscard]] bool noop_simulates_in_all_other(const int factor, const LabelGroup lg) const {
+        [[nodiscard]] bool noop_simulates_label_group_in_all_other(const int factor, const LabelGroup lg) const {
             auto res = std::ranges::all_of(fts_task.get_factor(factor).get_labels(lg), [&](const int l) {
                 return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const unsigned long& i) {
                     const auto& lts = fts_task.get_factor(i);
@@ -81,6 +81,20 @@ namespace qdominance {
                 });
             });
             return res;
+        }
+
+        [[nodiscard]] bool label_simulates_label_in_all_other(const int factor, const int l1, const int l2) const {
+            return fts_task.get_label_cost(l1) <= fts_task.get_label_cost(l2) && std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const unsigned long& j) {
+                const auto& lts = fts_task.get_factor(j);
+                return j == factor || label_group_simulates(j, lts.get_group_label(l1), lts.get_group_label(l2));
+            });
+        }
+
+        [[nodiscard]] bool noop_simulates_label_in_all_other(const int factor, const int l) const {
+            return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const unsigned long& j) {
+                const auto& lts = fts_task.get_factor(j);
+                return j == factor || noop_simulates_label_group(j, lts.get_group_label(l));
+            });
         }
     };
 }

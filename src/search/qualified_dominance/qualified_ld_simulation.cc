@@ -26,6 +26,7 @@ namespace qdominance {
     public:
         LDSimulationFeature() : TypedFeature("qld_simulation") {
             document_title("LDSimulation");
+            
 
             document_synopsis(
                     "This dominance analysis method implements the algorithm described in the following "
@@ -56,5 +57,4 @@ namespace qdominance {
     };
 
 static plugins::FeaturePlugin<LDSimulationFeature> _plugin;
-
 }

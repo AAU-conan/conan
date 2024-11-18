@@ -56,12 +56,12 @@ namespace operator_counting {
 
                         mata::nfa::StateSet t_targets;
                         for (const auto t_tr : t_transitions) {
-                            if (label_relation.simulates_in_all_other(factor, t_tr.label_group, s_tr.label_group)) {
+                            if (label_relation.label_group_simulates_label_group_in_all_other(factor, t_tr.label_group, s_tr.label_group)) {
                                 t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t_tr.target));
                             }
                         }
 
-                        if (label_relation.noop_simulates_in_all_other(factor, s_tr.label_group)) {
+                        if (label_relation.noop_simulates_label_group_in_all_other(factor, s_tr.label_group)) {
                             t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t));
                         }
 

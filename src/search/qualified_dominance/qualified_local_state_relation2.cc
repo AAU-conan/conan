@@ -100,11 +100,19 @@ namespace qdominance {
     }
 
     bool QualifiedLocalStateRelation2::noop_simulates_tr(int t, LTSTransition s_tr, const QualifiedLabelRelation& label_relation) const {
-        return label_relation.noop_simulates_in_all_other(factor, s_tr.label_group) && simulates(t, s_tr.target);
+        return label_relation.noop_simulates_label_group_in_all_other(factor, s_tr.label_group) && simulates(t, s_tr.target);
     }
 
     bool QualifiedLocalStateRelation2::tr_simulates_tr(const LTSTransition& t_tr, const LTSTransition& s_tr, const QualifiedLabelRelation& label_relation) const {
-        return label_relation.simulates_in_all_other(factor, t_tr.label_group, s_tr.label_group) && simulates(t_tr.target, s_tr.target);
+        return label_relation.label_group_simulates_label_group_in_all_other(factor, t_tr.label_group, s_tr.label_group) && simulates(t_tr.target, s_tr.target);
+    }
+
+    bool QualifiedLocalStateRelation2::labels_simulate_labels(const std::set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const QualifiedLabelRelation& label_relation) {
+        return std::ranges::all_of(l2s, [&](const auto& l2) {
+            return (include_noop && label_relation.noop_simulates_label_in_all_other(factor, l2)) || std::ranges::any_of(l1s, [&](const auto& l1) {
+                return label_relation.label_simulates_label_in_all_other(factor, l1, l2);
+            });
+        });
     }
 
     // Update the simulation relation for when t simulates s
@@ -122,18 +130,23 @@ namespace qdominance {
 #ifndef NDEBUG
                 std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
 #endif
-                bool res = !lts.is_relevant_label_group(s_tr.label_group) || noop_simulates_tr(t, s_tr, label_relation) ||
-                    std::ranges::any_of(t_transitions, [&](const LTSTransition& t_tr) {
-                        bool res =  tr_simulates_tr(t_tr, s_tr, label_relation);
-#ifndef NDEBUG
-                        std::println("        {} --{}-> {} does {}simulate", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target), res? "" : "not ");
-#endif
-                        return res;
-                });
+                if (!lts.is_relevant_label_group(s_tr.label_group)) {
+                    return true;
+                }
+
+                std::set<int> t_labels;
+                for (const LTSTransition& t_tr : t_transitions) {
+                    if (simulates(t_tr.target, s_tr.target)) {
+                        for (const auto& l : lts.get_labels(t_tr.label_group)) {
+                            t_labels.insert(l);
+                        }
+                    }
+                }
+
+                return labels_simulate_labels(t_labels, lts.get_labels(s_tr.label_group), simulates(t, s_tr.target), label_relation);
 #ifndef NDEBUG
                 std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
 #endif
-                return res;
             });
         });
     }
