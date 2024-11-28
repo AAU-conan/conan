@@ -11,17 +11,12 @@ typedef std::vector<int> ExplicitState;
 namespace dominance {
 
     class DominancePruningPrevious : public DominancePruning {
-
     protected:
-
         // Pure virtual methods to be implemented by derived classes
         virtual bool check(const ExplicitState &state, int g) const = 0;
         virtual void insert(const ExplicitState &transformed_state, int g) = 0;
-        
 
     public:
-        std::vector<ExplicitState> previous_transformed_states;
-
         DominancePruningPrevious(const std::shared_ptr<fts::FTSTaskFactory> & fts_factory,
                              std::shared_ptr<DominanceAnalysis> dominance_analysis,
                              utils::Verbosity verbosity);
@@ -37,9 +32,7 @@ namespace dominance {
                                  ExplicitState & succ,
                                  ExplicitState & succ_transformed,
                                  int g_value);
-
     };
-
 
     class DominancePruningAllPrevious : public DominancePruningPrevious {
 
@@ -60,12 +53,7 @@ namespace dominance {
         virtual ~DominancePruningAllPrevious() = default;
     };
 
-
-
     class DominancePruningPreviousLowerG : public DominancePruningPrevious {
-
-        // Store known states
-        std::vector<ExplicitState> previous_transformed_states;
         // key: g_value; value: vector<vector<int>> with the transformed states with that g_value
         std::map<int, std::vector<std::vector<int>>> previous_states_sorted;
 

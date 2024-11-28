@@ -28,7 +28,7 @@ namespace dominance {
         State initial(task_proxy.get_initial_state());
 
         // Store the initial state 
-        previous_transformed_states.push_back(state_mapping->transform(initial.get_unpacked_values()));  
+        insert(state_mapping->transform(initial.get_unpacked_values()), 0);
     }
 
     void DominancePruningPrevious::prune_generation(const State &state, const SearchNodeInfo &node_info, std::vector<OperatorID> &op_ids) {
@@ -152,7 +152,6 @@ namespace dominance {
 
 
     void DominancePruningPreviousLowerG::insert(const ExplicitState &transformed_state, int g_value) {
-        previous_transformed_states.push_back(transformed_state);
         previous_states_sorted[g_value].emplace_back(transformed_state);
     }
 
@@ -180,7 +179,7 @@ namespace dominance {
             }
         }
         return false;
-    } 
+    }
 
 
     //////////////////////////////////////////////////

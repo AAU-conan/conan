@@ -21,7 +21,7 @@ namespace fts {
 
 namespace dominance {
 
-    class DominancePruning : public PruningMethod {
+    class  DominancePruning : public PruningMethod {
     protected:
         std::shared_ptr<fts::FTSTaskFactory> fts_factory;
         std::shared_ptr<DominanceAnalysis> dominance_analysis;

@@ -19,7 +19,6 @@ namespace utils {
 }
 
 namespace dominance {
-    // First implementation of a simulation relation.
     class LocalStateRelation {
     protected:
         // By now we assume that the partition is unitary... we can improve this later with EquivalenceRelation
@@ -40,14 +39,6 @@ namespace dominance {
         inline void remove(int s, int t) {
             relation[s][t] = false;
         }
-
-        // This should be part of the factored mapping
-        // bool pruned(const State &state) const;
-        // int get_cost(const State &state) const;
-        // int get_index(const State &state) const;
-        //const std::vector<int> &get_dominated_states(const State &state);
-        //const std::vector<int> &get_dominating_states(const State &state);
-        // bool simulates(const State &t, const State &s) const;
 
         const std::vector<int> &get_dominated_states(int state);
         const std::vector<int> &get_dominating_states(int state);

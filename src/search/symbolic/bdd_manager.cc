@@ -24,10 +24,13 @@ namespace symbolic {
         return bdd1.Leq(!bdd2); //If bdd1 implies !bdd2 then their intersection is empty
     }
 
-    BDDManager::BDDManager(const Options &opts) :
-            cudd_init_nodes(opts.get<int>("cudd_init_nodes")),
-            cudd_init_cache_size(opts.get<int>("cudd_init_cache_size")),
-            cudd_init_available_memory(opts.get<int>("cudd_init_available_memory")) {
+    BDDManagerParameters::BDDManagerParameters(const Options &opts) :
+    cudd_init_nodes(opts.get<int>("cudd_init_nodes")),
+    cudd_init_cache_size(opts.get<int>("cudd_init_cache_size")),
+    cudd_init_available_memory(opts.get<int>("cudd_init_available_memory")) {
+    }
+
+    BDDManager::BDDManager(const BDDManagerParameters &params) : params(params) {
     }
 
     void BDDManager::init(int num_bdd_vars) {
@@ -35,12 +38,12 @@ namespace symbolic {
 
         if (utils::g_log.is_at_least_verbose()) {
             utils::g_log << "Initialize Symbolic Manager(" << num_bdd_vars << ", "
-                         << cudd_init_nodes / num_bdd_vars << ", "
-                         << cudd_init_cache_size << ", "
-                         << cudd_init_available_memory << ")" << endl;
+                         << params.cudd_init_nodes / num_bdd_vars << ", "
+                         << params.cudd_init_cache_size << ", "
+                         << params.cudd_init_available_memory << ")" << endl;
         }
         _manager = make_unique<Cudd>(num_bdd_vars, 0,
-                                     cudd_init_nodes / num_bdd_vars, cudd_init_cache_size, cudd_init_available_memory);
+                                     params.cudd_init_nodes / num_bdd_vars, params.cudd_init_cache_size, params.cudd_init_available_memory);
 
         _manager->setHandler(exceptionError);
         _manager->setTimeoutHandler(exceptionError);
@@ -68,9 +71,9 @@ namespace symbolic {
     }
 
     void BDDManager::print_options() const {
-        cout << "CUDD Init: nodes=" << cudd_init_nodes <<
-             " cache=" << cudd_init_cache_size <<
-             " max_memory=" << cudd_init_available_memory << endl;
+        cout << "CUDD Init: nodes=" << params.cudd_init_nodes <<
+             " cache=" << params.cudd_init_cache_size <<
+             " max_memory=" << params.cudd_init_available_memory << endl;
     }
 
     bool BDDManager::perform_operation_with_time_limit(utils::Duration maxTime, const std::function<void()> &function) {
@@ -117,4 +120,5 @@ namespace symbolic {
             }
         }
     }
+
 }
