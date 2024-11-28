@@ -684,6 +684,13 @@ create_fast_downward_library(
 )
 
 create_fast_downward_library(
+        NAME comparative_heuristic
+        HELP "Compare multiple heuristics"
+        SOURCES
+        heuristics/comparative_heuristic
+)
+
+create_fast_downward_library(
     NAME core_tasks
     HELP "Core task transformations"
     SOURCES
