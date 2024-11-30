@@ -1,9 +1,8 @@
-#include "dominance_pruning_dd.h"
+#include "database_dd.h"
 
-#include "../plugins/plugin.h"
-#include "../utils/markup.h"
 #include "../factored_transition_system/factored_state_mapping.h"
 #include "../factored_transition_system/symbolic_state_mapping.h"
+#include "../variable_ordering/variable_ordering_strategy.h"
 
 using namespace std;
 using namespace symbolic;
@@ -29,14 +28,10 @@ namespace dominance {
 
 
     DominanceRelationBDD::DominanceRelationBDD(const FactoredDominanceRelation &dominance_relation,
-                                               const fts::FactoredSymbolicStateMapping &symbolic_mapping) {
+                                               const fts::FactoredSymbolicStateMapping &symbolic_mapping,
+                                               bool dominated) : dominated(dominated) {
         assert(dominance_relation.size() == symbolic_mapping.size());
 
-        for (size_t i = 0; i < dominance_relation.size(); ++i) {
-            local_bdd_representation.push_back(
-                LocalStateRelationBDD::precompute_dominated_bdds(symbolic_mapping[i],
-                                                                 *(dominance_relation.get_local_relations()[i])));
-        }
     }
 
     void DominancePruningDD::initialize(const std::shared_ptr<AbstractTask> &task) {
@@ -58,45 +53,6 @@ namespace dominance {
         log << "Precomputed dominance BDDs: " << t() << endl;
     }
 
-
-    unique_ptr<LocalStateRelationBDD>
-    LocalStateRelationBDD::precompute_dominating_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
-                                                      const dominance::LocalStateRelation &state_relation) {
-        std::vector<BDD> dominance_bdds;
-        dominance_bdds.reserve(state_relation.num_states());
-        for (int i = 0; i < state_relation.num_states(); ++i) {
-            assert(state_relation.simulates(i, i));
-            BDD dominance = symbolic_mapping.get_bdd(i);
-            for (int j = 0;
-                 j < state_relation.num_states(); ++j) {
-                //TODO: Here we could iterate over the dominating states
-                if (state_relation.simulates(i, j) && i != j) {
-                    dominance += symbolic_mapping.get_bdd(j);
-                }
-            }
-            dominance_bdds.push_back(dominance);
-        }
-        return std::make_unique<LocalStateRelationBDD>(std::move(dominance_bdds));
-    }
-
-
-    unique_ptr<LocalStateRelationBDD>
-    LocalStateRelationBDD::precompute_dominated_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
-                                                     const dominance::LocalStateRelation &state_relation) {
-        std::vector<BDD> dominance_bdds;
-        dominance_bdds.reserve(state_relation.num_states());
-        for (int i = 0; i < state_relation.num_states(); ++i) {
-            assert(state_relation.simulates(i, i));
-            BDD dominance = symbolic_mapping.get_bdd(i);
-            for (int j = 0; j < state_relation.num_states(); ++j) {
-                if (state_relation.simulates(j, i) && i != j) {
-                    dominance += symbolic_mapping.get_bdd(j);
-                }
-            }
-            dominance_bdds.push_back(dominance);
-        }
-        return std::make_unique<LocalStateRelationBDD>(std::move(dominance_bdds));
-    }
 
 
     /*
@@ -127,19 +83,7 @@ namespace dominance {
     //        }
     //    }
     //
-    //    BDD DominanceRelationBDD::setOfDominatedStates(const ExplicitState &state) const {
-    //        try {
-    //            BDD res = vars->oneBDD();
-    //            for (int i = local_bdd_representation.size() - 1; i >= 0; --i) {
-    //                int value = state[i];
-    //                res *= local_bdd_representation[i]->get_dominance_bdd(value);
-    //            }
-    //            return res;
-    //        } catch (symbolic::BDDError) {
-    //            // This should never happen.
-    //            return vars->getStateBDD(state);
-    //        }
-    //    }
+
 
 
     BDD DominancePruningDD::getBDDToInsert(const ExplicitState &state) const {
@@ -169,36 +113,6 @@ namespace dominance {
         }
     }
 
-    void DominancePruningBDDMap::insert(const ExplicitState &state, int g) {
-        BDD res = getBDDToInsert(state);
-        if (!closed.count(g)) {
-            closed[g] = res;
-        } else {
-            closed[g] += res;
-        }
-    }
-
-    bool DominancePruningBDDMap::check(const ExplicitState &state, int g) const {
-        if (insert_dominated) {
-            auto sb = vars->getBinaryDescription(state);
-            for (auto &entry: closed) {
-                if (entry.first > g) break;
-                if (!(entry.second.Eval(sb).IsZero())) {
-                    return true;
-                }
-            }
-        } else {
-            BDD simulatingBDD = dominance_relation_bdd->setOfDominatingStates(state);
-            for (auto &entry: closed) {
-                if (entry.first > g) break;
-                if (!((entry.second * simulatingBDD).IsZero())) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 
 
     // DominancePruningBDD::DominancePruningBDD(bool insert_dominated, bool remove_spurious_dominated_states,
@@ -409,19 +323,4 @@ namespace dominance {
 }
 */
 
-    class DominancePruningBDDMapFeature
-            : public plugins::TypedFeature<PruningMethod, DominancePruningBDDMap> {
-    public:
-        DominancePruningBDDMapFeature() : TypedFeature("dominance_pruning_bdd_map") {
-            document_title("All Previous Dominance Pruning");
-
-            document_synopsis(
-                "This pruning method implements a strategy where all previously generated states "
-                "are compared against new states to see if the new state is dominated by any previous state.");
-
-            add_dominance_pruning_options_to_feature(*this);
-        }
-    };
-
-    static plugins::FeaturePlugin<DominancePruningBDDMapFeature> _plugin;
 }

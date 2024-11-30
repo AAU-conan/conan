@@ -6,32 +6,41 @@
 #include "../task_proxy.h"
 #include "../variable_ordering/variable_ordering_strategy.h"
 
-#include <iostream>
 #include <ranges>
+#include <utility>
 
 using namespace std;
 using plugins::Options;
 using variable_ordering::VariableOrderingStrategy;
 
 namespace symbolic {
+    SymVariables::SymVariables(std::shared_ptr<BDDManager> manager, std::vector<int> var_order,
+        std::vector<int> variable_domain_sizes) : bdd_manager(std::move(manager)), var_order(std::move(var_order)), variable_domain_sizes(variable_domain_sizes) {
+        constructor();
+    }
+
     SymVariables::SymVariables(shared_ptr <BDDManager> manager,
                                const VariableOrderingStrategy &variable_ordering,
-                               shared_ptr <AbstractTask> _task) :
-            bdd_manager(manager),
-            task(_task) {
+                               shared_ptr <AbstractTask> task) :
+            bdd_manager(std::move(manager)), var_order (variable_ordering.compute_variable_ordering(*task)) {
 
-        var_order = variable_ordering.compute_variable_ordering(*task);
+        variable_domain_sizes.reserve(var_order.size());
+        for (size_t i = 0; i < var_order.size(); i++) {
+            variable_domain_sizes.push_back(task->get_variable_domain_size(i));
+        }
+        constructor();
+    }
 
-        var_order = vector<int>(var_order);
-        int num_fd_vars = var_order.size();
 
+    void SymVariables::constructor() {
+        size_t num_fd_vars = var_order.size();
         //Initialize binary representation of variables.
         numBDDVars = 0;
         bdd_index_pre = vector<vector<int>>(var_order.size());
         bdd_index_eff = vector<vector<int>>(var_order.size());
 
         for (int var: var_order) {
-            int var_len = static_cast<int>(ceil(log2(task->get_variable_domain_size(var))));
+            int var_len = static_cast<int>(ceil(log2(variable_domain_sizes[var])));
             for (int j = 0; j < var_len; j++) {
                 bdd_index_pre[var].push_back(numBDDVars);
                 bdd_index_eff[var].push_back(numBDDVars + 1);
@@ -43,7 +52,6 @@ namespace symbolic {
         for (int v: var_order)
             utils::g_log << v << " ";
         utils::g_log << endl;
-
 
         //TODO: Manager should be initialized only once; so probably this should be somewhere else.
         bdd_manager->init(numBDDVars);
@@ -63,12 +71,12 @@ namespace symbolic {
         validBDD = bdd_manager->oneBDD();
         //Generate predicate (precondition (s) and effect (s')) BDDs
         for (int var: var_order) {
-            for (int j = 0; j < task->get_variable_domain_size(var); j++) {
+            for (int j = 0; j < variable_domain_sizes[var]; j++) {
                 preconditionBDDs[var].push_back(createPreconditionBDD(var, j));
                 effectBDDs[var].push_back(createEffectBDD(var, j));
             }
             validValues[var] = bdd_manager->zeroBDD();
-            for (int j = 0; j < task->get_variable_domain_size(var); j++) {
+            for (int j = 0; j < variable_domain_sizes[var]; j++) {
                 validValues[var] += preconditionBDDs[var][j];
             }
             validBDD *= validValues[var];
@@ -80,13 +88,13 @@ namespace symbolic {
         if (utils::g_log.is_at_least_debug()) {
             utils::g_log << "Symbolic Variables... Done." << endl;
         }
-        /*  for(int i = 0; i < g_variable_domain.size(); i++){
-          for(int j = 0; j < g_variable_domain[i]; j++){
+        for(int i = 0; i < variable_domain_sizes.size(); i++){
+          for(int j = 0; j < variable_domain_sizes[i]; j++){
             cout << "Var-val: " << i << "-" << j << endl;
             preconditionBDDs[i][j].print(1,2);
-            effectBDDs[i][j].print(1,2);
+            //effectBDDs[i][j].print(1,2);
           }
-          }*/
+          }
     }
 
     BDD SymVariables::getStateBDD(const State &state) const {
@@ -234,7 +242,7 @@ namespace symbolic {
                 }
             }
 
-            assert (state[v] < task->get_variable_domain_size(v));
+            assert (state[v] < preconditionBDDs[v].size());
         }
 
         return state;

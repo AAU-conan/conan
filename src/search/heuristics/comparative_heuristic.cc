@@ -1,10 +1,7 @@
 #include "comparative_heuristic.h"
 #include "../plugins/plugin.h"
-#include <print>
 #include <ranges>
 #include <format>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/detail/classification.hpp>
 
 class Evaluator;
 
@@ -13,10 +10,10 @@ EvaluationResult ComparativeHeuristic::compute_result(EvaluationContext& eval_co
     for (const auto& heuristic : comparison_heuristics) {
         results.push_back(heuristic->compute_result(eval_context));
     }
-    for (int i = 0; i < comparison_heuristics.size(); ++i) {
-        std::cout << comparison_heuristics.at(i)->get_description() << ": " << results.at(i).get_evaluator_value() << ", ";
+    for (size_t i = 0; i < comparison_heuristics.size(); ++i) {
+        log << comparison_heuristics.at(i)->get_description() << ": " << results.at(i).get_evaluator_value() << ", ";
     }
-    std::cout << std::endl;
+    log << std::endl;
     return results.front();
 }
 

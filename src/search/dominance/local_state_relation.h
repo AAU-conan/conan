@@ -21,7 +21,6 @@ namespace utils {
 namespace dominance {
     class LocalStateRelation {
     protected:
-        // By now we assume that the partition is unitary... we can improve this later with EquivalenceRelation
         std::vector<std::vector<bool> > relation;
 
         // Vectors of states dominated/dominating by each state. Lazily computed when needed.

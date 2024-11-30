@@ -37,13 +37,15 @@ namespace symbolic {
         //const VariableOrderType variable_ordering;
         const std::shared_ptr<BDDManager> bdd_manager;
         const std::shared_ptr<variable_ordering::VariableOrderingStrategy> variable_ordering_strategy;
-        const std::shared_ptr<AbstractTask> task;
+        //const std::shared_ptr<AbstractTask> task;
 
-        int numBDDVars; //Number of binary variables (just one set, the total number is numBDDVars*3
+        int numBDDVars = 0; //Number of binary variables (just one set, the total number is numBDDVars*3
         std::vector<BDD> variables; // BDD variables
+
 
         //The variable order must be complete.
         std::vector<int> var_order; //Variable(FD) order in the BDD
+        std::vector<int> variable_domain_sizes; //Domain sizes of the variables
         std::vector<std::vector<int>> bdd_index_pre, bdd_index_eff; //vars(BDD) for each var(FD)
 
         std::vector<std::vector<BDD>> preconditionBDDs; // BDDs associated with the precondition of a predicate
@@ -57,9 +59,20 @@ namespace symbolic {
         mutable std::vector<char> binStateChar;
         mutable std::vector<int> binState;
 
+
+        void constructor(); //Assumes bdd_manager, var_order, and variable_domain_sizes are already initialized
     public:
+        SymVariables(std::shared_ptr<BDDManager> manager, std::vector<int> var_order, std::vector<int> variable_domain_sizes);
         SymVariables(std::shared_ptr<BDDManager> manager, const variable_ordering::VariableOrderingStrategy &variable_ordering,
                      std::shared_ptr<AbstractTask> task);
+
+        int get_num_variables () const {
+            return preconditionBDDs.size();
+        }
+
+        int get_domain_size (int var) const {
+            return variable_domain_sizes[var];
+        }
 
         //State getStateFrom(const BDD & bdd) const;
         BDD getStateBDD(const State &state) const;
@@ -79,9 +92,9 @@ namespace symbolic {
             return bdd_manager.get();
         }
 
-        const AbstractTask &getTask() const {
-            return *task;
-        }
+        // const AbstractTask &getTask() const {
+        //     return *task;
+        // }
 
         double percentageNumStates(const BDD &bdd) const {
             return numStates(bdd) / numStates();
@@ -176,11 +189,17 @@ namespace symbolic {
                     binState[pos++] = 0; //Skip interleaving variable
                 }
             }
-            /* cout << "Binary description: ";
+            /*std::cout << "Binary description: ";
                for(int i = 0; i < pos; i++){
-               cout << binState[i];
+
+                   if (i % 2 == 1) {
+                       std::cout << "-";
+                       assert(binState[i] == 0);
+                   } else {
+                       std::cout << binState[i];
+                   }
                }
-               cout << endl;*/
+               std::cout << std::endl;*/
 
             return &(binState[0]);
         }

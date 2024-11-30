@@ -1008,19 +1008,34 @@ create_fast_downward_library(
         HELP "Dominance Analysis techniques"
         SOURCES
         dominance/dominance_analysis
-        dominance/dominance_pruning
-        dominance/dominance_pruning_local
         dominance/factored_dominance_relation
         dominance/label_relation
         dominance/ld_simulation
         dominance/local_state_relation
-        dominance/dominance_pruning_previous
-        dominance/dominance_pruning_dd
+        dominance/dominance_relation_bdd
         #dominance/label_relation_identity
         #dominance/label_relation_noop
         DEPENDS
         factored_transition_system
 )
+
+
+create_fast_downward_library(
+        NAME dominance_pruning
+        HELP "Dominance Pruning Analysis techniques"
+        SOURCES
+        dominance_pruning/dominance_pruning
+        dominance_pruning/dominance_pruning_local
+        dominance_pruning/dominance_pruning_previous
+        dominance_pruning/dominance_database
+        dominance_pruning/database_all_previous
+        dominance_pruning/database_previous_lower_g
+        dominance_pruning/database_bdd_map
+        dominance_pruning/database_test
+        DEPENDS
+        dominance
+)
+
 
 
 create_fast_downward_library(
