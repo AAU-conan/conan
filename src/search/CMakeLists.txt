@@ -1031,6 +1031,8 @@ create_fast_downward_library(
         dominance_pruning/database_all_previous
         dominance_pruning/database_previous_lower_g
         dominance_pruning/database_bdd_map
+        dominance_pruning/database_bdd_map_disj
+        dominance_pruning/database_bdd
         dominance_pruning/database_test
         DEPENDS
         dominance

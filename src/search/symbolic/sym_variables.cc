@@ -87,16 +87,15 @@ namespace symbolic {
         binStateChar.resize(numBDDVars, 0);
         if (utils::g_log.is_at_least_debug()) {
             utils::g_log << "Symbolic Variables... Done." << endl;
+        //     for(int i = 0; i < variable_domain_sizes.size(); i++){
+        //         for(int j = 0; j < variable_domain_sizes[i]; j++){
+        //             //cout << "Var-val: " << i << "-" << j << endl;
+        //             //preconditionBDDs[i][j].print(1,2);
+        //             //effectBDDs[i][j].print(1,2);
+        //         }
+        //     }
         }
-        for(int i = 0; i < variable_domain_sizes.size(); i++){
-          for(int j = 0; j < variable_domain_sizes[i]; j++){
-            cout << "Var-val: " << i << "-" << j << endl;
-            preconditionBDDs[i][j].print(1,2);
-            //effectBDDs[i][j].print(1,2);
-          }
-          }
     }
-
     BDD SymVariables::getStateBDD(const State &state) const {
         assert(state.size() == var_order.size());
         BDD res = bdd_manager->oneBDD();
@@ -242,7 +241,7 @@ namespace symbolic {
                 }
             }
 
-            assert (state[v] < preconditionBDDs[v].size());
+            assert (state[v] < (int)(preconditionBDDs[v].size()));
         }
 
         return state;

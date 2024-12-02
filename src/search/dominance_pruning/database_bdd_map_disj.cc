@@ -1,4 +1,4 @@
-#include "database_bdd_map.h"
+#include "database_bdd_map_disj.h"
 
 #include "../plugins/plugin.h"
 #include "../utils/markup.h"
@@ -10,7 +10,7 @@ using namespace symbolic;
 namespace dominance {
 
 
-    std::unique_ptr<DominanceDatabase> DatabaseBDDMapFactory::create(const std::shared_ptr<AbstractTask> & task,
+    std::unique_ptr<DominanceDatabase> DatabaseBDDMapDisjFactory::create(const std::shared_ptr<AbstractTask> & task,
                                                                      std::shared_ptr<FactoredDominanceRelation> dominance_relation,
                                                                       std::shared_ptr<fts::FactoredStateMapping> state_mapping) {
 
@@ -19,13 +19,13 @@ namespace dominance {
 
       auto dominance_bdd = std::make_shared<DominanceRelationBDD>(*dominance_relation, sym_mapping, insert_dominated);
       if (insert_dominated) {
-          return std::make_unique<DatabaseBDDMapDominated>(vars, dominance_bdd);
+          return std::make_unique<DatabaseBDDMapDisjDominated>(max_bdd_size, vars, dominance_bdd);
       } else {
-          return std::make_unique<DatabaseBDDMapDominating>(vars, dominance_bdd);
+          return std::make_unique<DatabaseBDDMapDisjDominating>(max_bdd_size, vars, dominance_bdd);
         }
       }
 
-    void DatabaseBDDMapDominated::insert(const ExplicitState &state, int g) {
+    void DatabaseBDDMapDisjDominated::insert(const ExplicitState &state, int g) {
         BDD res = dominance_relation_bdd->get_related_states(state);
         /*
                     if (remove_spurious_dominated_states) {
@@ -44,51 +44,54 @@ namespace dominance {
             res = vars->zeroBDD();
         }
 
-        if (!closed.count(g)) {
-            closed[g] = res;
+        if (!closed[g].empty() && closed[g].back().nodeCount() <= max_bdd_size) {
+            closed[g].back() += res;
         } else {
-            closed[g] += res;
+            closed[g].push_back(res);
         }
     }
 
-    bool DatabaseBDDMapDominated::check(const ExplicitState &state, int g) const {
+    bool DatabaseBDDMapDisjDominated::check(const ExplicitState &state, int g) const {
             auto sb = vars->getBinaryDescription(state);
             for (auto &entry: closed) {
                 if (entry.first > g) break;
-                if (!(entry.second.Eval(sb).IsZero())) {
-                    return true;
+                for (auto &bdd: entry.second) {
+                    if (!(bdd.Eval(sb).IsZero())) {
+                        return true;
+                    }
                 }
             }
         return false;
     }
 
 
-    void DatabaseBDDMapDominating::insert(const ExplicitState &state, int g) {
+    void DatabaseBDDMapDisjDominating::insert(const ExplicitState &state, int g) {
         BDD res = vars->getStateBDD(state);;
-        if (!closed.count(g)) {
-            closed[g] = res;
+        if (!closed[g].empty() && closed[g].back().nodeCount() <= max_bdd_size) {
+            closed[g].back() += res;
         } else {
-            closed[g] += res;
+            closed[g].push_back(res);
         }
     }
 
-    bool DatabaseBDDMapDominating::check(const ExplicitState &state, int g) const {
+    bool DatabaseBDDMapDisjDominating::check(const ExplicitState &state, int g) const {
             BDD simulatingBDD = dominance_relation_bdd->get_related_states(state);
             for (auto &entry: closed) {
                 if (entry.first > g) break;
-                if (!(entry.second.Intersect(simulatingBDD).IsZero())) {
+                for (auto &bdd: entry.second) {
+                if (!(bdd.Intersect(simulatingBDD).IsZero())) {
                     return true;
+                }
                 }
             }
 
         return false;
     }
 
-
-    class DominanceDatabaseBDDMapFeature
-        : public plugins::TypedFeature<DominanceDatabaseFactory, DatabaseBDDMapFactory> {
+    class DominanceDatabaseBDDMapDisjFeature
+        : public plugins::TypedFeature<DominanceDatabaseFactory, DatabaseBDDMapDisjFactory> {
     public:
-        DominanceDatabaseBDDMapFeature() : TypedFeature("bdd_map") {
+        DominanceDatabaseBDDMapDisjFeature() : TypedFeature("bdd_map_disj") {
             document_title("All Previous Dominance Pruning");
 
             document_synopsis(
@@ -102,16 +105,18 @@ namespace dominance {
 
             BDDManager::add_options_to_feature(*this);
             add_option<bool>("insert_dominated", "Insert dominated or check dominating states", "true");
+            add_option<bool>("max_bdd_size", "Maximum size for the disjunctive partitioning", "10000");
         }
 
-        virtual std::shared_ptr<DatabaseBDDMapFactory> create_component(
+        virtual std::shared_ptr<DatabaseBDDMapDisjFactory> create_component(
             const plugins::Options &opts,
             const utils::Context &) const override {
 
             BDDManagerParameters mgr_params (opts);
             auto bdd_mgr = std::make_shared<BDDManager>(mgr_params);
 
-            return plugins::make_shared_from_arg_tuples<DatabaseBDDMapFactory>(
+            return plugins::make_shared_from_arg_tuples<DatabaseBDDMapDisjFactory>(
+                opts.get<bool>("max_bdd_size"),
                 opts.get<bool>("insert_dominated"),
 //                opts.get<bool>("remove_spurious_dominated_states"),
                 bdd_mgr,
@@ -119,6 +124,6 @@ namespace dominance {
         }
     };
 
-    static plugins::FeaturePlugin<DominanceDatabaseBDDMapFeature> _plugin;
+    static plugins::FeaturePlugin<DominanceDatabaseBDDMapDisjFeature> _plugin;
 
 }
