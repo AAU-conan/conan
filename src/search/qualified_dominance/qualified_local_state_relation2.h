@@ -52,7 +52,7 @@ public:
                          const QualifiedLabelRelation &label_relation) const;
   bool tr_simulates_tr(const LTSTransition &t_tr, const LTSTransition &s_tr,
                        const QualifiedLabelRelation &label_relation) const;
-  bool labels_simulate_labels(const std::set<int> &l1s,
+  bool labels_simulate_labels(const std::unordered_set<int> &l1s,
                               const std::vector<int> &l2s, bool include_noop,
                               const QualifiedLabelRelation &label_relation);
   bool update_pairs(const QualifiedLabelRelation &label_relation);

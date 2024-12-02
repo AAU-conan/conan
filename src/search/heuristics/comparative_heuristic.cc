@@ -22,10 +22,13 @@ EvaluationResult ComparativeHeuristic::compute_result(EvaluationContext& eval_co
     // Use ranges instead
     const auto results = comparison_heuristics | std::views::transform([&eval_context](const auto& heuristic) {
         return heuristic->compute_result(eval_context);
-    });
+    }) | std::ranges::to<std::vector<EvaluationResult>>();
     std::println("{}", boost::algorithm::join(std::views::zip(comparison_heuristics, results) | std::views::transform([](const std::pair<std::shared_ptr<Evaluator>, EvaluationResult>& pair) {
         return std::format("{}: {}", pair.first->get_description(), pair.second.get_evaluator_value());
     }) | std::ranges::to<std::vector<std::string>>(), ", "));
+    if (results.at(1).get_evaluator_value() < results.at(2).get_evaluator_value()) {
+        std::println("NOT STRICTLY BETTER!");
+    }
     return results.front();
 }
 

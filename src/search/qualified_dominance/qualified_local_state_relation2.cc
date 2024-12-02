@@ -107,7 +107,7 @@ namespace qdominance {
         return label_relation.label_group_simulates_label_group_in_all_other(factor, t_tr.label_group, s_tr.label_group) && simulates(t_tr.target, s_tr.target);
     }
 
-    bool QualifiedLocalStateRelation2::labels_simulate_labels(const std::set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const QualifiedLabelRelation& label_relation) {
+    bool QualifiedLocalStateRelation2::labels_simulate_labels(const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const QualifiedLabelRelation& label_relation) {
         return std::ranges::all_of(l2s, [&](const auto& l2) {
             return (include_noop && label_relation.noop_simulates_label_in_all_other(factor, l2)) || std::ranges::any_of(l1s, [&](const auto& l1) {
                 return label_relation.label_simulates_label_in_all_other(factor, l1, l2);
@@ -122,19 +122,19 @@ namespace qdominance {
         return 0 < erase_if(simulations, [&](const auto p) {
             const auto [t, s] = p;
 #ifndef NDEBUG
-            std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
+            // std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
 #endif
             const auto& s_transitions = lts.get_transitions(s);
             const auto& t_transitions = lts.get_transitions(t);
             return !std::ranges::all_of(s_transitions, [&](const LTSTransition& s_tr) {
 #ifndef NDEBUG
-                std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
+                // std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
 #endif
                 if (!lts.is_relevant_label_group(s_tr.label_group)) {
                     return true;
                 }
 
-                std::set<int> t_labels;
+                std::unordered_set<int> t_labels;
                 for (const LTSTransition& t_tr : t_transitions) {
                     if (simulates(t_tr.target, s_tr.target)) {
                         for (const auto& l : lts.get_labels(t_tr.label_group)) {
@@ -145,7 +145,7 @@ namespace qdominance {
 
                 return labels_simulate_labels(t_labels, lts.get_labels(s_tr.label_group), simulates(t, s_tr.target), label_relation);
 #ifndef NDEBUG
-                std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
+                // std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
 #endif
             });
         });

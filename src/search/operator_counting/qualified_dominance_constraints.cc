@@ -50,7 +50,7 @@ namespace operator_counting {
                     for (const auto& s_tr : s_transitions) {
                         unused_labels.erase(s_tr.label_group.group);
                         if (!lts.is_relevant_label_group(s_tr.label_group)) {
-                            // If the label group is not relevant, t can trivially simulate it
+                            nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_true);
                             continue;
                         }
 

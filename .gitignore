@@ -6,8 +6,11 @@ __pycache__/
 /misc/.tox/
 /misc/autodoc/downward-xmlrpc.secret
 .idea
-src/cmake-build-debug
-src/search/cmake-build-debug
+src/cmake-build-*
+src/search/cmake-build-*
 src/search/rust_test/target
 **/Cargo.lock
 sas-files
+.cache
+compile_commands.json
+*.img
