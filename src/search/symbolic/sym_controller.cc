@@ -18,11 +18,9 @@ namespace variable_ordering {
 
 namespace symbolic {
     SymController::SymController(const Options &opts, shared_ptr <AbstractTask> _task)
-            : bdd_manager(make_shared<BDDManager>(opts)),
-              variable_ordering(opts.get < shared_ptr < variable_ordering::VariableOrderingStrategy>> ("variable_ordering")),
-              mgrParams(opts), searchParams(opts), lower_bound(0), solution() {
-        mgrParams.print_options();
-        searchParams.print_options();
+            : bdd_manager(make_shared<BDDManager>(opts)), mgrParams(opts), searchParams(opts) {
+
+        auto variable_ordering = opts.get < shared_ptr < variable_ordering::VariableOrderingStrategy>> ("variable_ordering");
         vars = std::make_shared<SymVariables>(bdd_manager, *variable_ordering, _task);
     }
 
@@ -35,34 +33,5 @@ namespace symbolic {
                 "variable_ordering",
                 "Strategy to decide the variable ordering",
                 "gamer()");
-    }
-
-    void SymController::new_solution(const SymSolution &sol) {
-        if (!solution.solved() ||
-            sol.getCost() < solution.getCost()) {
-            solution = sol;
-            utils::g_log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
-
-        }
-    }
-
-    void SymController::setLowerBound(int lower) {
-        //Never set a lower bound greater than the current upper bound
-        if (solution.solved()) {
-            lower = min(lower, solution.getCost());
-        }
-
-        if (lower > lower_bound) {
-            lower_bound = lower;
-
-            utils::g_log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
-
-        }
-
-    }
-
-    std::string SymController::getUpperBoundString() const {
-        if (solution.solved()) return std::to_string(solution.getCost());
-        else return "infinity";
     }
 }

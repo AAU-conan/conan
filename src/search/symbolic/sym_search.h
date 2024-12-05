@@ -10,7 +10,10 @@
 #include <map>
 #include <memory>
 
+#include "sym_solution.h"
+
 namespace symbolic {
+    class SymSolutionLowerBound;
     class SymController;
 
     inline std::string dirname(bool fw) {
@@ -78,24 +81,22 @@ namespace symbolic {
 
     class SymSearch {
     protected:
-        //Attributes that characterize the search:
-        std::shared_ptr<SymStateSpaceManager> mgr;           //Symbolic manager to perform bdd operations
         SymParamsSearch p;
 
-        SymController *engine; //Access to the bound and notification of new solutions
+        std::shared_ptr<SymStateSpaceManager> mgr;           //Symbolic manager to perform bdd operations
+        std::shared_ptr<SymSolutionLowerBound> solution; //Access to the bound and notification of new solutions
 
     public:
-        SymSearch(SymController *eng, const SymParamsSearch &params);
+        SymSearch(const SymParamsSearch &params, std::shared_ptr<SymStateSpaceManager> mgr, std::shared_ptr<SymSolutionLowerBound> solution);
 
-        SymStateSpaceManager *getStateSpace() {
-            return mgr.get();
+        const std::shared_ptr<SymSolutionLowerBound> & getSolutionShared() {
+            return solution;
         }
-
-        inline std::shared_ptr<SymStateSpaceManager> getStateSpaceShared() const {
+        const std::shared_ptr<SymStateSpaceManager> & getStateSpaceShared() const {
             return mgr;
         }
 
-        inline bool isSearchable() const {
+        bool isSearchable() const {
             return isSearchableWithNodes(p.getMaxStepNodes());
         }
 
@@ -111,9 +112,13 @@ namespace symbolic {
 
         virtual bool stepImage(utils::Duration maxTime, long maxNodes) = 0;
 
+        virtual int getG() const = 0;
+
         virtual int getF() const = 0;
 
         virtual bool finished() const = 0;
+
+        bool solved() const;
 
         virtual utils::Duration nextStepTime() const = 0;
 

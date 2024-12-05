@@ -1,11 +1,8 @@
 #ifndef SYMBOLIC_UNIFORM_COST_SEARCH_H
 #define SYMBOLIC_UNIFORM_COST_SEARCH_H
 
-#include "unidirectional_search.h"
 #include "sym_state_space_manager.h"
-#include "bucket.h"
 #include "closed_list.h"
-#include "merge_bdds.h"
 
 #include "../algorithms/step_time_estimation.h"
 #include "../algorithms/priority_queues.h"
@@ -14,7 +11,10 @@
 #include <map>
 #include <memory>
 
+#include "sym_search.h"
+
 namespace symbolic {
+    class OppositeFrontier;
 
     // The search intercalates two types of steps:
     //
@@ -51,7 +51,7 @@ namespace symbolic {
         std::map<int, std::vector<StepImage>> open;
 
     public:
-        void init(const SymStateSpaceManager &mgr);
+        OpenList(const SymStateSpaceManager &mgr);
 
         bool empty() const;
 
@@ -62,72 +62,86 @@ namespace symbolic {
         void insert_zero(int state_cost, BDD bdd);
         void insert_cost(int state_cost, BDD bdd);
 
-        void insert(StepImage step);
+        void insert(const StepImage & step);
 
+        const StepImage & nextStep() const;
 
         friend std::ostream &operator<<(std::ostream &os, const OpenList &open);
     };
 
+    class SymExpStatistics {
+    public:
+        double image_time, image_time_failed;
+        double time_heuristic_evaluation;
+        int num_steps_succeeded;
+        double step_time;
+
+        SymExpStatistics() :
+                image_time(0),
+                image_time_failed(0), time_heuristic_evaluation(0),
+                num_steps_succeeded(0), step_time(0) {}
+
+        void add_image_time(double t) {
+            image_time += t;
+            num_steps_succeeded += 1;
+        }
+
+        void add_image_time_failed(double t) {
+            image_time += t;
+            image_time_failed += t;
+            num_steps_succeeded += 1;
+        }
+    };
+
     class SymController;
 
-    class UniformCostSearch : public UnidirectionalSearch {
-        OpenList open_list;
+    class UniformCostSearch : public SymSearch {
+        bool fw; //Direction of the search. true=forward, false=backward
 
-        StepCostEstimation estimation; //Time/nodes estimated
+        OpenList open_list;
+        std::shared_ptr<ClosedList> closed;
+
+        std::shared_ptr<OppositeFrontier> perfectHeuristic;
+
+        StepCostEstimation estimation;
         SymExpStatistics stats;
 
         // Returns the subset with h_value h
         BDD compute_heuristic(const BDD &from, int fVal, int hVal, bool store_eval);
 
         void computeEstimation(bool prepare);
-
-        //////////////////////////////////////////////////////////////////////////////
     public:
-        UniformCostSearch(SymController *eng, const SymParamsSearch &params);
+        UniformCostSearch(const SymParamsSearch &params, const std::shared_ptr<SymStateSpaceManager>& manager, bool fw,
+            std::shared_ptr<SymSolutionLowerBound> solution);
 
+        UniformCostSearch(const SymParamsSearch &params, const std::shared_ptr<SymStateSpaceManager>& manager, bool fw,
+            const BDD& init_bdd, std::shared_ptr<ClosedList> closed, std::shared_ptr<OppositeFrontier> frontier,
+            std::shared_ptr<SymSolutionLowerBound> solution);
 
-        // Disable copy
         UniformCostSearch(const UniformCostSearch &) = delete;
         UniformCostSearch &operator=(const UniformCostSearch &) = delete;
         UniformCostSearch &operator=(UniformCostSearch &&) = delete;
         UniformCostSearch(UniformCostSearch &&) = default;
         virtual ~UniformCostSearch() = default;
 
-
-        // Default initialization to the initial state and the goal from the manager
-        void init(const std::shared_ptr<SymStateSpaceManager>& manager, bool fw);
-
-        // Custom initialization to any initial state and goal
-        void init(const std::shared_ptr<SymStateSpaceManager>& manager, bool fw, const BDD& init_bdd, std::shared_ptr<OppositeFrontier> frontier); // Init forward or backward search
-
         bool stepImage(utils::Duration maxTime, long maxNodes) override;
 
-        void getPlan(const BDD &cut, int g, std::vector<OperatorID> &path) const override;
+        void getPlan(const BDD &cut, int g, std::vector<OperatorID> &path) const;
 
-        bool finished() const override {
-            assert(!open_list.empty() || closed->getGNotClosed() == std::numeric_limits<int>::max());
-            return open_list.empty();
-        }
+        bool finished() const override;
 
-        std::shared_ptr<ClosedList> getClosed() override {
+        const std::shared_ptr<ClosedList> & getClosed() const {
             return closed;
         }
 
-        virtual ADD getHeuristic() const;
-
         bool isSearchableWithNodes(int maxNodes) const override;
-
-        // Pointer to the closed list. Used to set as heuristic of other explorations.
-        inline ClosedList *getClosed() const {
-            return closed.get();
-        }
 
         inline std::shared_ptr<ClosedList> getClosedShared() const {
             return closed;
         }
 
         int getG() const override {
-            return open_list.minG();
+            return 0; //TODO
         }
 
         virtual int getF() const override {
@@ -138,6 +152,12 @@ namespace symbolic {
 
         long nextStepNodes() const override;
 
+
+        void statistics() const override;
+
+        bool isFW() const {
+            return fw;
+        }
     private:
         friend std::ostream &operator<<(std::ostream &os, const UniformCostSearch &bdexp);
     };

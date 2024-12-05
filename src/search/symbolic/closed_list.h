@@ -2,11 +2,12 @@
 #define SYMBOLIC_CLOSED_LIST_H
 
 #include "sym_variables.h"
-#include "unidirectional_search.h"
 
 #include <vector>
 #include <set>
 #include <map>
+
+class OperatorID;
 
 namespace symbolic {
 
@@ -28,10 +29,9 @@ namespace symbolic {
  * A state is considered "closed" when we know the exact distance.
  * This is unrelated to whether the state has been expanded or not.
  */
-    class ClosedList : public OppositeFrontier {
+    class ClosedList {
     private:
-        UnidirectionalSearch *my_search;
-        SymStateSpaceManager *mgr;  //Symbolic manager to perform bdd operations
+        std::shared_ptr<SymStateSpaceManager> mgr;  //Symbolic manager to perform bdd operations
 
         BDD closedTotal;  // All closed states.
         std::map<int, BDD> closed_states;   // Mapping from cost to set of states
@@ -50,42 +50,43 @@ namespace symbolic {
         // but just an over-estimation to extract a path more quickly
         std::map<int, std::vector<BDD>> zeroCostClosed;
 
-        int gNotGenerated; // Bounds on g value for states that have not been generated
+        int gNotGenerated = 0; // Bounds on g value for states that have not been generated
         std::map<int, BDD> closedUpTo;  // Disjunction of BDDs in closed  (auxiliar useful to take the maximum between several BDDs)
 
-        void close_states(int g, const BDD &S);
-        void close_states_zero(int g, const BDD &S);
+        void close_states(int g, const BDD &S, OpenList& open_list);
+        void close_states_zero(int g, const BDD &S, OpenList& open_list);
         void reclose_states(int g, const BDD &S);
 
-        BDD remove_duplicates (const BDD & S) const;
+        [[nodiscard]] BDD remove_duplicates (const BDD & S) const;
 
         std::optional<int> min_value_to_expand() const;
 
-            public:
-        virtual ~ClosedList() override = default;
+        public:
+        explicit ClosedList(std::shared_ptr<SymStateSpaceManager> mgr);
 
-        explicit ClosedList() : my_search(nullptr), mgr(nullptr), gNotGenerated(0) {
-        }
-
-        void init(SymStateSpaceManager *manager, UnidirectionalSearch *search, const BDD &init, int gNotGenerated);
+        void init(const BDD &init, int gNotGenerated);
 
         void put_in_frontier(int g, const BDD &S);
 
         void closeUpTo(OpenList & open, utils::Duration maxTime, long maxNodes);
 
-        //Check if any of the states is closed.
-        //In case positive, return a solution pair <f_value, S>
-        virtual SymSolution checkCut(UnidirectionalSearch *search, const BDD &states, int g, bool fw) const override;
+        const BDD & getClosedTotal() const {
+            return closedTotal;
+        }
 
-        virtual BDD notClosed() const override {
+        BDD notClosed() const {
             return !closedTotal;
+        }
+
+        const std::map<int, BDD> & get_closed() const {
+            return closed_states;
         }
 
         BDD get_closed(int g) const {
             return closed_states.at(g);
         }
 
-        inline int getGNotClosed() const override {
+        int getGNotClosed() const {
             if (generated_states.empty()) {
                 return gNotGenerated;
             } else {
@@ -95,13 +96,17 @@ namespace symbolic {
 
         void extract_path(const BDD &cut, int h, bool fw, std::vector<OperatorID> &path) const;
 
-        ADD getHeuristic(int previousMaxH = -1) const;
+        ADD getHeuristic() const;
 
         void getHeuristic(std::vector<ADD> &heuristics, std::vector<int> &maxHeuristicValues) const;
 
         void statistics() const;
 
         double average_value() const;
+
+        const std::shared_ptr<SymStateSpaceManager> & getStateSpaceShared() const {
+            return mgr;
+        }
     };
 }
 

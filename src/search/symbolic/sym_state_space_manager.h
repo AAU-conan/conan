@@ -142,7 +142,7 @@ namespace symbolic {
             return min_transition_cost;
         }
 
-        inline int getAbsoluteMinTransitionCost() const {
+        int getAbsoluteMinTransitionCost() const {
             assert(!transitions.empty());
             if (hasTR0) return 0;
             return min_transition_cost;

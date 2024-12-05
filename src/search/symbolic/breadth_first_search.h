@@ -10,7 +10,7 @@
 namespace symbolic {
 
     class BreadthFirstSearch : public UnidirectionalSearch {
-        Bucket open;   // States in open
+        DisjunctiveBucket open;   // States in open
         //Bucket closed; // States in closed
         BDD closedTotal;
 
@@ -23,7 +23,7 @@ namespace symbolic {
             bdd *= !closedTotal;
         }
 
-        void filterDuplicates(Bucket &bucket) {
+        void filterDuplicates(DisjunctiveBucket &bucket) {
             for (BDD &bdd: bucket)
                 filterDuplicates(bdd);
         }
@@ -73,11 +73,6 @@ namespace symbolic {
 
             BDD target = (fw ? mgr->getGoal() : mgr->getInitialState());
             return !((closedTotal * target).IsZero());
-            /* for (auto & bdd : closed) { */
-            /* 	  if (!((bdd*target).IsZero())) { */
-            /* 	      return true; */
-            /* 	  } */
-            /* } */
         }
 
         bool isBetter(const BreadthFirstSearch &other) const {

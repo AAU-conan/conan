@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "../search_algorithm.h"
-#include "../symbolic/sym_controller.h"
+#include "../symbolic/sym_solution.h"
 
 namespace plugins {
     class Options;
@@ -20,30 +20,29 @@ namespace symbolic {
 
 namespace symbolic_search {
 
-    class SymbolicSearch : public SearchAlgorithm, public symbolic::SymController {
+    class SymbolicSearch : public SearchAlgorithm, public symbolic::SolutionNotifier {
     protected:
-	// Symbolic manager to perform bdd operations
-	std::shared_ptr<symbolic::SymStateSpaceManager> mgr; 
+	std::shared_ptr<symbolic::BDDManager> bdd_manager;
+	std::shared_ptr<symbolic::SymVariables> vars;
+	std::shared_ptr<symbolic::SymStateSpaceManager> mgr;
+
+   	std::shared_ptr<symbolic::SymSolutionLowerBound> solution;
 
 	std::unique_ptr<symbolic::SymSearch> search;
 
-	virtual SearchStatus step() override;
+	SearchStatus step() override;
 
     public:
 	SymbolicSearch(const plugins::Options &opts);
 	virtual ~SymbolicSearch() = default;
 
-	virtual void new_solution(const symbolic::SymSolution & sol) override;
+	void notify_solution(const symbolic::SymSolution & sol) override;
 
-    virtual void print_statistics() const override;
-
+    void print_statistics() const override;
     };
 
 
-    class SymbolicBidirectionalUniformCostSearch : public SymbolicSearch { 
-    protected:
-	virtual void initialize() override;
-	
+    class SymbolicBidirectionalUniformCostSearch : public SymbolicSearch {
     public:
 	SymbolicBidirectionalUniformCostSearch(const plugins::Options &opts);
 	virtual ~SymbolicBidirectionalUniformCostSearch() = default;
@@ -52,13 +51,10 @@ namespace symbolic_search {
     
     class SymbolicUniformCostSearch : public SymbolicSearch { 
 	bool fw;
-    protected:
-	virtual void initialize() override;
-	
+
     public:
 	SymbolicUniformCostSearch(const plugins::Options &opts, bool _fw);
 	virtual ~SymbolicUniformCostSearch() = default;
-
     };
 
     

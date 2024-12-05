@@ -14,27 +14,27 @@ StepCostEstimation::StepCostEstimation(const SymParamsSearch &p) :
     param_penalty_time_estimation_mult(p.penalty_time_estimation_mult),
     param_penalty_nodes_estimation_sum(p.penalty_nodes_estimation_sum),
     param_penalty_nodes_estimation_mult(p.penalty_nodes_estimation_mult),
-    nextStepNodes(1) {
+    nextStepNodes(1), estimation(1,1){
     //Initialize the first data points (useful for interpolation)
-    data[0] = Estimation(1, 1);
-    data[1] = Estimation(1, 1);
+    data.emplace(0, Estimation{1, 1});
+    data.emplace(1, Estimation{1, 1});
 }
 
 void StepCostEstimation::update_data(long key, Estimation est) {
-    if (!data.count(key)) {
+    if (!data.contains(key)) {
         //Ensure consistency with lower estimations, we do not store the data in case is smaller
         auto it = data.lower_bound(key);
         it--; //Guaranteed to exist because we initialize data[0] and data[1]
         est.time = max(est.time, it->second.time);
         est.nodes = max(est.nodes, it->second.nodes);
-    } else if (est.time < data[key].time && est.nodes < data[key].nodes) {
+    } else if (est.time < data.at(key).time && est.nodes < data.at(key).nodes) {
         return; //Also skip in case that the new value is smaller than the previous
     } else {
-        est.time = max(est.time, data[key].time);
-        est.nodes = max(est.nodes, data[key].nodes);
+        est.time = max(est.time, data.at(key).time);
+        est.nodes = max(est.nodes, data.at(key).nodes);
     }
 
-    data[key] = est;
+    data.emplace(key, est);
 
     //Ensure consistency with greater estimations
     for (auto it = data.upper_bound(nextStepNodes); it != std::end(data); ++it) {

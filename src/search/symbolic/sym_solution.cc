@@ -1,11 +1,11 @@
 #include "sym_solution.h"
 
-#include <vector>       // std::vector
+#include <vector>
+
+#include "closed_list.h"
+#include "sym_state_space_manager.h"
 #include "../state_registry.h"
 #include "../task_utils/task_properties.h"
-
-#include "unidirectional_search.h"
-
 
 using namespace std;
 
@@ -17,8 +17,10 @@ namespace symbolic {
 
         BDD newCut;
         if (exp_fw) {
-            exp_fw->getPlan(cut, g, path);
-            TaskProxy task = exp_fw->getStateSpace()->getTask();
+            exp_fw->extract_path(cut, g, true, path);
+            std::ranges::reverse(path);
+
+            TaskProxy task = mgr->getTask();
             State s = task.get_initial_state();
 
             if (!path.empty()) {
@@ -29,13 +31,13 @@ namespace symbolic {
                     s = s.get_unregistered_successor(op);
                 }
             }
-            newCut = exp_fw->getStateSpace()->getVars()->getStateBDD(s);
+            newCut = mgr->getVars()->getStateBDD(s);
         } else {
             newCut = cut;
         }
 
         if (exp_bw) {
-            exp_bw->getPlan(newCut, h, path);
+            exp_bw->extract_path(newCut, h, false, path);
         }
     }
 
@@ -44,15 +46,12 @@ namespace symbolic {
         vector<OperatorID> path;
         getPlan(path);
 
-        SymVariables *vars = nullptr;
-        if (exp_fw) vars = exp_fw->getStateSpace()->getVars();
-        else if (exp_bw) vars = exp_bw->getStateSpace()->getVars();
+        SymVariables *vars = mgr->getVars();
 
         ADD hADD = vars->get_bdd_manager()->getADD(-1);
         int h_val = g + h;
 
-        TaskProxy task = (
-                exp_fw ? exp_fw->getStateSpace()->getTask() : exp_bw->getStateSpace()->getTask());
+        TaskProxy task = mgr->getTask();
         State s = task.get_initial_state();
         BDD sBDD = vars->getStateBDD(s);
         hADD += sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val + 1));
@@ -66,4 +65,33 @@ namespace symbolic {
         return hADD;
     }
 
+    void SymSolutionLowerBound::new_solution(const SymSolution &sol) {
+        if (!solution || sol.getCost() < solution->getCost()) {
+            solution = sol;
+            //TODO: Remove from here or at least take some other log object
+            utils::g_log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+
+            for (auto notifier: notifiers) {
+                notifier->notify_solution(sol);
+            }
+        }
+    }
+
+    void SymSolutionLowerBound::setLowerBound(int lower) {
+        // Never set a lower bound greater than the current upper bound
+        if (solution) {
+            lower = min(lower, solution->getCost());
+        }
+
+        if (lower > lower_bound) {
+            lower_bound = lower;
+            //TODO: Remove from here or at least take some other log object
+            utils::g_log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+        }
+    }
+
+    std::string SymSolutionLowerBound::getUpperBoundString() const {
+        if (solution) return std::to_string(solution->getCost());
+        else return "infinity";
+    }
 }

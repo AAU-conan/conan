@@ -5,33 +5,31 @@
 #include "transition_relation.h"
 #include "sym_solution.h"
 #include "uniform_cost_search.h"
-#include "../abstract_task.h"
 
 #include <iostream>
 #include <string>
 #include <cassert>
+#include <fcntl.h>
 #include<ranges>
 
 using namespace std::ranges;
 using namespace std;
 
 namespace symbolic {
-    void
-    ClosedList::init(SymStateSpaceManager *manager, UnidirectionalSearch *search, const BDD &init, int _gNotGenerated) {
-        mgr = manager;
-        my_search = search;
 
-        closed_states.clear();
-        generated_states.clear();
-        zeroCostClosed.clear();
-        closedUpTo.clear();
-        closedTotal = mgr->zeroBDD();
+    ClosedList::ClosedList(std::shared_ptr<SymStateSpaceManager> mgr): mgr(mgr), closedTotal(mgr->zeroBDD()) {
+    }
+
+    void ClosedList::init(const BDD &init, int _gNotGenerated) {
         gNotGenerated = _gNotGenerated;
 
+        closedTotal = init;
+
         if (mgr->hasTransitions0()) {
-            close_states_zero(0, init);
+            zeroCostClosed[0].push_back(init);
         } else {
-            close_states(0, init);
+            closed_states[0] = init;
+            closedUpTo[0] = init;
         }
     }
 
@@ -43,12 +41,12 @@ namespace symbolic {
     }
 
     void ClosedList::reclose_states(int g, const BDD &S) {
-        if (my_search->get_log().is_at_least_verbose()) {
-            my_search->get_log() << *(my_search->getStateSpace()) << " " << (my_search->isFW() ? "fw" : "bw")
-                                 << " closing g= " << g << endl;
-        }
+        // if (log.is_at_least_verbose()) {
+        //     log << *(mgr) << " " << (my_search->isFW() ? "fw" : "bw")
+        //                          << " closing g= " << g << endl;
+        // }
 
-        if (closed_states.count(g)) {
+        if (closed_states.contains(g)) {
             closed_states[g] += S;
         } else {
             closed_states[g] = S;
@@ -62,15 +60,15 @@ namespace symbolic {
         }
     }
 
-    void ClosedList::close_states(int g, const BDD &S) {
-        if (my_search->get_log().is_at_least_verbose()) {
-            my_search->get_log() << *(my_search->getStateSpace()) << " " << (my_search->isFW() ? "fw" : "bw")
-                                 << " closing g= " << g << endl;
-        }
+    void ClosedList::close_states(int g, const BDD &S, OpenList &open_list) {
+        // if (log.is_at_least_verbose()) {
+        //     log << *(my_search->getStateSpace()) << " " << (my_search->isFW() ? "fw" : "bw")
+        //                          << " closing g= " << g << endl;
+        // }
 
         BDD SwoDuplicates = remove_duplicates(S);
 
-        if (closed_states.count(g)) {
+        if (closed_states.contains(g)) {
             closed_states[g] += SwoDuplicates;
         } else {
             closed_states[g] = SwoDuplicates;
@@ -88,18 +86,19 @@ namespace symbolic {
             c->second += *smaller;
             c++;
         }
+        open_list.insert_cost(g, SwoDuplicates);
     }
 
 
     // These states have been closed, but we have not applied zero cost operators yet.
     // Do not put them in closed. But put them in closedTotal to ensure that we remove duplicates.
-    void ClosedList::close_states_zero(int g, const BDD &S) {
+    void ClosedList::close_states_zero(int g, const BDD &S, OpenList & open_list) {
         assert(mgr->hasTransitions0());
 
-        if (my_search->get_log().is_at_least_verbose()) {
-            my_search->get_log() << *(my_search->getStateSpace()) << " " << (my_search->isFW() ? "fw" : "bw")
-                                 << " closing 0-cost actions with g=" << g << endl;
-        }
+        // if (log.is_at_least_debug()) {
+        //     log << *(my_search->getStateSpace()) << " " << (my_search->isFW() ? "fw" : "bw")
+        //                          << " closing 0-cost actions with g=" << g << endl;
+        // }
 
         BDD SwoDuplicates = remove_duplicates(S);
 
@@ -109,6 +108,7 @@ namespace symbolic {
         const BDD *smaller = SwoDuplicates.nodeCount() < S.nodeCount() ? &SwoDuplicates : &S;
         assert (closedTotal + SwoDuplicates == closedTotal + S);
         closedTotal += *smaller;
+        open_list.insert_zero(g, SwoDuplicates);
     }
 
     void ClosedList::put_in_frontier(int g, const BDD &S) {
@@ -116,8 +116,8 @@ namespace symbolic {
     }
 
     std::optional<int> ClosedList::min_value_to_expand() const {
-        for (auto &[cost, _]: zeroCostClosed | views::reverse) {
-            if (!closed_states.count(cost)) {
+        for (auto &[cost, _]: zeroCostClosed | ranges::views::reverse) {
+            if (!closed_states.contains(cost)) {
                 assert (generated_states.empty() || generated_states.begin()->first >= cost);
                 return cost;
             }
@@ -127,10 +127,8 @@ namespace symbolic {
         }
         return std::nullopt;
     }
-
     void ClosedList::closeUpTo(OpenList &open_list, utils::Duration maxTime, long maxNodes) {
         int g_not_generated = open_list.minG();
-        std::optional<int> zero_cost_to_expand;
         if (auto val = min_value_to_expand()) {
             g_not_generated = std::min<int>(g_not_generated, val.value() + mgr->getAbsoluteMinTransitionCost());
         }
@@ -145,7 +143,7 @@ namespace symbolic {
         if (mgr->hasTransitions0()) {
             if (auto val = min_value_to_expand()) {
                 int cost = val.value();
-                if (!generated_states.count(cost)) {
+                if (!generated_states.contains(cost)) {
                     DisjunctiveBucket bucket{zeroCostClosed.at(cost)};
                     bucket.merge_bucket(mgr->getVars()->get_bdd_manager(), maxTime, maxNodes);
 
@@ -156,6 +154,7 @@ namespace symbolic {
                 }
             }
         }
+
         // At this point we can close all generated states that have a value lower than gNotGenerated
         while (!generated_states.empty() &&
                generated_states.begin()->first <= gNotGenerated - (mgr->hasTransitions0() ? 0 : 1)) {
@@ -168,11 +167,9 @@ namespace symbolic {
 
             for (const BDD &states: bucket.bucket) {
                 if (mgr->hasTransitions0()) {
-                    close_states_zero(cost, states);
-                    open_list.insert_zero(cost, states);
+                    close_states_zero(cost, states, open_list);
                 } else {
-                    close_states(cost, states);
-                    open_list.insert_cost(cost, states);
+                    close_states(cost, states, open_list);
                 }
             }
         }
@@ -181,18 +178,18 @@ namespace symbolic {
     void ClosedList::extract_path(const BDD &c, int h, bool fw, vector <OperatorID> &path) const {
         if (!mgr) return;
 
-        if (my_search->get_log().is_at_least_debug()) {
-            my_search->get_log() << "Sym closed extract path h=" << h << " gNotGenerated: " << gNotGenerated
-                                 << ", Closed: ";
-            for (auto &tmp: closed_states) my_search->get_log() << tmp.first << " ";
-            my_search->get_log() << endl;
-        }
-
+        // if (log.is_at_least_debug()) {
+        //     log << "Sym closed extract path h=" << h << " gNotGenerated: " << gNotGenerated
+        //                          << ", Closed: ";
+        //     for (auto &tmp: closed_states) log << tmp.first << " ";
+        //     log << endl;
+        // }
+        //
         const auto &trs = mgr->getIndividualTRs();
         BDD cut = c;
         size_t steps0 = 0;
-        if (zeroCostClosed.count(h)) {
-            assert(trs.count(0));
+        if (zeroCostClosed.contains(h)) {
+            assert(trs.contains(0));
             while (steps0 < zeroCostClosed.at(h).size() && bdd_intersection_empty(cut, zeroCostClosed.at(h)[steps0])) {
                 steps0++;
             }
@@ -200,7 +197,7 @@ namespace symbolic {
             if (steps0 < zeroCostClosed.at(h).size()) {
                 cut *= zeroCostClosed.at(h)[steps0];
             } else {
-                //DEBUG_MSG(cout << "cut not found with steps0. Try to find with preimage: " << trs.count(0) << endl;);
+                //DEBUG_MSG(cout << "cut not found with steps0. Try to find with preimage: " << trs.contains(0) << endl;);
                 bool foundZeroCost = false;
                 for (const auto &tr: trs.at(0)) {
                     if (foundZeroCost)
@@ -230,15 +227,15 @@ namespace symbolic {
         }
 
         while (h > 0 || steps0 > 0) {
-            if (my_search->get_log().is_at_least_debug()) {
-                my_search->get_log() << "g=" << h << " and steps0=" << steps0 << endl;
-            }
+            // if (log.is_at_least_debug()) {
+            //     log << "g=" << h << " and steps0=" << steps0 << endl;
+            // }
 
             if (steps0 > 0) {
                 bool foundZeroCost = false;
 
                 //Apply 0-cost operators
-                if (trs.count(0)) {
+                if (trs.contains(0)) {
                     for (const auto &tr: trs.at(0)) {
                         if (foundZeroCost)
                             break;
@@ -250,9 +247,9 @@ namespace symbolic {
                             if (!bdd_intersection_empty(succ, zeroCostClosed.at(h)[newSteps0])) {
                                 steps0 = newSteps0;
                                 cut = succ;
-                                if (my_search->get_log().is_at_least_debug()) {
-                                    my_search->get_log() << "Adding " << (*(tr->getOps().begin())).get_index() << endl;
-                                }
+                                // if (log.is_at_least_debug()) {
+                                //     log << "Adding " << (*(tr->getOps().begin())).get_index() << endl;
+                                // }
                                 path.push_back(*(tr->getOps().begin()));
                                 foundZeroCost = true;
                                 break;
@@ -262,26 +259,25 @@ namespace symbolic {
                 }
 
                 if (!foundZeroCost) {
-                    if (my_search->get_log().is_at_least_debug()) {
-                        my_search->get_log() << "didn't find" << endl;
-                    }
+                    // if (log.is_at_least_debug()) {
+                    //     log << "didn't find" << endl;
+                    // }
 
                     steps0 = 0;
                 }
             }
 
-            if (my_search->get_log().is_at_least_debug()) {
-                my_search->get_log() << "g=" << h << " and steps0=" << steps0 << endl;
-            }
+            // if (log.is_at_least_debug()) {
+            //     log << "g=" << h << " and steps0=" << steps0 << endl;
+            // }
 
             if (h > 0 && steps0 == 0) {
                 bool found = false;
-                for (const auto &key: trs | views::reverse) { // We use the inverse order, so that more expensive actions are used first
+                for (const auto &key: trs | ranges::views::reverse) { // We use the inverse order, so that more expensive actions are used first
                     if (found) break;
                     int newH = h - key.first;
-                    if (key.first == 0 || !closed_states.count(newH)) continue;
                     for (auto &tr: key.second) {
-                        //my_search->get_log() << "Check " << " " << my_search->getStateSpaceShared()->getVars()->getTask().get_operator_name((*(tr->getOps().begin())).get_index(), false) << " of cost " << key.first << " in h=" << newH << endl;
+                        //log << "Check " << " " << my_search->getStateSpaceShared()->getVars()->getTask().get_operator_name((*(tr->getOps().begin())).get_index(), false) << " of cost " << key.first << " in h=" << newH << endl;
                         BDD succ = tr->image(!fw, cut);
 
                         /*DEBUG_MSG(cout << "Image computed: "; succ.print(0,1); cout << "closed_states at newh: "; closed_states.at(newH).print(0,1););*/
@@ -289,7 +285,7 @@ namespace symbolic {
                             h = newH;
                             cut = succ;
                             steps0 = 0;
-                            if (zeroCostClosed.count(h)) {
+                            if (zeroCostClosed.contains(h)) {
                                 while (bdd_intersection_empty(cut, zeroCostClosed.at(h)[steps0])) {
                                     //DEBUG_MSG(cout << "r Steps0 is not " << steps0<< " of " << zeroCostClosed.at(h).size() << endl;);
                                     steps0++;
@@ -304,6 +300,7 @@ namespace symbolic {
                             break;
                         }
                     }
+                    if (key.first == 0 || !closed_states.contains(newH)) continue;
                 }
                 if (!found) {
                     cerr << "Error: Solution reconstruction failed: " << endl;
@@ -313,91 +310,22 @@ namespace symbolic {
         }
     }
 
-    SymSolution ClosedList::checkCut(UnidirectionalSearch *search, const BDD &states, int g, bool fw) const {
-        BDD cut_candidate = states * closedTotal;
-        if (cut_candidate.IsZero()) {
-            // TODO: Check with generated but not closed states?
-            return {}; //No solution yet :(
-        }
-
-        for (const auto &closedH: closed_states) {
-            int h = closedH.first;
-
-            //DEBUG_MSG(cout << "Check cut of g=" << g << " with h=" << h << endl;);
-            BDD cut = closedH.second * cut_candidate;
-            if (!cut.IsZero()) {
-                if (fw)
-                    return {search, my_search, g, h, cut};
-                else
-                    return {my_search, search, h, g, cut};
-            }
-        }
-
-        cerr << "Error: Cut with closedTotal but not found on closed" << endl;
-        utils::exit_with(utils::ExitCode::SEARCH_CRITICAL_ERROR);
-    }
-
-    void ClosedList::getHeuristic(vector <ADD> &heuristics,
-                                  vector<int> &maxHeuristicValues) const {
-        int previousMaxH = 0; //Get the previous value of max h
-        if (!maxHeuristicValues.empty()) {
-            previousMaxH = maxHeuristicValues.back();
-        }
-        /* If we did not complete one step, and we do not surpass the previous maxH we do not have heuristic*/
-        if (closed_states.size() <= 1 && gNotGenerated <= previousMaxH) {
-            cout << "Heuristic not inserted: "
-                 << gNotGenerated << " " << closed_states.size() << endl;
-            return;
-        }
-
-        ADD h = getHeuristic(previousMaxH);
-
-        //  closed.clear(); //The heuristic values have been stored in the ADD.
-        cout << "Heuristic with maxValue: " << gNotGenerated
-             << " ADD size: " << h.nodeCount() << endl;
-
-        maxHeuristicValues.push_back(gNotGenerated);
-        heuristics.push_back(h);
-    }
-
-
-    ADD ClosedList::getHeuristic(int previousMaxH /*= -1*/) const {
-        /* When zero cost operators have been expanded, all the states in non reached
-           have a h-value strictly greater than frontierCost.
-           They can be frontierCost + min_action_cost or the least bucket in open. */
-        /*  int valueNonReached = frontierCost;
-            if(frontierCost >= 0 && zeroCostExpanded){
-            cout << "Frontier cost is " << frontierCost << endl;
-            closed[frontierCost] = S;
-            valueNonReached = frontierCost + mgr->getMinTransitionCost();
-            if(!open.empty()){
-            valueNonReached = min(open.begin()->first,
-            valueNonReached);
-            }
-            }*/
+    ADD ClosedList::getHeuristic() const {
         BDD statesWithHNotClosed = !closedTotal;
-        ADD h = mgr->getVars()->get_bdd_manager()->getADD(-1);
+        ADD h = mgr->getVars()->get_bdd_manager()->getADD(0);
         //cout << "New heuristic with h [";
-        for (auto &it: closed_states) {
+        for (auto &[h_val, closed_bdd]: closed_states) {
             //cout << it.first << " ";
-            int h_val = it.first;
 
-            /*If h_val < previousMaxH we can put it to that value
-              However, we only do so if it is less than hNotClosed
-              (or we will think that we have not fully determined the value)*/
-            if (h_val < previousMaxH && previousMaxH < gNotGenerated) {
-                h_val = previousMaxH;
-            }
             if (h_val != gNotGenerated) {
-                h += it.second.Add() * mgr->getVars()->get_bdd_manager()->getADD(h_val + 1);
+                h = h.Maximum(closed_bdd.Add() * mgr->getVars()->get_bdd_manager()->getADD(h_val));
             } else {
-                statesWithHNotClosed += it.second;
+                statesWithHNotClosed += closed_bdd;
             }
         }
-        //cout << gNotGenerated << "]" << endl;
 
-        if (gNotGenerated != numeric_limits<int>::max() && gNotGenerated >= 0 && !statesWithHNotClosed.IsZero()) {
-            h += statesWithHNotClosed.Add() * mgr->getVars()->get_bdd_manager()->getADD(gNotGenerated + 1);
+        if (gNotGenerated > 0 && !statesWithHNotClosed.IsZero()) {
+            h = h.Maximum(statesWithHNotClosed.Add() * mgr->getVars()->get_bdd_manager()->getADD(gNotGenerated));
         }
 
         return h;
