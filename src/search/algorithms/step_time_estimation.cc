@@ -37,7 +37,7 @@ void StepCostEstimation::update_data(long key, Estimation est) {
     data[key] = est;
 
     //Ensure consistency with greater estimations
-    for (auto it = data.upper_bound(nextStepNodes); it != end(data); ++it) {
+    for (auto it = data.upper_bound(nextStepNodes); it != std::end(data); ++it) {
         if (it->second.time < est.time) {
             it->second.time = est.time;
         }
@@ -69,7 +69,7 @@ void StepCostEstimation::nextStep(long nodes) {
     long estimatedNodes;
     //Get next data point
     auto nextIt = data.upper_bound(nextStepNodes);
-    if (nextIt == end(data)) {
+    if (nextIt == std::end(data)) {
         //This is greater than any est we have, just get the greatest
         --nextIt;
         long prevNodes = nextIt->first;

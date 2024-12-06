@@ -28,6 +28,10 @@ namespace symbolic {
         }
 
         virtual ~OriginalStateSpace() = default;
+
+        virtual TaskProxy getTask() const override {
+            return TaskProxy(*task);
+        }
     };
 }
 #endif

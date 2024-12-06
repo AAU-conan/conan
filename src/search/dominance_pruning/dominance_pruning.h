@@ -7,8 +7,8 @@
 #include <set>
 
 #include "../pruning_method.h"
-#include "factored_dominance_relation.h"
-#include "dominance_analysis.h"
+#include "../dominance/factored_dominance_relation.h"
+#include "../dominance/dominance_analysis.h"
 
 namespace plugins {
     class Options;
@@ -21,13 +21,13 @@ namespace fts {
 
 namespace dominance {
 
-    class DominancePruning : public PruningMethod {
+    class  DominancePruning : public PruningMethod {
     protected:
         std::shared_ptr<fts::FTSTaskFactory> fts_factory;
         std::shared_ptr<DominanceAnalysis> dominance_analysis;
 
         //TODO: This will be separated on a TaskDependentPruningMethod when the refactoring from FastDownward is completed
-        std::unique_ptr<FactoredDominanceRelation> dominance_relation;
+        std::shared_ptr<FactoredDominanceRelation> dominance_relation;
         std::shared_ptr<fts::FactoredStateMapping> state_mapping;
 
         void dump_options() const;

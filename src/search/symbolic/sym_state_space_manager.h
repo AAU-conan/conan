@@ -11,6 +11,8 @@
 #include <memory>
 #include <cassert>
 
+#include "../task_proxy.h"
+
 namespace plugins {
     class Feature;
 
@@ -44,7 +46,6 @@ namespace symbolic {
     };
 
     class SymStateSpaceManager {
-
     protected:
         SymVariables *vars;
         const SymParamsMgr p;
@@ -87,6 +88,13 @@ namespace symbolic {
         inline SymVariables *getVars() const {
             return vars;
         }
+
+        virtual TaskProxy getTask() const {
+            //TODO: Make this more robust
+            //Trying to access getTask from some abstract state space
+            utils::exit_with(utils::ExitCode::SEARCH_UNSUPPORTED);
+        }
+
 
         inline const std::set<int> &get_relevant_variables() const {
             return relevant_vars;

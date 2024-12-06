@@ -28,12 +28,10 @@ namespace fts {
 
     class FactoredStateMappingIdentity : public FactoredStateMapping {
     public:
-        virtual ~FactoredStateMappingIdentity() = default;
+        int get_value(const std::vector<int> & state, int factor) override;
+        std::vector<int> transform(const std::vector<int> & state) override;
 
-        virtual int get_value(const std::vector<int> & state, int factor) override;
-        virtual std::vector<int> transform(const std::vector<int> & state) override;
-
-        virtual std::optional<std::vector<int>> update_transformation_in_place(std::vector<int> & transformed_state_values,
+        std::optional<std::vector<int>> update_transformation_in_place(std::vector<int> & transformed_state_values,
                                                         const std::vector<int> & state_values,
                                                         std::vector<int> & updated_state_variables) override;
     };
@@ -43,12 +41,10 @@ namespace fts {
         std::vector<int> variable_to_factor;
 
     public:
-        virtual ~FactoredStateMappingMergeAndShrink() = default;
+        int get_value(const std::vector<int> & state, int factor) override;
+        std::vector<int> transform(const std::vector<int> & state) override;
 
-        virtual int get_value(const std::vector<int> & state, int factor) override;
-        virtual std::vector<int> transform(const std::vector<int> & state) override;
-
-        virtual std::optional<std::vector<int>> update_transformation_in_place(std::vector<int> & transformed_state_values,
+        std::optional<std::vector<int>> update_transformation_in_place(std::vector<int> & transformed_state_values,
                                                         const std::vector<int> & state_values,
                                                         std::vector<int> & updated_state_variables) override;
 

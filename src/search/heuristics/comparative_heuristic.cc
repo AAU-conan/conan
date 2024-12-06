@@ -1,25 +1,14 @@
 #include "comparative_heuristic.h"
 #include "../plugins/plugin.h"
-#include <print>
 #include <ranges>
 #include <format>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/detail/classification.hpp>
+#include <print>
 
 class Evaluator;
 
 EvaluationResult ComparativeHeuristic::compute_result(EvaluationContext& eval_context) {
-    // bool first = true;
-    // EvaluationResult first_result;
-    // for (const auto& heuristic : comparison_heuristics) {
-    //     const auto result = heuristic->compute_result(eval_context);
-    //     if (first) {
-    //         first_result = result;
-    //         first = false;
-    //     }
-    //     std::print("{}: {}, ", heuristic->get_description(), result.get_evaluator_value());
-    // }
-    // Use ranges instead
     const auto results = comparison_heuristics | std::views::transform([&eval_context](const auto& heuristic) {
         return heuristic->compute_result(eval_context);
     }) | std::ranges::to<std::vector<EvaluationResult>>();

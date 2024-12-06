@@ -1,8 +1,5 @@
 #include "dominance_pruning.h"
 
-#include <cassert>
-#include <vector>
-#include <limits>
 #include "../plugins/options.h"
 #include "../plugins/plugin.h"
 

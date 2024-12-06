@@ -27,7 +27,6 @@ namespace dominance {
             local_relations (std::move(_local_relations)){
         }
 
-
         //Statistics of the factored simulation
         void dump_statistics(utils::LogProxy &log) const;
 

@@ -18,7 +18,7 @@ namespace symbolic {
         BDD newCut;
         if (exp_fw) {
             exp_fw->getPlan(cut, g, path);
-            TaskProxy task(exp_fw->getStateSpace()->getVars()->getTask());
+            TaskProxy task = exp_fw->getStateSpace()->getTask();
             State s = task.get_initial_state();
 
             if (!path.empty()) {
@@ -51,8 +51,8 @@ namespace symbolic {
         ADD hADD = vars->get_bdd_manager()->getADD(-1);
         int h_val = g + h;
 
-        TaskProxy task(
-                exp_fw ? exp_fw->getStateSpace()->getVars()->getTask() : exp_bw->getStateSpace()->getVars()->getTask());
+        TaskProxy task = (
+                exp_fw ? exp_fw->getStateSpace()->getTask() : exp_bw->getStateSpace()->getTask());
         State s = task.get_initial_state();
         BDD sBDD = vars->getStateBDD(s);
         hADD += sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val + 1));

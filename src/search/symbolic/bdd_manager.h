@@ -24,11 +24,23 @@ namespace symbolic {
 
     extern void exitOutOfMemory(size_t memory);
 
-    class BDDManager {
+    struct BDDManagerParameters {
         //Parameters to initialize the CUDD manager
         const long cudd_init_nodes; //Number of initial nodes
         const long cudd_init_cache_size; //Initial cache size
         const long cudd_init_available_memory; //Maximum available memory (bytes)
+
+        BDDManagerParameters(const plugins::Options &opts);
+
+        BDDManagerParameters(long cudd_init_nodes, long cudd_init_cache_size, long cudd_init_available_memory) :
+                cudd_init_nodes(cudd_init_nodes),
+                cudd_init_cache_size(cudd_init_cache_size),
+                cudd_init_available_memory(cudd_init_available_memory) {
+        }
+    };
+
+    class BDDManager {
+        BDDManagerParameters params;
 
         std::unique_ptr<Cudd> _manager; //_manager associated with this symbolic search
 
@@ -42,7 +54,8 @@ namespace symbolic {
         }
 
     public:
-        BDDManager(const plugins::Options &opts);
+
+        BDDManager(const BDDManagerParameters & params);
 
         void init(int num_bdd_vars);
 

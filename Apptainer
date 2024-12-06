@@ -17,7 +17,7 @@ Stage: build
 
     export cplex_DIR=/cplex
     ./build.py -j 4
-    
+
 # Stage 2: Run the planner
 Bootstrap: docker
 From: ubuntu:24.04
@@ -30,11 +30,15 @@ Stage: run
 %files
     fast-downward.py
     driver
-    
+    src/plan
+    src/translate
+    src/search/downward
+    src/search/unitcost
+
 %files from build
     /builds/release/bin/downward
     /builds/release/bin/translate
-        
+
 %post
     apt-get update
     apt-get -y install --no-install-recommends python3 time gawk libgmp-dev
