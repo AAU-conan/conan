@@ -1035,15 +1035,12 @@ create_fast_downward_library(
         NAME qualified_dominance
         HELP "Qualified Dominance Analysis techniques"
         SOURCES
-        qualified_dominance/qualified_dominance_pruning
         qualified_dominance/qualified_dominance_analysis
         qualified_dominance/qualified_factored_dominance_relation
         qualified_dominance/qualified_local_state_relation
-        qualified_dominance/qualified_dominance_pruning_local
         qualified_dominance/qualified_ld_simulation
         qualified_dominance/qualified_label_relation
         qualified_dominance/nfa_merge_non_differentiable
-        qualified_dominance/qualified_local_state_relation2
         qualified_dominance/label_group_relation
         DEPENDS
         dominance
