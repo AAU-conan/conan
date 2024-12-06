@@ -274,6 +274,9 @@ namespace symbolic {
                 for (const auto &key: trs | ranges::views::reverse) { // We use the inverse order, so that more expensive actions are used first
                     if (found) break;
                     int newH = h - key.first;
+                    if (!closed_states.contains(newH)) {
+                        continue;
+                    }
                     for (auto &tr: key.second) {
                         //log << "Check " << " " << my_search->getStateSpaceShared()->getVars()->getTask().get_operator_name((*(tr->getOps().begin())).get_index(), false) << " of cost " << key.first << " in h=" << newH << endl;
                         BDD succ = tr->image(!fw, cut);
