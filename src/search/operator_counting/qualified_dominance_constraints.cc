@@ -269,9 +269,18 @@ namespace operator_counting {
             }
             g.add_node(state_pairs.empty()? std::format("{}", i): boost::algorithm::join(state_pairs, "\n"), nfa.final.contains(i)? "peripheries=2": "");
         }
-        for (auto const& [from, label, to] : nfa.delta.transitions()) {
-            g.add_edge(from, to, lts.label_group_name(LabelGroup(label)));
+        for (size_t s = 0; s < nfa.num_of_states(); ++s) {
+            std::unordered_map<int, std::vector<int>> state_labels;
+            for (const mata::nfa::SymbolPost& symbol_posts : nfa.delta.state_post(s)) {
+                for (const auto& t : symbol_posts.targets) {
+                    state_labels[t].push_back(symbol_posts.symbol);
+                }
+            }
+            for (const auto& [t, ls] : state_labels) {
+                g.add_edge(s, t, lts.fact_value_names.get_common_operators_name(ls));
+            }
         }
+
         g.output_graph(file_name);
     }
 
@@ -282,7 +291,6 @@ namespace operator_counting {
 #ifndef NDEBUG
         fts::draw_fts("fts.dot", *transformed_task->fts_task);
 #endif
-
 
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task->fts_task);
 

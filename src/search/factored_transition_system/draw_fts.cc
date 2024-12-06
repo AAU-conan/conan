@@ -10,10 +10,18 @@ namespace fts {
             for (int j = 0; j < lts->size(); ++j) {
                 state_to_node[j] = graph.add_node(fts.get_fact_name(FactPair(i, j)), lts->is_goal(j) ? "peripheries=2" : "");
             }
-            for (auto &t : lts->get_transitions())
-            {
-                if (lts->is_relevant_label_group(t.label_group)) {
-                    graph.add_edge(state_to_node[t.src], state_to_node[t.target], lts->label_group_name(t.label_group));
+
+            for (int s = 0; s < lts->size(); ++s) {
+                std::unordered_map<int, std::vector<int>> state_labels;
+                for (auto &t : lts->get_transitions(s)) {
+                    if (lts->is_relevant_label_group(t.label_group)) {
+                        for (int l : lts->get_labels(t.label_group)) {
+                            state_labels[t.target].push_back(l);
+                        }
+                    }
+                }
+                for (const auto& [t, ls] : state_labels) {
+                    graph.add_edge(state_to_node[s], state_to_node[t], lts->fact_value_names.get_common_operators_name(ls));
                 }
             }
         }
