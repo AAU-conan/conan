@@ -48,19 +48,19 @@ namespace symbolic {
 
         SymVariables *vars = mgr->getVars();
 
-        ADD hADD = vars->get_bdd_manager()->getADD(-1);
+        ADD hADD = vars->get_bdd_manager()->getADD(std::numeric_limits<int>::max());
         int h_val = g + h;
 
         TaskProxy task = mgr->getTask();
         State s = task.get_initial_state();
         BDD sBDD = vars->getStateBDD(s);
-        hADD += sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val + 1));
+        hADD = hADD.Minimum(sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val)));
         for (auto op_id: path) {
             const auto &op = task.get_operators()[op_id];
             h_val -= op.get_cost();
             s = s.get_unregistered_successor(op);
             sBDD = vars->getStateBDD(s);
-            hADD += sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val + 1));
+            hADD += hADD = hADD.Minimum(sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val)));
         }
         return hADD;
     }

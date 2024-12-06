@@ -2,6 +2,7 @@
 #define SYMBOLIC_SYM_SOLUTION_H
 
 #include "sym_variables.h"
+#include <utility>
 #include <vector>
 
 class OperatorID;
@@ -17,14 +18,13 @@ namespace symbolic {
         BDD cut;
     public:
         SymSolution(std::shared_ptr<SymStateSpaceManager> mgr, std::shared_ptr<ClosedList> exp_fw,
-                    std::shared_ptr<ClosedList> exp_bw, int g_val, int h_val, BDD S) : mgr(mgr),
-            exp_fw(exp_fw), exp_bw(exp_bw), g(g_val), h(h_val), cut(S) {
+                    std::shared_ptr<ClosedList> exp_bw, int g_val, int h_val, const BDD& S) : mgr(std::move(std::move(mgr))),
+            exp_fw(std::move(exp_fw)), exp_bw(std::move(exp_bw)), g(g_val), h(h_val), cut(S) {
         }
 
         void getPlan(std::vector<OperatorID> &path) const;
 
         ADD getADD() const;
-
 
         int getCost() const {
             return g + h;
@@ -67,7 +67,7 @@ namespace symbolic {
             return getLowerBound() >= getUpperBound();
         }
 
-        const std::optional<SymSolution> get_solution() const {
+        const std::optional<SymSolution> & get_solution() const {
             return solution;
         }
 

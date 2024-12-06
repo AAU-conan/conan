@@ -41,9 +41,11 @@ namespace symbolic {
         } else {
             open_list.insert_cost(0, init_bdd);
         }
-        closed->init(init_bdd, open_list.minG());
+        closed->init(init_bdd, open_list.get_min_new_g());
 
-        solution->setLowerBound(getG());
+        //TODO: Check against goal to detect cases where the initial state is a goal state
+
+        solution->setLowerBound(getF());
     }
 
     /*
@@ -90,9 +92,7 @@ namespace symbolic {
 
         if (!generated_states.IsZero()) {
             //Check the cut (removing states classified, since they do not need to be included in open)
-            //TODO: if (!isAbstracted()) This is kind of old code, that requires searches in abstractions to not check against the other frontier.
-            // But that only makes sense on SymBA's heuristic and could be implemented more elegantly anyway.
-            auto sol = perfectHeuristic->checkCut(closed, generated_states, step_image.g(), fw);
+            auto sol = perfectHeuristic->checkCut(closed, generated_states, step_image.new_g(), fw);
             if (sol) {
                 p.log << "Solution found with cost " << sol->getCost() << " total time: " << g_timer << endl;
                 // Solution found :)
@@ -104,10 +104,10 @@ namespace symbolic {
             //      and duplicate detection should be performed somewhere else.
             //generated_states *= perfectHeuristic->notClosed();   //Prune everything closed in opposite direction
 
-            closed->put_in_frontier(step_image.g(), generated_states);
+            closed->put_in_frontier(step_image.new_g(), generated_states);
 
             if (solution->solved()) {
-                //TODO: Here we are not closing the states, which is a problem for heuristic generation from the closed list
+                //TODO: Here we are not closing the states, which may be a problem for heuristic generation from the closed list
                 //            DEBUG_MSG(p.log << "SOLVED!!!: " << engine->getLowerBound() << " >= " << engine->getUpperBound() << endl;);
                 return true; //If it has been solved, return
             }
@@ -189,12 +189,25 @@ namespace symbolic {
     }
 
     void OpenList::insert(const StepImage &task) {
-        open[task.g()].push_back(task);
+        open[task.new_g()].push_back(task);
     }
 
-    int OpenList::minG() const {
+    int OpenList::get_min_new_g() const {
         return open.empty() ? std::numeric_limits<int>::max() : open.begin()->first;
     }
+
+    int OpenList::get_min_old_g() const {
+        int value =std::numeric_limits<int>::max();
+        // TODO: We could keep track of the minimum value in a different way. Unclear if this is needed in the first place,
+        // or how to organize open in a better way
+        for (const auto & steps : open ) {
+            for (const auto & step : steps.second) {
+                value = std::min(value, step.old_g());
+            }
+        }
+        return value;
+    }
+
 
     bool OpenList::empty() const {
         return open.empty();
@@ -233,12 +246,12 @@ namespace symbolic {
     }
 
     std::ostream &operator<<(std::ostream &os, const StepImage &exp) {
-        os << "g=" << exp.g() << " from " << exp.state_cost << " (" << exp.bdd.nodeCount() << " nodes) with "
+        os << "g=" << exp.new_g() << " from " << exp.old_g() << " (" << exp.bdd.nodeCount() << " nodes) with "
                 << *(exp.transition_relation);
         return os;
     }
 
-    int StepImage::g() const {
+    int StepImage::new_g() const {
         return state_cost + transition_relation->getCost();
     }
 

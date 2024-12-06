@@ -34,7 +34,10 @@ namespace symbolic {
 
         StepImage(int stateCost, const BDD &bdd, TransitionRelation *transitionRelation);
 
-        int g() const;
+        int old_g() const {
+            return state_cost;
+        }
+        int new_g() const;
 
         friend std::ostream &operator<<(std::ostream &os, const StepImage &step);
     };
@@ -57,7 +60,8 @@ namespace symbolic {
 
         StepImage pop();
 
-        int minG() const;
+        int get_min_new_g() const;
+        int get_min_old_g() const;
 
         void insert_zero(int state_cost, BDD bdd);
         void insert_cost(int state_cost, BDD bdd);
@@ -141,11 +145,12 @@ namespace symbolic {
         }
 
         int getG() const override {
-            return 0; //TODO
+            // TODO: revise how this is computed. one could strenghten them based on having a separate g-value per operator cost
+            return open_list.get_min_old_g();
         }
 
         virtual int getF() const override {
-            return open_list.minG();
+            return open_list.get_min_new_g();
         }
 
         utils::Duration nextStepTime() const override;

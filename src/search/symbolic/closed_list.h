@@ -62,7 +62,7 @@ namespace symbolic {
         std::optional<int> min_value_to_expand() const;
 
         public:
-        explicit ClosedList(std::shared_ptr<SymStateSpaceManager> mgr);
+        explicit ClosedList(const std::shared_ptr<SymStateSpaceManager>& mgr);
 
         void init(const BDD &init, int gNotGenerated);
 

@@ -3,11 +3,9 @@
 #include "bdd_manager.h"
 #include "sym_state_space_manager.h"
 #include "transition_relation.h"
-#include "sym_solution.h"
 #include "uniform_cost_search.h"
 
 #include <iostream>
-#include <string>
 #include <cassert>
 #include <fcntl.h>
 #include<ranges>
@@ -17,7 +15,7 @@ using namespace std;
 
 namespace symbolic {
 
-    ClosedList::ClosedList(std::shared_ptr<SymStateSpaceManager> mgr): mgr(mgr), closedTotal(mgr->zeroBDD()) {
+    ClosedList::ClosedList(const std::shared_ptr<SymStateSpaceManager>& mgr): mgr(mgr), closedTotal(mgr->zeroBDD()) {
     }
 
     void ClosedList::init(const BDD &init, int _gNotGenerated) {
@@ -128,7 +126,7 @@ namespace symbolic {
         return std::nullopt;
     }
     void ClosedList::closeUpTo(OpenList &open_list, utils::Duration maxTime, long maxNodes) {
-        int g_not_generated = open_list.minG();
+        int g_not_generated = open_list.get_min_new_g();
         if (auto val = min_value_to_expand()) {
             g_not_generated = std::min<int>(g_not_generated, val.value() + mgr->getAbsoluteMinTransitionCost());
         }
@@ -342,7 +340,7 @@ namespace symbolic {
         double averageHeuristic = 0;
         double heuristicSize = 0;
         for (const auto &item: closed_states) {
-            double currentSize = mgr->getVars()->numStates(item.second);
+            auto currentSize = static_cast<double>(mgr->getVars()->numStates(item.second));
             //DEBUG_MSG(cout << item.first << " " << currentSize << endl;);
             averageHeuristic += currentSize * item.first;
             heuristicSize += currentSize;
