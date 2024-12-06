@@ -6,7 +6,7 @@
 #include <print>
 
 #include "label_group_relation.h"
-#include "qualified_local_state_relation2.h"
+#include "qualified_local_state_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
 
@@ -46,7 +46,7 @@ namespace qdominance {
         return label_group_simulation_relations.at(factor).noop_simulates(lg);
     }
 
-    bool QualifiedLabelRelation::update(int factor, const QualifiedLocalStateRelation2& sim) {
+    bool QualifiedLabelRelation::update(int factor, const QualifiedLocalStateRelation& sim) {
         std::println("Updating {} label group relation", factor);
         return label_group_simulation_relations.at(factor).update(sim);
     }

@@ -1006,7 +1006,7 @@ create_fast_downward_library(
         factored_transition_system/labelled_transition_system
         factored_transition_system/draw_fts
         factored_transition_system/fact_names
-        factored_transition_system/symbolic_state_mapping.h
+#        factored_transition_system/symbolic_state_mapping.h
         DEPENDENCY ONLY
         DEPENDS
         mas_heuristic
@@ -1023,7 +1023,7 @@ create_fast_downward_library(
         dominance/local_state_relation
         dominance/all_none_factor_index
         dominance/dominance_pruning_previous
-        dominance/dominance_relation_bdd
+#        dominance/dominance_relation_bdd
         #dominance/label_relation_identity
         #dominance/label_relation_noop
         DEPENDS
@@ -1061,7 +1061,7 @@ create_fast_downward_library(
         dominance_pruning/dominance_database
         dominance_pruning/database_all_previous
         dominance_pruning/database_previous_lower_g
-        dominance_pruning/database_bdd_map
+#        dominance_pruning/database_bdd_map
         dominance_pruning/database_test
         DEPENDS
         dominance

@@ -28,7 +28,7 @@ namespace utils {
 
 namespace qdominance {
     using TransitionIndex = size_t;
-    class QualifiedLocalStateRelation2;
+    class QualifiedLocalStateRelation;
 
     /*
      * Label relation represents the preorder relations on labels that
@@ -42,7 +42,7 @@ namespace qdominance {
     public:
         explicit QualifiedLabelRelation(const fts::FTSTask& fts_task);
 
-        bool update(int factor, const QualifiedLocalStateRelation2& sim);
+        bool update(int factor, const QualifiedLocalStateRelation& sim);
 
         void dump(utils::LogProxy& log) const;
         void dump(utils::LogProxy& log, int label) const;

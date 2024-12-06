@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "qualified_local_state_relation2.h"
+#include "qualified_local_state_relation.h"
 
 namespace merge_and_shrink {
 class TransitionSystem;
@@ -23,12 +23,12 @@ namespace qdominance {
  */
 class QualifiedFactoredDominanceRelation {
 protected:
-  std::vector<std::unique_ptr<QualifiedLocalStateRelation2>> local_relations;
+  std::vector<std::unique_ptr<QualifiedLocalStateRelation>> local_relations;
   QualifiedLabelRelation label_relation;
 
 public:
   explicit QualifiedFactoredDominanceRelation(
-      std::vector<std::unique_ptr<QualifiedLocalStateRelation2>>
+      std::vector<std::unique_ptr<QualifiedLocalStateRelation>>
           &&_local_relations,
       QualifiedLabelRelation _label_relation)
       : local_relations(std::move(_local_relations)),
@@ -63,7 +63,7 @@ public:
   double get_percentage_equal() const;
 
   // Methods to access the underlying simulation relations
-  const std::vector<std::unique_ptr<QualifiedLocalStateRelation2>> &
+  const std::vector<std::unique_ptr<QualifiedLocalStateRelation>> &
   get_local_relations() const {
     return local_relations;
   }
@@ -74,12 +74,12 @@ public:
 
   size_t size() const { return local_relations.size(); }
 
-  QualifiedLocalStateRelation2 &operator[](int index) {
+  QualifiedLocalStateRelation &operator[](int index) {
     assert(index >= 0 && index < local_relations.size());
     return *(local_relations[index]);
   }
 
-  const QualifiedLocalStateRelation2 &operator[](int index) const {
+  const QualifiedLocalStateRelation &operator[](int index) const {
     assert(index >= 0 && index < local_relations.size());
     return *(local_relations[index]);
   }

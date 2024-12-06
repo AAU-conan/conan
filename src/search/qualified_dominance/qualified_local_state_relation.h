@@ -1,169 +1,99 @@
 #ifndef QUALIFIED_DOMINANCE_LOCAL_STATE_RELATION_H
 #define QUALIFIED_DOMINANCE_LOCAL_STATE_RELATION_H
 
-#include <vector>
 #include <string>
-#include <memory>
+#include <unordered_set>
+#include <vector>
 
-#include <rust/cxx.h>
+#include "../factored_transition_system/fact_names.h"
+#include "../factored_transition_system/labelled_transition_system.h"
+#include "qualified_label_relation.h"
 #include <mata/nfa/nfa.hh>
 #include <mata/nfa/types.hh>
-#include <unordered_map>
+#include <rust/cxx.h>
 
-#include "nfa_merge_non_differentiable.h"
-#include "../factored_transition_system/fact_names.h"
-
-namespace qdominance {
-    class QualifiedLabelRelation;
-}
-
-namespace merge_and_shrink{
-    class TransitionSystem;
+namespace merge_and_shrink {
+class TransitionSystem;
 }
 
 namespace fts {
-    class LabelledTransitionSystem;
-}
+class FTSTask;
+class LabelledTransitionSystem;
+} // namespace fts
 
 namespace utils {
-    class LogProxy;
+class LogProxy;
 }
 
 namespace qdominance {
-    // First implementation of a simulation relation.
-    class QualifiedLocalStateRelation {
-    protected:
+using TransitionIndex = size_t;
+TransitionIndex constexpr NOOP_TRANSITION = -1;
 
-        // NFA representing the simulation relation
-        mutable mata::nfa::Nfa simulation_nfa;
+// First implementation of a simulation relation.
+class QualifiedLocalStateRelation {
+protected:
+  LabelledTransitionSystem lts;
+  int factor;
+  const FTSTask &fts_task;
 
-        // Whether the simulation_nfa has been reduced. When it is reduced, we are guaranteed that the universally_accepting state
-        // is the only state that is universally accepting.
-        bool is_simulation_nfa_reduced = false;
+public:
+  // For each state, the set of states that it simulates
+  std::unordered_set<std::pair<int, int>> simulations;
 
-        // for s_i and s_j, the state in the NFA that represents when s_i simulates s_j
-        std::vector<std::vector<mata::nfa::State>> state_pair_to_nfa_state;
-        std::unordered_map<mata::nfa::State, std::pair<int,int>> nfa_state_to_state_pair;
+  // Vectors of states dominated/dominating by each state. Lazily computed when
+  // needed.
+  std::vector<std::vector<int>> dominated_states, dominating_states;
+  void compute_list_dominated_states();
 
-        // The universal accepting state of simulation_nfa
-        mata::nfa::State universally_accepting;
+  void cancel_simulation_computation();
 
-        mutable std::vector<int> universally_accepting_cache;
-        bool nfa_always_simulates(const int s, const int t) const {
-            if (is_simulation_nfa_reduced)
-                return state_pair_to_nfa_state[s][t] == universally_accepting;
+  bool update(const QualifiedLabelRelation &label_relation);
+  bool noop_simulates_tr(int t, LTSTransition s_tr,
+                         const QualifiedLabelRelation &label_relation) const;
+  bool tr_simulates_tr(const LTSTransition &t_tr, const LTSTransition &s_tr,
+                       const QualifiedLabelRelation &label_relation) const;
+  bool labels_simulate_labels(const std::unordered_set<int> &l1s,
+                              const std::vector<int> &l2s, bool include_noop,
+                              const QualifiedLabelRelation &label_relation);
+  bool update_pairs(const QualifiedLabelRelation &label_relation);
+  QualifiedLocalStateRelation(const LabelledTransitionSystem &lts, int factor,
+                               const FTSTask &fts_task);
 
-            const auto nfa_state = state_pair_to_nfa_state[s][t];
-            if (universally_accepting_cache[nfa_state] != -1) {
-                return universally_accepting_cache[nfa_state];
-            }
-            simulation_nfa.initial.insert(nfa_state);
-            const bool result = simulation_nfa.is_universal(*simulation_nfa.alphabet);
-            simulation_nfa.initial.clear();
-            universally_accepting_cache[nfa_state] = result;
-            return result;
-        }
+  void print_simulations() const {
+    for (auto &sim : simulations) {
+      if (!lts.get_transitions(sim.first).empty() &&
+          !lts.get_transitions(sim.second).empty()) {
+        std::println("    {} <= {}", lts.state_name(sim.second),
+                     lts.state_name(sim.first));
+      }
+    }
+  }
 
-        bool nfa_never_simulates(const int s, const int t) const {
-            simulation_nfa.initial.insert(state_pair_to_nfa_state[s][t]);
-            const bool result = simulation_nfa.is_lang_empty();
-            simulation_nfa.initial.clear();
-            return result;
-        }
+  [[nodiscard]] bool simulates(int t, int s) const {
+    return s == t || simulations.contains({t, s});
+  }
 
-        int num_labels;
+  [[nodiscard]] bool similar(int s, int t) const {
+    return simulates(s, t) && simulates(t, s);
+  }
 
-        // Vectors of states dominated/dominating by each state. Lazily computed when needed.
-        std::vector<std::vector<int>> dominated_states, dominating_states;
-        void compute_list_dominated_states();
-    public:
-        fts::FactValueNames fact_value_names;
-        QualifiedLocalStateRelation(mata::nfa::Nfa& simulation_nfa, std::vector<std::vector<mata::nfa::State> > && relation, std::unordered_map<mata::nfa::State, std::pair<int,int>>& nfa_state_to_state_pair, int num_labels, mata::nfa::State universally_accepting, fts::FactValueNames fact_value_names);
+  [[nodiscard]] int num_states() const { return lts.size(); }
 
-        //static LocalStateRelation get_local_distances_relation(const merge_and_shrink::TransitionSystem & ts);
-        static std::unique_ptr<QualifiedLocalStateRelation> get_local_distances_relation(const fts::LabelledTransitionSystem &ts, int num_labels);
-        //TODO?: static LocalStateRelation get_identity_relation(const merge_and_shrink::TransitionSystem & ts);
+  bool is_identity() const;
+  int num_equivalences() const;
+  int num_simulations(bool ignore_equivalences) const;
+  int num_different_states() const;
 
-        void draw_nfa(const std::string& filename) const;
-        void draw_transformed_nfa(const std::string& filename, const mata::nfa::Nfa& other_nfa) const;
-        void cancel_simulation_computation();
+  void dump(utils::LogProxy &log, const std::vector<std::string> &names) const;
+  void dump(utils::LogProxy &log) const;
 
-        // This should be part of the factored mapping
-        // bool pruned(const State &state) const;
-        // int get_cost(const State &state) const;
-        // int get_index(const State &state) const;
-        //const std::vector<int> &get_dominated_states(const State &state);
-        //const std::vector<int> &get_dominating_states(const State &state);
-        // bool simulates(const State &t, const State &s) const;
+  // Computes the probability of selecting a random pair s, s' such that s
+  // simulates s'.
+  double get_percentage_simulations(bool ignore_equivalences) const;
 
-        const std::vector<int> &get_dominated_states(int state);
-        const std::vector<int> &get_dominating_states(int state);
-
-        const auto& get_state_to_nfa_state() const {
-            return state_pair_to_nfa_state;
-        }
-
-        const auto& get_state_pair_from_nfa_state(mata::nfa::State q) const {
-            return nfa_state_to_state_pair.at(q);
-        }
-
-        bool update(int s, int t, const QualifiedLabelRelation& label_relation, const fts::LabelledTransitionSystem& ts, int lts_i, utils::
-                    LogProxy& log);
-
-        [[nodiscard]] bool simulates(int s, int t) const {
-            return nfa_always_simulates(s, t);
-        }
-
-        [[nodiscard]] bool never_simulates(int s, int t) const {
-            return nfa_never_simulates(s, t);
-        }
-
-        [[nodiscard]] bool similar(int s, int t) const {
-            return simulates(s, t) && simulates(t, s);
-        }
-
-        mata::nfa::State nfa_simulates(const int s, const int t) const {
-            return state_pair_to_nfa_state[s][t];
-        }
-
-        void reduce_nfa() {
-            auto [reduced_nfa, old_to_new_state_map] = merge_non_differentiable_states(simulation_nfa);
-            simulation_nfa = reduced_nfa;
-            universally_accepting = old_to_new_state_map[universally_accepting];
-            for (int i = 0; i < state_pair_to_nfa_state.size(); ++i) {
-                for (int j = 0; j < state_pair_to_nfa_state[i].size(); ++j) {
-                    state_pair_to_nfa_state[i][j] = old_to_new_state_map[state_pair_to_nfa_state[i][j]];
-                }
-            }
-        }
-
-        bool is_identity() const;
-        int num_equivalences() const;
-        int num_simulations(bool ignore_equivalences) const;
-        int num_different_states() const;
-
-        [[nodiscard]] size_t num_states() const {
-            return state_pair_to_nfa_state.size();
-        }
-
-        int get_num_labels() const {
-            return num_labels;
-        }
-
-        [[nodiscard]] const mata::nfa::Nfa& get_nfa() const {
-            return simulation_nfa;
-        }
-
-        void dump(utils::LogProxy &log, const std::vector<std::string> &names) const;
-        void dump(utils::LogProxy &log) const;
-
-
-        //Computes the probability of selecting a random pair s, s' such that s simulates s'.
-        double get_percentage_simulations(bool ignore_equivalences) const;
-
-        //Computes the probability of selecting a random pair s, s' such that s is equivalent to s'.
-        double get_percentage_equivalences() const;
-
-    };
-}
+  // Computes the probability of selecting a random pair s, s' such that s is
+  // equivalent to s'.
+  double get_percentage_equivalences() const;
+};
+} // namespace qdominance
 #endif

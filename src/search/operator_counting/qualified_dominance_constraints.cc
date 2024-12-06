@@ -1,6 +1,5 @@
 #include "qualified_dominance_constraints.h"
 
-#include "../qualified_dominance/qualified_dominance_pruning_local.h"
 #include "../qualified_dominance/nfa_merge_non_differentiable.h"
 #include "../factored_transition_system/fts_task_factory.h"
 #include "../factored_transition_system/draw_fts.h"
@@ -13,7 +12,7 @@
 
 namespace operator_counting {
 
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation2& rel, const qdominance::QualifiedLabelRelation& label_relation) {
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation) {
         mata::nfa::Nfa nfa;
         auto all_label_groups = std::views::iota(0, lts.get_num_label_groups()) | std::ranges::to<std::vector>();
         nfa.alphabet = new mata::EnumAlphabet(all_label_groups.begin(), all_label_groups.end());
@@ -83,70 +82,6 @@ namespace operator_counting {
             }
         }
         return {nfa, state_pair_to_nfa_state};
-    }
-
-    [[nodiscard]] std::pair<mata::nfa::Nfa, std::vector<std::vector<int>>> label_group_nfa(const mata::nfa::Nfa& nfa) {
-        // Start with all labels in the same group
-        std::vector<int> label_to_group(nfa.alphabet->get_alphabet_symbols().size(), 0);
-        int next_label_group = 1;
-
-        // Iterate through all transitions and split the group into two group where one has the transition and another doesn't
-        for (const auto& [from, label, to] : nfa.delta.transitions()) {
-            int lg = label_to_group[label];
-            for (const auto& symbol_post : nfa.delta.state_post(from)) {
-                if (label_to_group.at(symbol_post.symbol) != lg)
-                    continue;
-
-                for (const auto& tgt : symbol_post.targets) {
-                    if (tgt == to) {
-                        // Put all labels in this label group that have this transition in the next group
-                        label_to_group.at(symbol_post.symbol) = next_label_group;
-                    }
-                }
-            }
-            ++next_label_group;
-        }
-
-        // The label groups may be sparse now, so compact them
-        auto used_groups = label_to_group | std::ranges::to<std::set<int>>();
-        std::vector<std::vector<int>> label_groups(used_groups.size());
-
-        for (auto [ng, og] : std::views::enumerate(used_groups)) {
-            for (const auto& [label, lg] : std::views::enumerate(label_to_group)) {
-                if (lg == og) {
-                    label_groups[ng].push_back(label);
-                    label_to_group[label] = ng;
-                }
-            }
-        }
-
-        mata::nfa::Nfa new_nfa(nfa.num_of_states(), mata::nfa::StateSet(nfa.initial), mata::nfa::StateSet(nfa.final), nullptr);
-        auto all_labels = std::views::iota(0ul, used_groups.size());
-        new_nfa.alphabet = new mata::EnumAlphabet(all_labels.begin(), all_labels.end());
-        for (const auto& [from, label, to] : nfa.delta.transitions()) {
-            new_nfa.delta.add(from, label_to_group[label], to);
-        }
-
-        return std::make_pair(new_nfa, label_groups);
-    }
-
-    [[nodiscard]] mata::nfa::Nfa lts_to_nfa(const fts::LabelledTransitionSystem& lts) {
-        mata::nfa::Nfa nfa;
-
-        for (int s = 0; s < lts.size(); ++s) {
-            nfa.add_state(s);
-            if (lts.is_goal(s)) {
-                nfa.final.insert(static_cast<mata::nfa::State>(s));
-            }
-        }
-
-        for (const auto& t : lts.get_transitions()) {
-            for (const auto label : lts.get_labels(t.label_group)) {
-                nfa.delta.add(t.src, label, t.target);
-            }
-        }
-
-        return nfa;
     }
 
     void QualifiedDominanceConstraints::add_automaton_to_lp(const mata::nfa::Nfa& automaton, lp::LinearProgram& lp, mata::nfa::State state, int factor, const std::vector<std::vector<int>>& label_groups) {
@@ -296,46 +231,6 @@ namespace operator_counting {
 
         std::println("Number of simulations: ", factored_qdomrel->num_simulations());
         std::println("Percentage simulations: ", factored_qdomrel->get_percentage_simulations(false));
-#ifndef NDEBUG
-        // for (int i = 0; i < factored_qdomrel->size(); ++i) {
-        //     std::println("Factor {}", i);
-        //     graphviz::Graph graph;
-        //     const auto& rel = *factored_qdomrel->get_local_relations().at(i);
-        //     const auto& lts = transformed_task.fts_task->get_factor(i);
-        //
-        //     auto no_response_node = graph.add_node("no response", "shape=doublecircle");
-        //
-        //     std::map<std::pair<int,int>,size_t> state_pair_to_node;
-        //     for (int s = 0; s < lts.size(); ++s) {
-        //         for (int t = 0; t < lts.size(); ++t) {
-        //             state_pair_to_node[{s,t}] = graph.add_node(std::format("{} <= {}:", lts.state_name(s), lts.state_name(t)));
-        //         }
-        //     }
-        //     for (int s = 0; s < lts.size(); ++s) {
-        //         for (int t = 0; t < lts.size(); ++t) {
-        //             std::println("{} <= {}:", lts.state_name(s), lts.state_name(t));
-        //             for (const auto& [s_tr_i, t_tr_is] : std::views::enumerate(rel.transition_responses[s][t])) {
-        //                 auto s_tr = lts.get_transitions(s).at(s_tr_i);
-        //                 std::println("    {} --{}-> {}", lts.state_name(s_tr.src), lts.label_group_name(s_tr.label_group), lts.state_name(s_tr.target));
-        //                 if (t_tr_is.empty()) {
-        //                     graph.add_edge(state_pair_to_node[{s,t}], no_response_node, std::format("{}<>none", lts.label_group_name(s_tr.label_group)));
-        //                 }
-        //                 for (auto t_tr_i : t_tr_is) {
-        //                     if (t_tr_i == qdominance::NOOP_TRANSITION) {
-        //                         std::println("        noop");
-        //                         graph.add_edge(state_pair_to_node[{s,t}], state_pair_to_node[{s_tr.target,t}], std::format("{}<>{}", lts.label_group_name(s_tr.label_group), "noop"));
-        //                     } else {
-        //                         auto t_tr = lts.get_transitions(t).at(t_tr_i);
-        //                         std::println("        {} --{}-> {}", lts.state_name(t_tr.src), lts.label_group_name(t_tr.label_group), lts.state_name(t_tr.target));
-        //                         graph.add_edge(state_pair_to_node[{s,t}], state_pair_to_node[{s_tr.target,t_tr.target}], std::format("{}<>{}", lts.label_group_name(s_tr.label_group), lts.label_group_name(t_tr.label_group)));
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }
-        //     graph.output_graph(std::format("response_graph_{}.dot", i));
-        // }
-#endif
 
         // Create all the LP variables
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
@@ -356,17 +251,15 @@ namespace operator_counting {
 #ifndef NDEBUG
             draw_nfa(std::format("nfa_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
 
-            std::println("Label groups for factor {}", i);
-            for (auto [j, lg] : std::views::enumerate(lts.get_label_groups())) {
-                std::print("{}: ", j);
-                for (auto label : lg) {
-                    std::print("{}, ", lts.label_name(label));
-                }
-                std::println();
-            }
+            // std::println("Label groups for factor {}", i);
+            // for (auto [j, lg] : std::views::enumerate(lts.get_label_groups())) {
+            //     std::print("{}: ", j);
+            //     for (auto label : lg) {
+            //         std::print("{}, ", lts.label_name(label));
+            //     }
+            //     std::println();
+            // }
 #endif
-            auto lts_nfa = lts_to_nfa(transformed_task->fts_task->get_factor(i));
-
             init_variables.emplace_back();
             transition_variables.emplace_back();
             for (int q = 0; q < automaton.num_of_states(); ++q) {
@@ -380,9 +273,9 @@ namespace operator_counting {
         }
 
 #ifndef NDEBUG
-        for (int i = 0; i < lp.get_constraints().size(); ++i) {
-            std::cout << lp.get_constraints().get_name(i) << std::endl;
-        }
+        // for (int i = 0; i < lp.get_constraints().size(); ++i) {
+        //     std::cout << lp.get_constraints().get_name(i) << std::endl;
+        // }
 #endif
     }
 
@@ -400,6 +293,15 @@ namespace operator_counting {
         }
         std::cout << std::endl;
 #endif
+
+        if (!std::ranges::all_of(std::views::enumerate(explicit_state), [&](std::pair<int, int> fs) { return transformed_task->fts_task->get_factor(fs.first).is_goal(fs.second); })) {
+            // If not a goal state, add a constraint that some operator must be applied
+            lp::LPConstraint any_label_contraint(1., lp_solver.get_infinity());
+            for (int l = 0; l < transformed_task->fts_task->get_num_labels(); ++l) {
+                any_label_contraint.insert(l, 1.);
+            }
+            lp_constraints.push_back(any_label_contraint);
+        }
 
         // The constraints for each previous state, the set of initial states for each factor such that one of them must
         // reach a goal state to satisfy the constraint.

@@ -6,7 +6,7 @@
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../utils/logging.h"
 #include "qualified_factored_dominance_relation.h"
-#include "qualified_local_state_relation2.h"
+#include "qualified_local_state_relation.h"
 #include <fstream>
 #include <ostream>
 #include <vector>
@@ -38,12 +38,12 @@ compute_ld_simulation(const fts::FTSTask &task, utils::LogProxy &log) {
 
   LR label_relation{task};
 
-  std::vector<std::unique_ptr<QualifiedLocalStateRelation2>> local_relations;
+  std::vector<std::unique_ptr<QualifiedLocalStateRelation>> local_relations;
   local_relations.reserve(task.get_num_variables());
 
   for (const auto &[factor, lts] : std::views::enumerate(task.get_factors())) {
     local_relations.push_back(
-        std::make_unique<QualifiedLocalStateRelation2>(*lts, factor, task));
+        std::make_unique<QualifiedLocalStateRelation>(*lts, factor, task));
     label_relation.update(
         factor, *local_relations.back()); // Make sure to update the label
                                           // relation at least once per factor

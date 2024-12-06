@@ -1,11 +1,11 @@
 #include "label_group_relation.h"
 #include "qualified_label_relation.h"
-#include "qualified_local_state_relation2.h"
+#include "qualified_local_state_relation.h"
 
 namespace qdominance {
 bool LabelGroupSimulationRelation::compute_simulates(
     const LabelGroup lg1, const LabelGroup lg2,
-    const QualifiedLocalStateRelation2 &sim) const {
+    const QualifiedLocalStateRelation &sim) const {
   // Check if lg1 simulates lg2 in lts
   // ∀s -lg2--> s'. ∃s -lg1-> s''. s'' simulates s'
   return std::ranges::all_of(
@@ -19,14 +19,14 @@ bool LabelGroupSimulationRelation::compute_simulates(
 }
 
 bool LabelGroupSimulationRelation::compute_noop_simulates(
-    const LabelGroup lg, const QualifiedLocalStateRelation2 &sim) const {
+    const LabelGroup lg, const QualifiedLocalStateRelation &sim) const {
   return std::ranges::all_of(
       lts.get_transitions_label_group(lg),
       [&](const auto &tr) { return sim.simulates(tr.src, tr.target); });
 }
 
 bool LabelGroupSimulationRelation::compute_simulates_noop(
-    const LabelGroup lg, const QualifiedLocalStateRelation2 &sim) const {
+    const LabelGroup lg, const QualifiedLocalStateRelation &sim) const {
   // This assumes that lg has a transition in every state!
   return std::ranges::all_of(
       lts.get_transitions_label_group(lg),
@@ -34,7 +34,7 @@ bool LabelGroupSimulationRelation::compute_simulates_noop(
 }
 
 bool LabelGroupSimulationRelation::update(
-    const QualifiedLocalStateRelation2 &sim) {
+    const QualifiedLocalStateRelation &sim) {
   bool changes = false;
   changes |=
       0 < erase_if(simulations, [&](const std::pair<LabelGroup, LabelGroup> p) {

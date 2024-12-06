@@ -9,7 +9,7 @@
 using namespace fts;
 
 namespace qdominance {
-class QualifiedLocalStateRelation2;
+class QualifiedLocalStateRelation;
 class QualifiedLabelRelation;
 } // namespace qdominance
 
@@ -104,13 +104,13 @@ public:
 
   [[nodiscard]] bool
   compute_simulates(LabelGroup lg1, LabelGroup lg2,
-                    const QualifiedLocalStateRelation2 &sim) const;
+                    const QualifiedLocalStateRelation &sim) const;
   bool compute_simulates_noop(LabelGroup lg,
-                              const QualifiedLocalStateRelation2 &sim) const;
+                              const QualifiedLocalStateRelation &sim) const;
   [[nodiscard]] bool
   compute_noop_simulates(LabelGroup lg,
-                         const QualifiedLocalStateRelation2 &sim) const;
-  bool update(const QualifiedLocalStateRelation2 &sim);
+                         const QualifiedLocalStateRelation &sim) const;
+  bool update(const QualifiedLocalStateRelation &sim);
 };
 } // namespace qdominance
 
