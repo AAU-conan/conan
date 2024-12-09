@@ -5,6 +5,7 @@
 #include "cuddObj.hh"
 #include "bdd_manager.h"
 #include "merge_bdds.h"
+#include <algorithm>
 
 namespace symbolic {
 
@@ -21,7 +22,7 @@ namespace symbolic {
         }
 
         void clean() {
-            bucket.erase(remove_if(std::begin(bucket), std::end(bucket),
+            bucket.erase(std::remove_if(std::begin(bucket), std::end(bucket),
                                    [](BDD &bdd) { return bdd.IsZero(); }),
                          std::end(bucket));
         }
