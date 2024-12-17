@@ -38,9 +38,9 @@ bool ContrastiveLandmarks::update_constraints_g_value(const State &state,
 
   LPConstraints op_constraints;
   for (const auto &previous_state : previous_states) {
-    if (previous_state.g_value <= g_value) {
+    if (previous_state.g_value <= g_value && std::ranges::all_of(std::views::iota(0ul, explicit_state.size()), [&](int i) { return !fts_task->get_factor(i).is_goal(explicit_state.at(i)) || fts_task->get_factor(i).is_goal(previous_state.state.at(i)); })) {
       lp::LPConstraint op_constraint(1., lp_solver.get_infinity());
-      std::cout << "Disjunctive landmark: ";
+      // std::cout << "Disjunctive landmark: ";
       std::set<int> used_labels;
       for (int i = 0; i < explicit_state.size(); ++i) {
         if (explicit_state.at(i) != previous_state.state.at(i)) {
@@ -61,14 +61,14 @@ bool ContrastiveLandmarks::update_constraints_g_value(const State &state,
                  fts_task->get_factor(i).get_labels(fts::LabelGroup(lg))) {
               if (!used_labels.contains(label)) {
                 op_constraint.insert(label, 1.);
-                std::cout << fts_task->get_operator_name(label, false) << ",";
+                //std::cout << fts_task->get_operator_name(label, false) << ",";
                 used_labels.insert(label);
               }
             }
           }
         }
       }
-      std::cout << std::endl;
+//      std::cout << std::endl;
 
       op_constraints.push_back(op_constraint);
     }
