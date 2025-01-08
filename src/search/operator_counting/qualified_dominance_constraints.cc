@@ -12,7 +12,7 @@
 
 namespace operator_counting {
 
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation) {
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate = false) {
         mata::nfa::Nfa nfa;
         auto all_label_groups = std::views::iota(0, lts.get_num_label_groups()) | std::ranges::to<std::vector>();
         nfa.alphabet = new mata::EnumAlphabet(all_label_groups.begin(), all_label_groups.end());
@@ -71,7 +71,38 @@ namespace operator_counting {
                             // If there is a t-response to a state that simulates s', only add that transition as it is better than the others
                             nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_true);
                         } else {
-                            nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, t_targets);
+                            if (under_approximate) {
+                                /* We can only pick one response of t, so we should try and pick the best one, i.e. the one that simulates most plans of s
+                                 * Prefer final states
+                                 * Prefer states where more transitions lead to universally true
+                                 */
+                                mata::nfa::State best_target = *t_targets.begin();
+                                double best_target_score = 0.0;
+                                for (const auto& target : t_targets) {
+                                    size_t total_transitions = 0;
+                                    size_t transitions_to_true = 0;
+                                    size_t transitions_to_false = 0;
+                                    for (auto sp : nfa.delta.state_post(target)) {
+                                        for (auto tt : sp) {
+                                            if (tt == universally_true) {
+                                                ++transitions_to_true;
+                                            } else if (tt == universally_false) {
+                                                ++transitions_to_false;
+                                            }
+                                        }
+                                        ++total_transitions;
+                                    }
+
+                                    double target_score = ((double)(transitions_to_true - transitions_to_false) / total_transitions) + (nfa.final.contains(target)? 100.0: 0.0);
+                                    if (target_score > best_target_score) {
+                                        best_target = target;
+                                        best_target_score = target_score;
+                                    }
+                                }
+                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, best_target);
+                            } else {
+                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, t_targets);
+                            }
                         }
                     }
                     for (const auto& label : unused_labels) {
@@ -235,9 +266,9 @@ namespace operator_counting {
         // Create all the LP variables
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
             const auto& lts = transformed_task->fts_task->get_factor(i);
-            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation());
-            {
-                auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton);
+            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation(), approximate_determinization);
+            if (minimize_nfa) {
+                auto [minimal_automaton, state_to_reduced_map] = qdominance::minimize_determinize_hopcroft(automaton, approximate_determinization);
                 for (int s = 0; s < lts.size(); ++s) {
                     for (int t = 0; t < lts.size(); ++t) {
                         local_state_pair_to_nfa_state[s][t] = state_to_reduced_map[local_state_pair_to_nfa_state[s][t]];
@@ -245,6 +276,12 @@ namespace operator_counting {
                 }
                 minimal_automaton.swap_final_nonfinal(); // Swap final and non-final states; nfa should be deterministic and complete
                 automaton = minimal_automaton;
+            } else {
+                automaton.make_complete();
+                if (!approximate_determinization) {
+                    automaton = qdominance::determinize(automaton);
+                }
+                automaton.swap_final_nonfinal(); // Swap final and non-final states; nfa should be deterministic and complete
             }
             state_pair_to_nfa_state.push_back(local_state_pair_to_nfa_state);
 
@@ -264,9 +301,14 @@ namespace operator_counting {
             transition_variables.emplace_back();
             for (int q = 0; q < automaton.num_of_states(); ++q) {
                 automaton.initial = {static_cast<mata::nfa::State>(q)};
-                auto reduced_automaton = minimize(automaton);
-                reduced_automaton.alphabet = automaton.alphabet;
-                reduced_automaton.make_complete();
+                mata::nfa::Nfa reduced_automaton;
+                if (minimize_nfa) {
+                    reduced_automaton = minimize(automaton);
+                    reduced_automaton.alphabet = automaton.alphabet;
+                    reduced_automaton.make_complete();
+                } else {
+                    reduced_automaton = automaton;
+                }
 
                 add_automaton_to_lp(reduced_automaton, lp, q, i, lts.get_label_groups());
             }
@@ -359,10 +401,12 @@ namespace operator_counting {
             document_title("Qualified Dominance constraints");
             document_synopsis("");
             add_option<bool>("only_pruning", "Only use dominance to assign h=∞", "false");
+            add_option<bool>("minimize_nfa", "Minimize the NFA before adding it to the LP", "true");
+            add_option<bool>("approx_det", "Under-approximate the determinization of the transition response NA", "false");
         }
 
         [[nodiscard]] std::shared_ptr<QualifiedDominanceConstraints> create_component(const plugins::Options &opts, const utils::Context &) const override {
-            return std::make_shared<QualifiedDominanceConstraints>(opts.get<bool>("only_pruning"));
+            return std::make_shared<QualifiedDominanceConstraints>(opts.get<bool>("only_pruning"), opts.get<bool>("minimize_nfa"), opts.get<bool>("approx_det"));
         }
     };
 

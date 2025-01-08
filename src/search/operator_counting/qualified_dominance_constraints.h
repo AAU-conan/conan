@@ -25,8 +25,10 @@ namespace operator_counting {
         bool update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) override;
 
         bool only_pruning;
+        bool minimize_nfa;
+        bool approximate_determinization;
 
-        explicit QualifiedDominanceConstraints(const bool only_pruning = false) : only_pruning(only_pruning)
+        explicit QualifiedDominanceConstraints(const bool only_pruning = false, const bool minimize_nfa = true, const bool approximate_determinization = false) : only_pruning(only_pruning), minimize_nfa(minimize_nfa), approximate_determinization(approximate_determinization)
         {}
 
     private:
