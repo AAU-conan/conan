@@ -281,8 +281,10 @@ namespace operator_counting {
 
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task->fts_task);
 
+#ifndef NDEBUG
         factored_qdomrel->print_simulations();
         factored_qdomrel->print_label_dominance();
+#endif
 
         std::println("Number of simulations: ", factored_qdomrel->num_simulations());
         std::println("Percentage simulations: ", factored_qdomrel->get_percentage_simulations(false));
@@ -381,7 +383,6 @@ namespace operator_counting {
             if (previous_state.g_value <= g_value) {
                 std::vector<mata::nfa::State> initial_states;
                 bool same_state = previous_state.g_value == g_value;
-                std::cout << "Previous state" << std::endl;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
 #ifndef NDEBUG
