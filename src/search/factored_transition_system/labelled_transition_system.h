@@ -131,6 +131,7 @@ namespace fts {
     class LabelledTransitionSystem {
         //Duplicated from abstraction
         int num_states;
+        int num_labels;
         std::vector<bool> goal_states;
         AbstractStateRef init_state;
         std::unordered_set<LabelGroup> relevant_label_groups;
@@ -247,6 +248,10 @@ namespace fts {
 
         int get_num_label_groups() const {
             return label_groups.size();
+        }
+
+        int get_num_labels() const {
+            return num_labels;
         }
 
         const std::vector<LabelGroup> &get_group_of_label() const {

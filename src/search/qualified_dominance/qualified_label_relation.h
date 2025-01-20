@@ -44,9 +44,7 @@ namespace qdominance {
 
         bool update(int factor, const QualifiedLocalStateRelation& sim);
 
-        void dump(utils::LogProxy& log) const;
-        void dump(utils::LogProxy& log, int label) const;
-        void dump_dominance(utils::LogProxy& log) const;
+        void print_label_dominance() const;
 
         [[nodiscard]] bool label_group_simulates(int factor, fts::LabelGroup lg1, fts::LabelGroup lg2) const;
         [[nodiscard]] bool noop_simulates_label_group(int factor, fts::LabelGroup lg) const;

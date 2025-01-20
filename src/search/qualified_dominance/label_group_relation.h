@@ -54,7 +54,7 @@ public:
       for (const auto &lg2 : lts.get_relevant_label_groups()) {
         if (std::ranges::includes(lg_sources.at(lg2.group),
                                   lg_sources.at(lg1.group))) {
-          simulations.insert({lg1, lg2});
+          simulations.insert({lg2, lg1});
         }
       }
     }
@@ -77,6 +77,12 @@ public:
           .at(tr.src)
           .push_back(tr.target);
     }
+
+#ifndef NDEBUG
+    std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.label_group_name(p.second), lts.label_group_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
+    std::println("{} simulations_noop: {}", factor, boost::algorithm::join(std::views::transform(simulations_noop, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+    std::println("{} noop_simulations: {}", factor, boost::algorithm::join(std::views::transform(noop_simulations, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+#endif
   }
 
   [[nodiscard]] bool simulates(const LabelGroup lg1,

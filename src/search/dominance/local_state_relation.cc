@@ -91,6 +91,22 @@ namespace dominance {
         }
     }
 
+    void LocalStateRelation::dump(utils::LogProxy &log, const LabelledTransitionSystem& lts) const {
+        log << "SIMREL:" << endl;
+        for (size_t j = 0; j < relation.size(); ++j) {
+            for (size_t i = 0; i < relation.size(); ++i) {
+                if (simulates(j, i) && i != j) {
+                    if (simulates(i, j)) {
+                        if (j < i) {
+                            log << lts.state_name(i) << " <=> " << lts.state_name(j) << endl;
+                        }
+                    } else {
+                        log << lts.state_name(i) << " <= " << lts.state_name(j) << endl;
+                    }
+                }
+            }
+        }
+    }
 
     void LocalStateRelation::dump(utils::LogProxy &log) const {
         log << "SIMREL:" << endl;

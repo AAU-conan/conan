@@ -9,6 +9,7 @@
 #include "../pruning_method.h"
 #include "../dominance/factored_dominance_relation.h"
 #include "../dominance/dominance_analysis.h"
+#include "../factored_transition_system/fts_task_factory.h"
 
 namespace plugins {
     class Options;
@@ -23,6 +24,7 @@ namespace dominance {
 
     class  DominancePruning : public PruningMethod {
     protected:
+        fts::TransformedFTSTask transformed_task;
         std::shared_ptr<fts::FTSTaskFactory> fts_factory;
         std::shared_ptr<DominanceAnalysis> dominance_analysis;
 

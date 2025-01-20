@@ -66,6 +66,7 @@ namespace dominance {
         }
 
         void dump(utils::LogProxy &log, const std::vector<std::string> &names) const;
+        void dump(utils::LogProxy& log, const fts::LabelledTransitionSystem& lts) const;
         void dump(utils::LogProxy &log) const;
 
 

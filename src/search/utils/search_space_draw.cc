@@ -51,6 +51,8 @@ void set_heuristic_value(const State& state, int value) {
     int id = state_lookup(state);
     if (!heuristic_values.contains(id))
         heuristic_values[id] = value;
+    else
+        heuristic_values[id] = std::max(heuristic_values[id], value);
 }
 
 std::string state_name(const std::vector<int>& state_vector, const fts::FactNames& names) {

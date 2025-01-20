@@ -41,6 +41,10 @@ public:
     }
   }
 
+  void print_label_dominance() {
+    label_relation.print_label_dominance();
+  }
+
   // Statistics of the factored simulation
   void dump_statistics(utils::LogProxy &log) const;
 

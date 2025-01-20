@@ -7,6 +7,8 @@
 
 #include <print>
 
+#include <boost/unordered_map.hpp>
+
 #include "delete_relaxation_if_constraints.h"
 #include "../utils/graphviz.h"
 
@@ -14,8 +16,8 @@ namespace operator_counting {
 
     [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate = false) {
         mata::nfa::Nfa nfa;
-        auto all_label_groups = std::views::iota(0, lts.get_num_label_groups()) | std::ranges::to<std::vector>();
-        nfa.alphabet = new mata::EnumAlphabet(all_label_groups.begin(), all_label_groups.end());
+        auto all_labels = std::views::iota(0, lts.get_num_labels()) | std::ranges::to<std::vector>();
+        nfa.alphabet = new mata::EnumAlphabet(all_labels.begin(), all_labels.end());
         std::vector<std::vector<mata::nfa::State>> state_pair_to_nfa_state(rel.num_states(), std::vector<mata::nfa::State>(rel.num_states()));
         // We know that all states where t simulates s, are in the same equivalence class, i.e. t always has a response to s
         const auto universally_true = nfa.add_state();
@@ -45,63 +47,69 @@ namespace operator_counting {
                 if (state_pair_to_nfa_state[s][t] != universally_true) {
                     const auto& s_transitions = lts.get_transitions(s);
                     const auto& t_transitions = lts.get_transitions(t);
-                    std::unordered_set<int> unused_labels(all_label_groups.begin(), all_label_groups.end());
+                    std::unordered_set<int> unused_labels(all_labels.begin(), all_labels.end());
                     for (const auto& s_tr : s_transitions) {
                         unused_labels.erase(s_tr.label_group.group);
                         if (!lts.is_relevant_label_group(s_tr.label_group)) {
-                            nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_true);
+                            for (auto l : lts.get_labels(s_tr.label_group)) {
+                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_true);
+                            }
                             continue;
                         }
 
-                        mata::nfa::StateSet t_targets;
-                        for (const auto t_tr : t_transitions) {
-                            if (label_relation.label_group_simulates_label_group_in_all_other(factor, t_tr.label_group, s_tr.label_group)) {
-                                t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t_tr.target));
-                            }
-                        }
-
-                        if (label_relation.noop_simulates_label_group_in_all_other(factor, s_tr.label_group)) {
-                            t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t));
-                        }
-
-                        if (t_targets.empty()) {
-                            // No t-responses, add a transition to universally false
-                            nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_false);
-                        } else if (t_targets.contains(universally_true)) {
-                            // If there is a t-response to a state that simulates s', only add that transition as it is better than the others
-                            nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_true);
-                        } else {
-                            if (under_approximate) {
-                                /* We can only pick one response of t, so we should try and pick the best one, i.e. the one that simulates most plans of s
-                                 * Prefer final states
-                                 * Prefer states where more transitions lead to universally true
-                                 */
-                                mata::nfa::State best_target = *t_targets.begin();
-                                double best_target_score = 0.0;
-                                for (const auto& target : t_targets) {
-                                    size_t total_transitions = 0;
-                                    size_t transitions_to_true = 0;
-                                    size_t transitions_to_false = 0;
-                                    for (auto sp : nfa.delta.state_post(target)) {
-                                        for (auto tt : sp) {
-                                            if (tt == universally_true) {
-                                                ++transitions_to_true;
-                                            } else if (tt == universally_false) {
-                                                ++transitions_to_false;
-                                            }
-                                        }
-                                        ++total_transitions;
-                                    }
-
-                                    double target_score = ((double)(transitions_to_true - transitions_to_false) / total_transitions) + (nfa.final.contains(target)? 100.0: 0.0);
-                                    if (target_score > best_target_score) {
-                                        best_target = target;
-                                        best_target_score = target_score;
+                        for (auto s_label : lts.get_labels(s_tr.label_group)) {
+                            mata::nfa::StateSet t_targets;
+                            for (const auto t_tr : t_transitions) {
+                                for (auto t_label : lts.get_labels(t_tr.label_group)) {
+                                    if (label_relation.label_simulates_label_in_all_other(factor, t_label, s_label)) {
+                                        t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t_tr.target));
                                     }
                                 }
-                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, best_target);
+                            }
+
+                            if (label_relation.noop_simulates_label_in_all_other(factor, s_label)) {
+                                t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t));
+                            }
+
+                            if (t_targets.empty()) {
+                                // No t-responses, add a transition to universally false
+                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_label, universally_false);
+                            } else if (t_targets.contains(universally_true)) {
+                                // If there is a t-response to a state that simulates s', only add that transition as it is better than the others
+                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_label, universally_true);
                             } else {
-                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, t_targets);
+                                if (under_approximate) {
+                                    /* We can only pick one response of t, so we should try and pick the best one, i.e. the one that simulates most plans of s
+                                     * Prefer final states
+                                     * Prefer states where more transitions lead to universally true
+                                     */
+                                    mata::nfa::State best_target = *t_targets.begin();
+                                    double best_target_score = 0.0;
+                                    for (const auto& target : t_targets) {
+                                        size_t total_transitions = 0;
+                                        size_t transitions_to_true = 0;
+                                        size_t transitions_to_false = 0;
+                                        for (auto sp : nfa.delta.state_post(target)) {
+                                            for (auto tt : sp) {
+                                                if (tt == universally_true) {
+                                                    ++transitions_to_true;
+                                                } else if (tt == universally_false) {
+                                                    ++transitions_to_false;
+                                                }
+                                            }
+                                            ++total_transitions;
+                                        }
+
+                                        double target_score = ((double)(transitions_to_true - transitions_to_false) / total_transitions) + (nfa.final.contains(target)? 100.0: 0.0);
+                                        if (target_score > best_target_score) {
+                                            best_target = target;
+                                            best_target_score = target_score;
+                                        }
+                                    }
+                                    nfa.delta.add(state_pair_to_nfa_state[s][t], s_label, best_target);
+                                } else {
+                                    nfa.delta.add(state_pair_to_nfa_state[s][t], s_label, t_targets);
+                                }
                             }
                         }
                     }
@@ -147,27 +155,35 @@ namespace operator_counting {
         // Add transition variables and collect ingoing/outgoing transitions for each state
         std::vector<std::set<int>> state_ingoing(automaton.num_of_states(), std::set<int>());
         std::vector<std::set<int>> state_outgoing(automaton.num_of_states(), std::set<int>());
-        std::vector<std::vector<int>> label_group_transitions(automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
+        boost::unordered_map<std::pair<mata::nfa::State, mata::nfa::State>, std::pair<int, std::unordered_set<mata::Symbol>>> transition_to_labels;
 
         auto transitions = automaton.delta.transitions();
         auto it = transitions.begin();
         for (int j = 0; it != transitions.end(); ++j, ++it) {
             const auto& [from, label, to] = *it;
 
-            // Add transition variable
-            lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
-            auto transition_variable = lp_variables.size() - 1;
-#ifndef NDEBUG
-            lp_variables.set_name(transition_variable, std::format("T[q={},f={},{}-{}>{}]", state, factor, from, std::to_string(label), to));
-#endif
-            transition_variables.at(factor).at(state).emplace_back();
+            if (from == to) {
+                continue;
+            }
+            if (transition_to_labels.contains({from, to})) {
+                transition_to_labels.at({from, to}).second.insert(label);
+            } else {
+                // Add transition variable
+                lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
+                auto transition_variable = lp_variables.size() - 1;
 
-            // Add this transition to the list of transitions for the label
-            label_group_transitions[label].push_back(transition_variable);
+                transition_to_labels.insert({{from,to}, {transition_variable, {label}}});
 
-            // Add this transition to the list of ingoing/outgoing transitions for the target/source states
-            state_ingoing[to].insert(transition_variable);
-            state_outgoing[from].insert(transition_variable);
+        #ifndef NDEBUG
+                lp_variables.set_name(transition_variable, std::format("T[q={},f={},{}->{}]", state, factor, from, std::to_string(label), to));
+        #endif
+                transition_variables.at(factor).at(state).emplace_back();
+
+
+                // Add this transition to the list of ingoing/outgoing transitions for the target/source states
+                state_ingoing[to].insert(transition_variable);
+                state_outgoing[from].insert(transition_variable);
+            }
         }
 
         // Add the flow constraint for each state
@@ -206,18 +222,23 @@ namespace operator_counting {
 #endif
         }
 
-        // Add operator count constraints for each label group
-        for (auto [lg_i, lg] : std::views::enumerate(label_groups)) {
-            lp::LPConstraint label_constraint(0., lp.get_infinity());
-            for (auto label : lg) {
-                label_constraint.insert(label, 1.);
-            }
-            for (const auto& transition : label_group_transitions.at(lg_i)) {
-                label_constraint.insert(transition, -1.);
-            }
-            lp_constraints.push_back(label_constraint);
+        // Add operator count constraints for transitions
+        for (auto [_, values] : transition_to_labels) {
+            auto [transition_variable, labels] = values;
+            lp::LPConstraint transition_label_constraint(0., lp.get_infinity());
 #ifndef NDEBUG
-            lp_constraints.set_name(lp_constraints.size() - 1, std::format("LabelGroup[q={},f={},lg={}]", state, factor, lg_i));
+            std::string labels_string;
+#endif
+            for (const auto label : labels) {
+                transition_label_constraint.insert(label, 1);
+#ifndef NDEBUG
+                labels_string += std::format("{}, ", label);
+#endif
+            }
+            transition_label_constraint.insert(transition_variable, -1.);
+            lp_constraints.push_back(transition_label_constraint);
+#ifndef NDEBUG
+            lp_constraints.set_name(lp_constraints.size() - 1, std::format("Transition {} with labels {}", lp_variables.get_name(transition_variable), labels_string));
 #endif
         }
     }
@@ -225,7 +246,7 @@ namespace operator_counting {
     void draw_nfa(const std::string& file_name, const mata::nfa::Nfa& nfa, const fts::LabelledTransitionSystem& lts, const std::vector<std::vector<unsigned long>>& state_pair_to_nfa_state) {
         graphviz::Graph g(true);
         for (size_t i = 0; i < nfa.num_of_states(); ++i) {
-            std::vector<std::string> state_pairs;
+            std::vector<std::string> state_pairs = {std::format("{}", i)};
             for (size_t s = 0; s < lts.size(); ++s) {
                 for (size_t t = 0; t < lts.size(); ++t) {
                     if (state_pair_to_nfa_state[s][t] == i) {
@@ -242,8 +263,8 @@ namespace operator_counting {
                     state_labels[t].push_back(symbol_posts.symbol);
                 }
             }
-            for (const auto& [t, ls] : state_labels) {
-                g.add_edge(s, t, lts.fact_value_names.get_common_operators_name(ls));
+            for (const auto& [t, labels] : state_labels) {
+                g.add_edge(s, t, lts.fact_value_names.get_common_operators_name(labels));
             }
         }
 
@@ -260,6 +281,9 @@ namespace operator_counting {
 
         factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task->fts_task);
 
+        factored_qdomrel->print_simulations();
+        factored_qdomrel->print_label_dominance();
+
         std::println("Number of simulations: ", factored_qdomrel->num_simulations());
         std::println("Percentage simulations: ", factored_qdomrel->get_percentage_simulations(false));
 
@@ -268,7 +292,8 @@ namespace operator_counting {
             const auto& lts = transformed_task->fts_task->get_factor(i);
             auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation(), approximate_determinization);
             if (minimize_nfa) {
-                auto [minimal_automaton, state_to_reduced_map] = qdominance::minimize_determinize_hopcroft(automaton, approximate_determinization);
+                std::println("Automaton size before minimization for factor {}: {}", i, automaton.num_of_states());
+                auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton, approximate_determinization);
                 for (int s = 0; s < lts.size(); ++s) {
                     for (int t = 0; t < lts.size(); ++t) {
                         local_state_pair_to_nfa_state[s][t] = state_to_reduced_map[local_state_pair_to_nfa_state[s][t]];
@@ -283,9 +308,11 @@ namespace operator_counting {
                 }
                 automaton.swap_final_nonfinal(); // Swap final and non-final states; nfa should be deterministic and complete
             }
+            std::println("Automaton size for factor {}: {}", i, automaton.num_of_states());
             state_pair_to_nfa_state.push_back(local_state_pair_to_nfa_state);
 
 #ifndef NDEBUG
+
             draw_nfa(std::format("nfa_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
 
             // std::println("Label groups for factor {}", i);
@@ -294,7 +321,7 @@ namespace operator_counting {
             //     for (auto label : lg) {
             //         std::print("{}, ", lts.label_name(label));
             //     }
-            //     std::println();
+            //     std::println(" ; {}", lts.fact_value_names.get_common_operators_name(lg));
             // }
 #endif
             init_variables.emplace_back();
@@ -310,6 +337,7 @@ namespace operator_counting {
                     reduced_automaton = automaton;
                 }
 
+                // draw_nfa(std::format("reduced_automaton_{}", q), reduced_automaton, lts, local_state_pair_to_nfa_state);
                 add_automaton_to_lp(reduced_automaton, lp, q, i, lts.get_label_groups());
             }
         }
@@ -353,6 +381,7 @@ namespace operator_counting {
             if (previous_state.g_value <= g_value) {
                 std::vector<mata::nfa::State> initial_states;
                 bool same_state = previous_state.g_value == g_value;
+                std::cout << "Previous state" << std::endl;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
 #ifndef NDEBUG

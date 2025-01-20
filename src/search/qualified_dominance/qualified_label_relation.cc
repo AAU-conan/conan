@@ -23,21 +23,6 @@ namespace qdominance {
         }
     }
 
-
-    void QualifiedLabelRelation::dump_dominance(utils::LogProxy &) const {
-        //TODO: implement
-/*
-        for (size_t l1 = 0; l1 < dominates_in.size(); ++l1) {
-            for (size_t l2 = 0; l2 < dominates_in.size(); ++l2) {
-                if (!dominates_in[l1][l2].is_none() && dominates_in[l2][l1] != dominates_in[l1][l2]) {
-                   // log << l1 << " dominates " << l2 << " in " << dominates_in[l1][l2] << endl;
-//                    log << g_operators[l1].get_name() << " dominates " << g_operators[l2].get_name() << endl;
-                }
-            }
-        }
-*/
-    }
-
     bool QualifiedLabelRelation::label_group_simulates(int factor, LabelGroup lg1, LabelGroup lg2) const {
         return label_group_simulation_relations.at(factor).simulates(lg1, lg2);
     }
@@ -49,5 +34,20 @@ namespace qdominance {
     bool QualifiedLabelRelation::update(int factor, const QualifiedLocalStateRelation& sim) {
         std::println("Updating {} label group relation", factor);
         return label_group_simulation_relations.at(factor).update(sim);
+    }
+
+    void QualifiedLabelRelation::print_label_dominance() const {
+        for (const auto lgsr : label_group_simulation_relations) {
+            std::println("Factor {}", lgsr.factor);
+            for (const auto [lg1, lg2] : lgsr.simulations) {
+                std::println("{} simulates {}", lgsr.lts.label_group_name(lg1), lgsr.lts.label_group_name(lg2));
+            }
+            for (const auto lg : lgsr.noop_simulations) {
+                std::println("noop simulates {}", lgsr.lts.label_group_name(lg));
+            }
+            for (const auto lg : lgsr.simulations_noop) {
+                std::println("{} simulates noop", lgsr.lts.label_group_name(lg));
+            }
+        }
     }
 }
