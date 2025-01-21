@@ -75,7 +75,7 @@ void draw_search_space(const std::shared_ptr<AbstractTask>& task, const std::str
 
     for (const auto& [state, id] : state_to_id) {
         std::string label = state_name(state, names);
-        state_id_to_node[id] = graph.add_node(label, heuristic_values.contains(id)? std::format("xlabel=\"h={}\"", heuristic_values[id]): "");
+        state_id_to_node[id] = graph.add_node(label, heuristic_values.contains(id)? std::format("xlabel=\"h={}\"", heuristic_values[id] == -1 ? "∞": std::format("{}", heuristic_values[id])): "");
     }
 
     for (const auto& [from_id, to_id, op] : edges) {

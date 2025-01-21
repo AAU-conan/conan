@@ -49,19 +49,20 @@ namespace operator_counting {
                     const auto& t_transitions = lts.get_transitions(t);
                     std::unordered_set<int> unused_labels(all_labels.begin(), all_labels.end());
                     for (const auto& s_tr : s_transitions) {
-                        unused_labels.erase(s_tr.label_group.group);
                         if (!lts.is_relevant_label_group(s_tr.label_group)) {
                             for (auto l : lts.get_labels(s_tr.label_group)) {
-                                nfa.delta.add(state_pair_to_nfa_state[s][t], s_tr.label_group.group, universally_true);
+                                unused_labels.erase(l);
+                                nfa.delta.add(state_pair_to_nfa_state[s][t], l, universally_true);
                             }
                             continue;
                         }
 
                         for (auto s_label : lts.get_labels(s_tr.label_group)) {
+                            unused_labels.erase(s_label);
                             mata::nfa::StateSet t_targets;
                             for (const auto t_tr : t_transitions) {
                                 for (auto t_label : lts.get_labels(t_tr.label_group)) {
-                                    if (label_relation.label_simulates_label_in_all_other(factor, t_label, s_label)) {
+                                    if (label_relation.label_dominates_label_in_all_other(factor, t_label, s_label)) {
                                         t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t_tr.target));
                                     }
                                 }
@@ -276,6 +277,9 @@ namespace operator_counting {
         transformed_task = std::make_unique<TransformedFTSTask>(fts_factory.transform_to_fts(task));
 
 #ifndef NDEBUG
+        for (int l = 0; l < task->get_num_operators(); l++) {
+            std::println("cost({}) = {}", task->get_operator_name(l, false), task->get_operator_cost(l, false));
+        }
         fts::draw_fts("fts.dot", *transformed_task->fts_task);
 #endif
 

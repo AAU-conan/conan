@@ -81,7 +81,7 @@ namespace qdominance {
             return res;
         }
 
-        [[nodiscard]] bool label_simulates_label_in_all_other(const int factor, const int l1, const int l2) const {
+        [[nodiscard]] bool label_dominates_label_in_all_other(const int factor, const int l1, const int l2) const {
             return fts_task.get_label_cost(l1) <= fts_task.get_label_cost(l2) && std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const unsigned long& j) {
                 const auto& lts = fts_task.get_factor(j);
                 return j == factor || label_group_simulates(j, lts.get_group_label(l1), lts.get_group_label(l2));
