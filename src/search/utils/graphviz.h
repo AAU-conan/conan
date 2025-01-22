@@ -78,6 +78,10 @@ namespace graphviz {
 
     public:
         explicit Graph(bool aggregate_labels = false) {
+#ifdef NDEBUG
+            std::cerr << "ERROR: Outputting graphs in non-debug mode" << std::endl;
+            std::exit(1);
+#endif
             if (aggregate_labels) {
                 edges = std::make_unique<AggregatedEdgeContainer>();
             } else {
