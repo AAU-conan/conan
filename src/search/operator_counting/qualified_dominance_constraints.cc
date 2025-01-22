@@ -156,7 +156,7 @@ namespace operator_counting {
         // Add transition variables and collect ingoing/outgoing transitions for each state
         std::vector<std::set<int>> state_ingoing(automaton.num_of_states(), std::set<int>());
         std::vector<std::set<int>> state_outgoing(automaton.num_of_states(), std::set<int>());
-        boost::unordered_map<std::pair<mata::nfa::State, mata::nfa::State>, std::pair<int, std::unordered_set<mata::Symbol>>> transition_to_labels;
+        std::vector<std::vector<int>> label_transitions(automaton.alphabet->get_alphabet_symbols().size(), std::vector<int>());
 
         auto transitions = automaton.delta.transitions();
         auto it = transitions.begin();
@@ -166,26 +166,21 @@ namespace operator_counting {
             if (from == to) {
                 continue;
             }
-            if (transition_to_labels.contains({from, to})) {
-                transition_to_labels.at({from, to}).second.insert(label);
-            } else {
-                // Add transition variable
-                lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
-                auto transition_variable = lp_variables.size() - 1;
+            // Add transition variable
+            lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
+            auto transition_variable = lp_variables.size() - 1;
+#ifndef NDEBUG
+            lp_variables.set_name(transition_variable, std::format("T[q={},f={},{}-{}>{}]", state, factor, from, std::to_string(label), to));
+#endif
+            transition_variables.at(factor).at(state).emplace_back();
 
-                transition_to_labels.insert({{from,to}, {transition_variable, {label}}});
+            label_transitions.at(label).push_back(transition_variable);
 
-        #ifndef NDEBUG
-                lp_variables.set_name(transition_variable, std::format("T[q={},f={},{}->{}]", state, factor, from, std::to_string(label), to));
-        #endif
-                transition_variables.at(factor).at(state).emplace_back();
-
-
-                // Add this transition to the list of ingoing/outgoing transitions for the target/source states
-                state_ingoing[to].insert(transition_variable);
-                state_outgoing[from].insert(transition_variable);
-            }
+            // Add this transition to the list of ingoing/outgoing transitions for the target/source states
+            state_ingoing[to].insert(transition_variable);
+            state_outgoing[from].insert(transition_variable);
         }
+
 
         // Add the flow constraint for each state
         for (int j = 0; j < automaton.num_of_states(); ++j) {
@@ -223,23 +218,18 @@ namespace operator_counting {
 #endif
         }
 
-        // Add operator count constraints for transitions
-        for (auto [_, values] : transition_to_labels) {
-            auto [transition_variable, labels] = values;
-            lp::LPConstraint transition_label_constraint(0., lp.get_infinity());
-#ifndef NDEBUG
-            std::string labels_string;
-#endif
-            for (const auto label : labels) {
-                transition_label_constraint.insert(label, 1);
-#ifndef NDEBUG
-                labels_string += std::format("{}, ", label);
-#endif
+        // Add operator count constraints for each label
+        for (auto [l, transition_variables] : std::views::enumerate(label_transitions)) {
+            lp::LPConstraint label_transition_constraint(0., lp.get_infinity());
+
+            label_transition_constraint.insert(l, 1);
+
+            for (auto t_var : transition_variables) {
+                label_transition_constraint.insert(t_var, -1.);
             }
-            transition_label_constraint.insert(transition_variable, -1.);
-            lp_constraints.push_back(transition_label_constraint);
+            lp_constraints.push_back(label_transition_constraint);
 #ifndef NDEBUG
-            lp_constraints.set_name(lp_constraints.size() - 1, std::format("Transition {} with labels {}", lp_variables.get_name(transition_variable), labels_string));
+            lp_constraints.set_name(lp_constraints.size() - 1, std::format("Label {}", l));
 #endif
         }
     }
