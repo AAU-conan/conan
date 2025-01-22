@@ -297,6 +297,8 @@ namespace operator_counting {
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
             const auto& lts = transformed_task->fts_task->get_factor(i);
             auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation(), approximate_determinization);
+
+            draw_nfa(std::format("nfa_premin_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
             if (minimize_nfa) {
                 std::println("Automaton size before minimization for factor {}: {}", i, automaton.num_of_states());
                 auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton, approximate_determinization);
@@ -305,6 +307,7 @@ namespace operator_counting {
                         local_state_pair_to_nfa_state[s][t] = state_to_reduced_map[local_state_pair_to_nfa_state[s][t]];
                     }
                 }
+                std::println("NUm states {}, num final states {}", minimal_automaton.num_of_states(), minimal_automaton.final.size());
                 minimal_automaton.swap_final_nonfinal(); // Swap final and non-final states; nfa should be deterministic and complete
                 automaton = minimal_automaton;
             } else {
@@ -319,6 +322,7 @@ namespace operator_counting {
 
 #ifndef NDEBUG
 
+            std::println("Automaton final states: {}", automaton.final.size());
             draw_nfa(std::format("nfa_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
 
             // std::println("Label groups for factor {}", i);

@@ -81,19 +81,18 @@ namespace qdominance {
 
     [[nodiscard]] std::pair<Nfa, std::vector<State>> merge_non_differentiable_states(const Nfa& nfa, bool is_deterministic) {
         assert(nfa.is_complete(nfa.alphabet)); // This check is not sufficient because it only checks reachable states
-        std::println("Pre determinization size {}", nfa.num_of_states());
         Nfa detnfa(nfa);
+        // DON'T USE nfa AFTERWARDS
         detnfa.make_complete();
         if (!is_deterministic) {
             detnfa = qdominance::determinize(detnfa);
         }
-        std::println("Post determinization size {}", detnfa.num_of_states());
 
         std::vector<std::vector<State>> partition = {{}, {}};
         std::vector<size_t> state_to_partition;
         for (State s = 0; s < detnfa.num_of_states(); ++s) {
-            partition[nfa.final.contains(s)? 1 : 0].push_back(s);
-            state_to_partition.push_back(nfa.final.contains(s)? 1 : 0);
+            partition[detnfa.final.contains(s)? 1 : 0].push_back(s);
+            state_to_partition.push_back(detnfa.final.contains(s)? 1 : 0);
         }
         std::set<int> waiting = {0, 1}; // Holds the indices of partition which is in waiting state
 
@@ -104,7 +103,6 @@ namespace qdominance {
         }
 
         while (!waiting.empty()) {
-            std::println("Number of partitions: {}", partition.size());
             // Pop the first element from waiting
             auto a_index = *waiting.begin();
             waiting.erase(waiting.begin());
@@ -182,7 +180,6 @@ namespace qdominance {
             new_nfa.final.insert(old_to_new[final]);
         }
 
-        std::println("Post merging step {}", new_nfa.num_of_states());
         return {new_nfa, old_to_new};
     }
 
