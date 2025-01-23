@@ -287,7 +287,9 @@ namespace operator_counting {
         for (int i = 0; i < factored_qdomrel->size(); ++i) {
             const auto& lts = transformed_task->fts_task->get_factor(i);
             auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation(), approximate_determinization);
-
+#ifndef NDEBUG
+            draw_nfa(std::format("nfa_premin_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
+#endif
             if (minimize_nfa) {
                 std::println("Automaton size before minimization for factor {}: {}", i, automaton.num_of_states());
                 auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton, approximate_determinization);
@@ -379,8 +381,11 @@ namespace operator_counting {
             if (previous_state.g_value <= g_value) {
                 std::vector<mata::nfa::State> initial_states;
                 bool same_state = previous_state.g_value == g_value;
+                int num_dominations = 0;
                 for (int i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
+                    if (factored_qdomrel->get_local_relations()[i]->simulates(previous_state.state[i], explicit_state[i]))
+                        num_dominations += 1;
 #ifndef NDEBUG
                     std::cout << "    Adding " << state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]) << ": " << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << " <= " << transformed_task->fts_task->get_factor(i).state_name(previous_state.state[i]) << std::endl;
 #endif
@@ -393,7 +398,12 @@ namespace operator_counting {
                     // nodes that are later or equal in the evaluation order.
                     break;
                 }
-                init_state_constraints.emplace_back(initial_states);
+                if (num_dominations == factored_qdomrel->size()) {
+                    // If all factors dominate the previous state, then we can prune this state
+                    return true;
+                } if (num_dominations == factored_qdomrel->size() - 1) {
+                    init_state_constraints.emplace_back(initial_states);
+                }
             }
         }
 
