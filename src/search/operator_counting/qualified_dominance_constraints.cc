@@ -163,9 +163,6 @@ namespace operator_counting {
         for (int j = 0; it != transitions.end(); ++j, ++it) {
             const auto& [from, label, to] = *it;
 
-            if (from == to) {
-                continue;
-            }
             // Add transition variable
             lp_variables.emplace_back(lp::LPVariable(0., lp.get_infinity(), 0., false));
             auto transition_variable = lp_variables.size() - 1;
@@ -220,7 +217,7 @@ namespace operator_counting {
 
         // Add operator count constraints for each label
         for (auto [l, transition_variables] : std::views::enumerate(label_transitions)) {
-            lp::LPConstraint label_transition_constraint(0., lp.get_infinity());
+            lp::LPConstraint label_transition_constraint(0., 0);
 
             label_transition_constraint.insert(l, 1);
 
