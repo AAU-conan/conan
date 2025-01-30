@@ -1005,6 +1005,7 @@ create_fast_downward_library(
         factored_transition_system/labelled_transition_system
         factored_transition_system/draw_fts
         factored_transition_system/fact_names
+        factored_transition_system/symbolic_state_mapping
         DEPENDENCY ONLY
         DEPENDS
         mas_heuristic
@@ -1191,7 +1192,7 @@ include(ExternalProject)
 
 if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
     ExternalProject_Add(cudd
-            GIT_REPOSITORY https://github.com/ivmai/cudd
+            GIT_REPOSITORY https://github.com/alvaro-torralba/cudd
             GIT_TAG release
             PATCH_COMMAND
                 COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
