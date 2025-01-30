@@ -9,8 +9,6 @@
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "qualified_label_relation.h"
 #include <mata/nfa/nfa.hh>
-#include <mata/nfa/types.hh>
-#include <rust/cxx.h>
 
 namespace merge_and_shrink {
 class TransitionSystem;

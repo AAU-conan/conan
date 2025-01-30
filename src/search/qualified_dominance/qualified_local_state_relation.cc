@@ -110,7 +110,7 @@ namespace qdominance {
     bool QualifiedLocalStateRelation::labels_simulate_labels(const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const QualifiedLabelRelation& label_relation) {
         return std::ranges::all_of(l2s, [&](const auto& l2) {
             return (include_noop && label_relation.noop_simulates_label_in_all_other(factor, l2)) || std::ranges::any_of(l1s, [&](const auto& l1) {
-                return label_relation.label_simulates_label_in_all_other(factor, l1, l2);
+                return label_relation.label_dominates_label_in_all_other(factor, l1, l2);
             });
         });
     }

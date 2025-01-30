@@ -1184,8 +1184,6 @@ option(USE_CUDD  "Compile with support for CUDD if installed on this system." TR
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 
-include(rust)
-
 if(POLICY CMP0135)
     cmake_policy(SET CMP0135 NEW)
 endif()
@@ -1193,45 +1191,27 @@ endif()
 
 include(ExternalProject)
 
-#if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
-#    ExternalProject_Add(cudd
-#            GIT_REPOSITORY https://github.com/ivmai/cudd
-#            GIT_TAG release
-#            PATCH_COMMAND
-#                COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
-#            PREFIX ${CMAKE_BINARY_DIR}/cudd
-#            CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS="-std=c++98" --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
-#            BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
-#            INSTALL_COMMAND make install
-#            BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
-#            BUILD_IN_SOURCE 1
-#    )
-#
-#    add_dependencies(qualified_dominance cudd)
-#
-#    include_directories(${CMAKE_BINARY_DIR}/cudd/include)
-#    link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
-#
-#    target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
-#endif()
+if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
+    ExternalProject_Add(cudd
+            GIT_REPOSITORY https://github.com/ivmai/cudd
+            GIT_TAG release
+            PATCH_COMMAND
+                COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
+            PREFIX ${CMAKE_BINARY_DIR}/cudd
+            CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS="-std=c++98" --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
+            BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
+            INSTALL_COMMAND make install
+            BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
+            BUILD_IN_SOURCE 1
+    )
 
-# Requires swig
-#ExternalProject_Add(spot
-#        URL http://www.lrde.epita.fr/dload/spot/spot-2.12.tar.gz
-#        URL_HASH MD5=1a9b7231575744b35e3998da61e4b89f
-#        PREFIX ${CMAKE_BINARY_DIR}/spot
-#        CONFIGURE_COMMAND ./configure --prefix=${CMAKE_BINARY_DIR}/spot CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} --disable-python --disable-devel --disable-debug --disable-shared --enable-static --enable-c++20 CFLAGS=-flto CXXFLAGS=-flto LDFLAGS=-fuse-linker-plugin
-#        BUILD_COMMAND make
-#        INSTALL_COMMAND make install
-#        BUILD_IN_SOURCE 1
-#        BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a
-#)
-#add_dependencies(qualified_dominance spot)
-#
-#include_directories(${CMAKE_BINARY_DIR}/spot/include)
-#link_directories(${CMAKE_BINARY_DIR}/spot/lib)
-#
-#target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/spot/lib/libspot.a ${CMAKE_BINARY_DIR}/spot/lib/libbddx.a)
+    add_dependencies(qualified_dominance cudd)
+
+    include_directories(${CMAKE_BINARY_DIR}/cudd/include)
+    link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
+
+    target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
+endif()
 
 
 ExternalProject_Add(mata
