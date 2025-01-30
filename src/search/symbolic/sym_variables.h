@@ -66,11 +66,11 @@ namespace symbolic {
         SymVariables(std::shared_ptr<BDDManager> manager, const variable_ordering::VariableOrderingStrategy &variable_ordering,
                      std::shared_ptr<AbstractTask> task);
 
-        int get_num_variables () const {
+        size_t get_num_variables () const {
             return preconditionBDDs.size();
         }
 
-        int get_domain_size (int var) const {
+        size_t get_domain_size (int var) const {
             return variable_domain_sizes[var];
         }
 

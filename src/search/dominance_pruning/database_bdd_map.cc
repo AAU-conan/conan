@@ -76,7 +76,7 @@ namespace dominance {
             BDD simulatingBDD = dominance_relation_bdd->get_related_states(state);
             for (auto &entry: closed) {
                 if (entry.first > g) break;
-                if (!((entry.second * simulatingBDD).IsZero())) {
+                if (!(entry.second.Intersect(simulatingBDD).IsZero())) {
                     return true;
                 }
             }
