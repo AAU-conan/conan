@@ -15,7 +15,7 @@ namespace qdominance {
     double QualifiedFactoredDominanceRelation::get_percentage_simulations(bool ignore_equivalences) const {
         double percentage = 1;
         for (auto &sim: local_relations) {
-            percentage *= sim->get_percentage_simulations(false);
+            percentage *= sim->get_percentage_simulations();
         }
         if (ignore_equivalences) {
             percentage -= get_percentage_equivalences();
@@ -54,7 +54,7 @@ namespace qdominance {
     int QualifiedFactoredDominanceRelation::num_simulations() const {
         int res = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res += local_relations[i]->num_simulations(true);
+            res += local_relations[i]->num_simulations();
         }
         return res;
     }
@@ -62,7 +62,7 @@ namespace qdominance {
     double QualifiedFactoredDominanceRelation::num_st_pairs() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res *= local_relations[i]->num_simulations(false);
+            res *= local_relations[i]->num_simulations();
         }
         return res;
     }
@@ -84,7 +84,7 @@ namespace qdominance {
         int num_vars = 0;
         int num_vars_with_simulations = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            if (local_relations[i]->num_simulations(true) > 0) {
+            if (local_relations[i]->num_simulations() > 0) {
                 num_vars_with_simulations++;
             }
             num_vars++;

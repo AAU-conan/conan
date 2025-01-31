@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "../algorithms/named_vector.h"
+#include "../utils/language.h"
 
 class AbstractTask;
 class State;
@@ -48,10 +49,12 @@ public:
       Returns true if a dead end was detected and false otherwise.
     */
     virtual bool update_constraints(const State &state, lp::LPSolver &lp_solver) {
+        utils::unused_variable(state); utils::unused_variable(lp_solver);
         throw std::runtime_error("update_constraints not implemented");
     };
 
     virtual bool update_constraints_g_value(const State &state, int g_value, lp::LPSolver &lp_solver) {
+        utils::unused_variable(g_value);
         return update_constraints(state, lp_solver);
     }
 };

@@ -84,7 +84,7 @@ namespace operator_counting {
         const auto transformed_task = fts_factory.transform_to_fts(task);
 
         // Create all the LP variables
-        for (int i = 0; i < transformed_task.fts_task->get_factors().size(); ++i) {
+        for (int i = 0; i < static_cast<int>(transformed_task.fts_task->get_factors().size()); ++i) {
             add_factor_lts_to_lp(transformed_task.fts_task->get_factor(i), lp, i);
         }
     }
@@ -95,7 +95,7 @@ namespace operator_counting {
 
         LPConstraints lp_constraints;
         // Create factor constraints
-        for (int i = 0; i < explicit_state.size(); ++i) {
+        for (int i = 0; i < static_cast<int>(explicit_state.size()); ++i) {
             lp::LPConstraint constraint_i(1, lp_solver.get_infinity());
             constraint_i.insert(lts_init_variables.at(i).at(explicit_state.at(i)), 1.);
             lp_constraints.push_back(constraint_i);
@@ -113,6 +113,7 @@ namespace operator_counting {
         }
 
         [[nodiscard]] std::shared_ptr<FactoredConstraints> create_component(const plugins::Options &opts, const utils::Context &) const override {
+            utils::unused_variable(opts);
             return std::make_shared<FactoredConstraints>();
         }
     };

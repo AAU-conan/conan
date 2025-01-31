@@ -22,6 +22,7 @@ EvaluationResult ComparativeHeuristic::compute_result(EvaluationContext& eval_co
 }
 
 int ComparativeHeuristic::compute_heuristic(const State& ancestor_state) {
+    utils::unused_variable(ancestor_state);
     throw std::runtime_error("Should not be reachable");
 }
 

@@ -76,15 +76,15 @@ public:
     return label_relation;
   }
 
-  size_t size() const { return local_relations.size(); }
+  [[nodiscard]] size_t size() const { return local_relations.size(); }
 
   QualifiedLocalStateRelation &operator[](int index) {
-    assert(index >= 0 && index < local_relations.size());
+    assert(index >= 0 && index < static_cast<int>(local_relations.size()));
     return *(local_relations[index]);
   }
 
   const QualifiedLocalStateRelation &operator[](int index) const {
-    assert(index >= 0 && index < local_relations.size());
+    assert(index >= 0 && index < static_cast<int>(local_relations.size()));
     return *(local_relations[index]);
   }
 

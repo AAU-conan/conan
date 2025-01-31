@@ -14,6 +14,9 @@ struct Edge {
     OperatorProxy op;
 };
 
+int state_lookup(const State& state);
+std::string state_name(const std::vector<int>& state_vector, const fts::FactNames& names);
+
 static const StateRegistry* state_registry;
 
 static std::vector<Edge> edges;

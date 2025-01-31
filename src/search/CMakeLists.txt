@@ -561,14 +561,14 @@ if(USE_LP)
         target_compile_definitions(lp_solver INTERFACE HAS_CPLEX)
         target_link_libraries(lp_solver INTERFACE cplex::cplex)
         target_sources(lp_solver INTERFACE lp/cplex_solver_interface.h lp/cplex_solver_interface.cc)
-    else()
-        find_package(soplex 7.1.0)
-        if (SOPLEX_FOUND)
-            message(STATUS "Found SoPlex: ${SOPLEX_INCLUDE_DIRS}")
-            target_link_libraries(lp_solver INTERFACE libsoplex)
-            target_compile_definitions(lp_solver INTERFACE HAS_SOPLEX)
-            target_sources(lp_solver INTERFACE lp/soplex_solver_interface.h lp/soplex_solver_interface.cc)
-        endif()
+    endif()
+
+    find_package(soplex 7.1.0)
+    if (SOPLEX_FOUND)
+        message(STATUS "Found SoPlex: ${SOPLEX_INCLUDE_DIRS}")
+        target_link_libraries(lp_solver INTERFACE libsoplex)
+        target_compile_definitions(lp_solver INTERFACE HAS_SOPLEX)
+        target_sources(lp_solver INTERFACE lp/soplex_solver_interface.h lp/soplex_solver_interface.cc)
     endif()
 endif()
 
@@ -1021,8 +1021,8 @@ create_fast_downward_library(
         dominance/ld_simulation
         dominance/local_state_relation
         dominance/dominance_relation_bdd
-        #dominance/label_relation_identity
-        #dominance/label_relation_noop
+#        dominance/label_relation_identity
+#        dominance/label_relation_noop
         DEPENDS
         factored_transition_system
 )
@@ -1174,13 +1174,6 @@ create_fast_downward_library(
 # TODO: partial grounding
 # TODO: pruning rules ILP bad actions
 
-# If any enabled plugin requires the CUDD library, compile with it.
-# If CUDD is not installed, the planner will still compile, but
-# using components that depend on CUDD will cause an error.
-# This behavior can be overwritten by setting the
-# option USE_CUDD to false.
-option(USE_CUDD  "Compile with support for CUDD if installed on this system." TRUE)
-
 set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 
 if(POLICY CMP0135)
@@ -1190,27 +1183,26 @@ endif()
 
 include(ExternalProject)
 
-if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
-    ExternalProject_Add(cudd
-            GIT_REPOSITORY https://github.com/alvaro-torralba/cudd
-            GIT_TAG release
-            PATCH_COMMAND
-                COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
-            PREFIX ${CMAKE_BINARY_DIR}/cudd
-            CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS="-std=c++98" --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
-            BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
-            INSTALL_COMMAND make install
-            BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
-            BUILD_IN_SOURCE 1
-    )
+ExternalProject_Add(cudd
+        GIT_REPOSITORY https://github.com/alvaro-torralba/cudd
+        GIT_TAG release
+        PATCH_COMMAND
+            COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
+        PREFIX ${CMAKE_BINARY_DIR}/cudd
+        CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS=-std=c++98\ -w --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
+        BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
+        INSTALL_COMMAND make install
+        BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
+        BUILD_IN_SOURCE 1
+        UPDATE_COMMAND ""
+)
 
-    add_dependencies(qualified_dominance cudd)
+add_dependencies(qualified_dominance cudd)
 
-    include_directories(${CMAKE_BINARY_DIR}/cudd/include)
-    link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
+include_directories(SYSTEM ${CMAKE_BINARY_DIR}/cudd/include)
+link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
 
-    target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
-endif()
+target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
 
 
 ExternalProject_Add(mata
@@ -1221,11 +1213,12 @@ ExternalProject_Add(mata
     INSTALL_COMMAND cd build && make install
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/mata/lib/libmata.a
     BUILD_IN_SOURCE 1
+    UPDATE_COMMAND ""
 )
 
 add_dependencies(qualified_dominance mata)
 
-include_directories(${CMAKE_BINARY_DIR}/mata/include)
+include_directories(SYSTEM ${CMAKE_BINARY_DIR}/mata/include)
 link_directories(${CMAKE_BINARY_DIR}/mata/lib)
 
 target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/mata/lib/libmata.a)

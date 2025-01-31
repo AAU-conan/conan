@@ -94,7 +94,7 @@ namespace qdominance {
             partition[detnfa.final.contains(s)? 1 : 0].push_back(s);
             state_to_partition.push_back(detnfa.final.contains(s)? 1 : 0);
         }
-        std::set<int> waiting = {0, 1}; // Holds the indices of partition which is in waiting state
+        std::set<size_t> waiting = {0, 1}; // Holds the indices of partition which is in waiting state
 
         // Maps each state s and label l, to the states that have an l-transition to s
         std::vector<std::vector<std::vector<State>>> state_label_premap = std::vector(detnfa.num_of_states(), std::vector(detnfa.alphabet->get_alphabet_symbols().size(), std::vector<State>(detnfa.num_of_states())));
@@ -115,7 +115,7 @@ namespace qdominance {
                     }
                 }
 
-                for (int y_part_index = 0; y_part_index < partition.size(); ++y_part_index) {
+                for (size_t y_part_index = 0; y_part_index < partition.size(); ++y_part_index) {
                     std::vector<State> difference;
                     std::vector<State> intersection;
                     for (State s : partition[y_part_index]) {
@@ -129,9 +129,9 @@ namespace qdominance {
                     if (!intersection.empty() && !difference.empty()) {
                         // y_part is split into intersection and difference
                         partition[y_part_index] = std::move(intersection); // This invalidates y_part
-                        int intersection_index = (int)y_part_index;
+                        auto intersection_index = y_part_index;
                         partition.push_back(std::move(difference));
-                        int difference_index = (int)partition.size() - 1;
+                        auto difference_index = partition.size() - 1;
 
                         if (waiting.contains(intersection_index)) {
                             // Fix the waiting list

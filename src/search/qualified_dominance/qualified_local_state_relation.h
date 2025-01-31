@@ -79,7 +79,7 @@ public:
 
   bool is_identity() const;
   int num_equivalences() const;
-  int num_simulations(bool ignore_equivalences) const;
+  int num_simulations() const;
   int num_different_states() const;
 
   void dump(utils::LogProxy &log, const std::vector<std::string> &names) const;
@@ -87,7 +87,7 @@ public:
 
   // Computes the probability of selecting a random pair s, s' such that s
   // simulates s'.
-  double get_percentage_simulations(bool ignore_equivalences) const;
+  double get_percentage_simulations() const;
 
   // Computes the probability of selecting a random pair s, s' such that s is
   // equivalent to s'.

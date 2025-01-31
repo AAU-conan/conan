@@ -29,7 +29,7 @@ namespace qdominance {
         return std::ranges::count_if(simulations, [&](const auto p) { return simulations.contains({p.second, p.first}); });
     }
 
-    int QualifiedLocalStateRelation::num_simulations(bool ignore_equivalences) const {
+    int QualifiedLocalStateRelation::num_simulations() const {
         return simulations.size();
     }
 
@@ -51,9 +51,9 @@ namespace qdominance {
 
 //Computes the probability of selecting a random pair s, s' such
 //that s simulates s'.
-    double QualifiedLocalStateRelation::get_percentage_simulations(bool ignore_equivalences) const {
-        double num_sims = num_simulations(ignore_equivalences);
-        double num_states = (ignore_equivalences ? num_different_states() : simulations.size());
+    double QualifiedLocalStateRelation::get_percentage_simulations() const {
+        double num_sims = num_simulations();
+        double num_states =  simulations.size();
         return num_sims / (num_states * num_states);
     }
 

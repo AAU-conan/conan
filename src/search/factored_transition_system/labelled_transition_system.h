@@ -148,8 +148,8 @@ namespace fts {
         bool is_self_loop_everywhere_label(LabelGroup lg) const;
 
     public:
-        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, FactValueNames fact_value_names);
         FactValueNames fact_value_names;
+        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, FactValueNames fact_value_names);
 
         ~LabelledTransitionSystem() {}
 
@@ -162,7 +162,7 @@ namespace fts {
         }
 
         bool is_goal(int state) const {
-            return goal_states[state];
+            return goal_states.at(state);
         }
 
         inline int size() const {

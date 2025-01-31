@@ -22,7 +22,7 @@ public:
     [[nodiscard]] virtual std::string get_variable_name(int var) const = 0;
     [[nodiscard]] virtual std::string get_fact_name(const FactPair& fact_pair) const = 0;
     [[nodiscard]] virtual std::unique_ptr<FactNames> clone() const = 0;
-    [[nodiscard]] virtual size_t get_num_operators() const = 0;
+    [[nodiscard]] virtual int get_num_operators() const = 0;
     [[nodiscard]] virtual size_t get_num_variables() const = 0;
 };
 
@@ -176,7 +176,7 @@ public:
         return std::make_unique<AbstractTaskFactNames>(*this);
     }
 
-    [[nodiscard]] size_t get_num_operators() const override {
+    [[nodiscard]] int get_num_operators() const override {
         return abstract_task->get_num_operators();
     }
 
@@ -205,7 +205,7 @@ public:
         return std::make_unique<NoFactNames>(*this);
     }
 
-    [[nodiscard]] size_t get_num_operators() const override {
+    [[nodiscard]] int get_num_operators() const override {
         throw std::logic_error("NoFactNames cannot be used to get the number of operators");
     }
 

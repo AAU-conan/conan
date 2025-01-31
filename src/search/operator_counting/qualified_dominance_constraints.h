@@ -19,8 +19,7 @@ namespace operator_counting {
     class QualifiedDominanceConstraints final : public ConstraintGenerator {
     public:
         void add_automaton_to_lp(const mata::nfa::Nfa& automaton, lp::LinearProgram& lp, mata::nfa::State state,
-                                 int factor,
-                                 const std::vector<std::vector<int>>& label_groups);
+                                 int factor);
         void initialize_constraints(const std::shared_ptr<AbstractTask> &task, lp::LinearProgram &lp) override;
         bool update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) override;
 

@@ -10,6 +10,7 @@
 namespace operator_counting {
 void ContrastiveLandmarks::initialize_constraints(
     const std::shared_ptr<AbstractTask> &task, lp::LinearProgram &lp) {
+  utils::unused_variable(lp);
   fts::AtomicTaskFactory fts_factory;
   fts_task = fts_factory.transform_to_fts(task).fts_task;
 
@@ -42,7 +43,7 @@ bool ContrastiveLandmarks::update_constraints_g_value(const State &state,
       lp::LPConstraint op_constraint(1., lp_solver.get_infinity());
       // std::cout << "Disjunctive landmark: ";
       std::set<int> used_labels;
-      for (int i = 0; i < explicit_state.size(); ++i) {
+      for (size_t i = 0; i < explicit_state.size(); ++i) {
         if (explicit_state.at(i) != previous_state.state.at(i)) {
           std::set<int> pstate_lgs =
               std::views::transform(

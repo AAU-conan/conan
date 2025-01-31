@@ -13,8 +13,11 @@
 #include "../utils/graphviz.h"
 
 namespace operator_counting {
+    std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate = false);
+    void draw_nfa(const std::string& file_name, const mata::nfa::Nfa& nfa, const fts::LabelledTransitionSystem& lts, const std::vector<std::vector<unsigned long>>& state_pair_to_nfa_state);
 
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate = false) {
+
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate) {
         mata::nfa::Nfa nfa;
         auto all_labels = std::views::iota(0, lts.get_num_labels()) | std::ranges::to<std::vector>();
         nfa.alphabet = new mata::EnumAlphabet(all_labels.begin(), all_labels.end());
@@ -124,7 +127,7 @@ namespace operator_counting {
         return {nfa, state_pair_to_nfa_state};
     }
 
-    void QualifiedDominanceConstraints::add_automaton_to_lp(const mata::nfa::Nfa& automaton, lp::LinearProgram& lp, mata::nfa::State state, int factor, const std::vector<std::vector<int>>& label_groups) {
+    void QualifiedDominanceConstraints::add_automaton_to_lp(const mata::nfa::Nfa& automaton, lp::LinearProgram& lp, mata::nfa::State state, int factor) {
         LPVariables& lp_variables = lp.get_variables();
         LPConstraints& lp_constraints = lp.get_constraints();
 
@@ -180,7 +183,7 @@ namespace operator_counting {
 
 
         // Add the flow constraint for each state
-        for (int j = 0; j < automaton.num_of_states(); ++j) {
+        for (size_t j = 0; j < automaton.num_of_states(); ++j) {
             // 0 <= Sum of ingoing transitions - sum of outgoing transitions + initial state <= goal state? 1: 0
             lp::LPConstraint flow_constraint(0., automaton.final.contains(j)? 1.: 0.);
 #ifndef NDEBUG
@@ -235,8 +238,8 @@ namespace operator_counting {
         graphviz::Graph g(true);
         for (size_t i = 0; i < nfa.num_of_states(); ++i) {
             std::vector<std::string> state_pairs = {std::format("{}", i)};
-            for (size_t s = 0; s < lts.size(); ++s) {
-                for (size_t t = 0; t < lts.size(); ++t) {
+            for (int s = 0; s < lts.size(); ++s) {
+                for (int t = 0; t < lts.size(); ++t) {
                     if (state_pair_to_nfa_state[s][t] == i) {
                         state_pairs.emplace_back(std::format("{} <= {}", lts.state_name(s), lts.state_name(t)));
                     }
@@ -281,7 +284,7 @@ namespace operator_counting {
         std::println("Percentage simulations: ", factored_qdomrel->get_percentage_simulations(false));
 
         // Create all the LP variables
-        for (int i = 0; i < factored_qdomrel->size(); ++i) {
+        for (size_t i = 0; i < factored_qdomrel->size(); ++i) {
             const auto& lts = transformed_task->fts_task->get_factor(i);
             auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation(), approximate_determinization);
 #ifndef NDEBUG
@@ -323,7 +326,7 @@ namespace operator_counting {
 #endif
             init_variables.emplace_back();
             transition_variables.emplace_back();
-            for (int q = 0; q < automaton.num_of_states(); ++q) {
+            for (size_t q = 0; q < automaton.num_of_states(); ++q) {
                 automaton.initial = {static_cast<mata::nfa::State>(q)};
                 mata::nfa::Nfa reduced_automaton;
                 if (minimize_nfa) {
@@ -335,7 +338,7 @@ namespace operator_counting {
                 }
 
                 // draw_nfa(std::format("reduced_automaton_{}", q), reduced_automaton, lts, local_state_pair_to_nfa_state);
-                add_automaton_to_lp(reduced_automaton, lp, q, i, lts.get_label_groups());
+                add_automaton_to_lp(reduced_automaton, lp, q, i);
             }
         }
 
@@ -355,20 +358,25 @@ namespace operator_counting {
 #ifndef NDEBUG
         // Print state
         std::print("g-value: {}, ", g_value);
-        for (int i = 0; i < explicit_state.size(); ++i) {
-            std::cout << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << ", ";
+        for (size_t i = 0; i < explicit_state.size(); ++i) {
+            std::cout << transformed_task->fts_task->get_factor(i).state_name(explicit_state.at(i)) << ", ";
         }
         std::cout << std::endl;
 #endif
 
         if (!std::ranges::all_of(std::views::enumerate(explicit_state), [&](std::pair<int, int> fs) { return transformed_task->fts_task->get_factor(fs.first).is_goal(fs.second); })) {
             // If not a goal state, add a constraint that some operator must be applied
-            lp::LPConstraint any_label_contraint(1., lp_solver.get_infinity());
+            lp::LPConstraint any_label_constraint(1., lp_solver.get_infinity());
             for (int l = 0; l < transformed_task->fts_task->get_num_labels(); ++l) {
-                any_label_contraint.insert(l, 1.);
+                any_label_constraint.insert(l, 1.);
             }
-            lp_constraints.push_back(any_label_contraint);
+            lp_constraints.push_back(any_label_constraint);
+#ifndef NDEBUG
+            lp_constraints.set_name(lp_constraints.size() - 1, "AnyLabel");
+#endif
         }
+
+        lp_solver.write_lp("lp.lp");
 
         // The constraints for each previous state, the set of initial states for each factor such that one of them must
         // reach a goal state to satisfy the constraint.
@@ -378,8 +386,8 @@ namespace operator_counting {
             if (previous_state.g_value <= g_value) {
                 std::vector<mata::nfa::State> initial_states;
                 bool same_state = previous_state.g_value == g_value;
-                int num_dominations = 0;
-                for (int i = 0; i < previous_state.state.size(); ++i) {
+                size_t num_dominations = 0;
+                for (size_t i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
                     if (factored_qdomrel->get_local_relations()[i]->simulates(previous_state.state[i], explicit_state[i]))
                         num_dominations += 1;
@@ -406,10 +414,10 @@ namespace operator_counting {
 
         if (!init_state_constraints.empty()) {
             // For each set of constraints
-            for (int i = 0; i < init_state_constraints.size(); ++i) {
+            for (size_t i = 0; i < init_state_constraints.size(); ++i) {
                 // Add initial state constraints
                 lp::LPConstraint constraint(1., lp_solver.get_infinity());
-                for (int j = 0; j < init_state_constraints.at(i).size(); ++j) {
+                for (size_t j = 0; j < init_state_constraints.at(i).size(); ++j) {
                     // Each initial state should appear with coefficient |constraints|
                     constraint.insert(init_variables.at(j).at(init_state_constraints.at(i).at(j)), 1.);
                 }

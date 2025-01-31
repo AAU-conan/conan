@@ -17,7 +17,7 @@ namespace qdominance {
 
     QualifiedLabelRelation::QualifiedLabelRelation(const fts::FTSTask & fts_task)
     : fts_task(fts_task) {
-        for (int i = 0; i < fts_task.get_factors().size(); ++i) {
+        for (size_t i = 0; i < fts_task.get_factors().size(); ++i) {
             const auto& lts = fts_task.get_factor(i);
             label_group_simulation_relations.emplace_back(lts, i);
         }
@@ -36,15 +36,15 @@ namespace qdominance {
     }
 
     void QualifiedLabelRelation::print_label_dominance() const {
-        for (const auto lgsr : label_group_simulation_relations) {
+        for (const auto& lgsr : label_group_simulation_relations) {
             std::println("Factor {}", lgsr.factor);
-            for (const auto [lg1, lg2] : lgsr.simulations) {
+            for (const auto& [lg1, lg2] : lgsr.simulations) {
                 std::println("{} simulates {}", lgsr.lts.label_group_name(lg1), lgsr.lts.label_group_name(lg2));
             }
-            for (const auto lg : lgsr.noop_simulations) {
+            for (const auto& lg : lgsr.noop_simulations) {
                 std::println("noop simulates {}", lgsr.lts.label_group_name(lg));
             }
-            for (const auto lg : lgsr.simulations_noop) {
+            for (const auto& lg : lgsr.simulations_noop) {
                 std::println("{} simulates noop", lgsr.lts.label_group_name(lg));
             }
         }

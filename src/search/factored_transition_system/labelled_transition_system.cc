@@ -13,7 +13,7 @@ namespace fts {
     LabelledTransitionSystem::LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &ts,
                                                        const LabelMap &labelMap,
                                                        FactValueNames fact_value_names) :
-            num_states(ts.get_size()), goal_states(ts.get_goal_states()), init_state(ts.get_init_state()), fact_value_names(std::move(fact_value_names)), num_labels(0) {
+            num_states(ts.get_size()), num_labels(0), goal_states(ts.get_goal_states()), init_state(ts.get_init_state()), fact_value_names(std::move(fact_value_names)) {
 
         int num_label_groups = labelMap.get_num_labels();
 

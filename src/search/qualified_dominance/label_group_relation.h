@@ -61,7 +61,7 @@ public:
 
     // lg simulates noop only if it has a transition in every state
     for (int lg = 0; lg < lts.get_num_label_groups(); ++lg) {
-      if (!lg_sources.contains(lg) || lg_sources.at(lg).size() == lts.size()) {
+      if (!lg_sources.contains(lg) || lg_sources.at(lg).size() == static_cast<size_t>(lts.size())) {
         // If lg is not in lg_sources, it is irrelevant
         simulations_noop.insert(LabelGroup(lg));
       }

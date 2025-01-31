@@ -74,7 +74,7 @@ namespace dominance {
             }
             dominance_bdds.push_back(dominance);
         }
-        assert (dominance_bdds.size() == state_relation.num_states());
+        assert (dominance_bdds.size() == static_cast<size_t>(state_relation.num_states()));
         return std::make_unique<LocalStateRelationBDD>(std::move(dominance_bdds));
     }
 }
