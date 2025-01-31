@@ -1025,6 +1025,7 @@ create_fast_downward_library(
 #        dominance/label_relation_noop
         DEPENDS
         factored_transition_system
+        symbolic
 )
 
 
@@ -1061,6 +1062,7 @@ create_fast_downward_library(
         dominance_pruning/database_test
         DEPENDS
         dominance
+        symbolic
 )
 
 
