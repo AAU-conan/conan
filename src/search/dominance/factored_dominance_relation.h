@@ -6,6 +6,7 @@
 #include <set>
 
 #include "local_state_relation.h"
+#include "../qualified_dominance/label_grouped_label_relation.h"
 
 namespace merge_and_shrink {
     class TransitionSystem;
@@ -21,10 +22,11 @@ namespace dominance {
  */
     class FactoredDominanceRelation {
     protected:
-        std::vector<std::unique_ptr<LocalStateRelation> > local_relations;
+        std::vector<std::unique_ptr<FactorDominanceRelation> > local_relations;
+        std::unique_ptr<LabelGroupedLabelRelation> label_relation;
     public:
-        FactoredDominanceRelation(std::vector<std::unique_ptr<LocalStateRelation>> &&_local_relations) :
-            local_relations (std::move(_local_relations)){
+        explicit FactoredDominanceRelation(std::vector<std::unique_ptr<FactorDominanceRelation>> &&_local_relations, std::unique_ptr<LabelGroupedLabelRelation> &label_relation) :
+            local_relations (std::move(_local_relations)), label_relation(std::move(label_relation)) {
         }
 
         //Statistics of the factored simulation
@@ -49,7 +51,7 @@ namespace dominance {
         double get_percentage_equal() const;
 
         //Methods to access the underlying simulation relations
-        const std::vector<std::unique_ptr<LocalStateRelation> > &get_local_relations() const {
+        const std::vector<std::unique_ptr<FactorDominanceRelation> > &get_local_relations() const {
             return local_relations;
         }
 
@@ -57,12 +59,16 @@ namespace dominance {
             return local_relations.size();
         }
 
-        LocalStateRelation &operator[](int index) {
+        FactorDominanceRelation &operator[](int index) {
             return *(local_relations[index]);
         }
 
-        const LocalStateRelation &operator[](int index) const {
+        const FactorDominanceRelation &operator[](int index) const {
             return *(local_relations[index]);
+        }
+
+        [[nodiscard]] const LabelGroupedLabelRelation& get_label_relation() const {
+            return *label_relation;
         }
 
         //Methods to use the simulation

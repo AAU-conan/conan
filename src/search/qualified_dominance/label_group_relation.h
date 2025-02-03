@@ -8,12 +8,12 @@
 
 using namespace fts;
 
-namespace qdominance {
-class QualifiedLocalStateRelation;
-class QualifiedLabelRelation;
-} // namespace qdominance
+namespace dominance {
+class FactorDominanceRelation;
+class LabelGroupedLabelRelation;
+} // namespace dominance
 
-namespace qdominance {
+namespace dominance {
 class LabelGroupSimulationRelation {
   // For lg, state s, the states s' s.t. s -lg-> s'
   std::vector<std::vector<std::vector<int>>> label_group_state_targets;
@@ -110,14 +110,14 @@ public:
 
   [[nodiscard]] bool
   compute_simulates(LabelGroup lg1, LabelGroup lg2,
-                    const QualifiedLocalStateRelation &sim) const;
+                    const FactorDominanceRelation &sim) const;
   bool compute_simulates_noop(LabelGroup lg,
-                              const QualifiedLocalStateRelation &sim) const;
+                              const FactorDominanceRelation &sim) const;
   [[nodiscard]] bool
   compute_noop_simulates(LabelGroup lg,
-                         const QualifiedLocalStateRelation &sim) const;
-  bool update(const QualifiedLocalStateRelation &sim);
+                         const FactorDominanceRelation &sim) const;
+  bool update(const FactorDominanceRelation &sim);
 };
-} // namespace qdominance
+} // namespace dominance
 
 #endif // LABEL_GROUP_RELATION_H

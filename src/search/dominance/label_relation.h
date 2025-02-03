@@ -38,7 +38,7 @@ namespace dominance {
 
         std::vector<AllNoneFactorIndex> dominated_by_noop_in;
 
-        bool update(int i, const fts::LabelledTransitionSystem &lts, const LocalStateRelation &sim);
+        bool update(int i, const fts::LabelledTransitionSystem &lts, const FactorDominanceRelation &sim);
 
         //Returns true if l1 simulates l2 in lts
         inline bool simulates(int l1, int l2, int lts) const {
@@ -65,9 +65,9 @@ namespace dominance {
 
     public:
         LabelRelation(const fts::FTSTask & fts_task,
-                      const std::vector<std::unique_ptr<LocalStateRelation>> &sim);
+                      const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
 
-        bool update(const fts::FTSTask & fts_task, const std::vector<std::unique_ptr<LocalStateRelation>> &sim);
+        bool update(const fts::FTSTask & fts_task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
 
         void dump(utils::LogProxy &log) const;
         void dump(utils::LogProxy &log, int label) const;

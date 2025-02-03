@@ -9,9 +9,9 @@ namespace fts {
     struct TransformedFTSTask;
 }
 
-namespace qdominance {
+namespace dom {
     class QualifiedDominanceAnalysis;
-    class QualifiedLDSimulation;
+    class IncrementalLDSimulation;
     class QualifiedDominancePruning;
 }
 
@@ -23,16 +23,19 @@ namespace operator_counting {
         void initialize_constraints(const std::shared_ptr<AbstractTask> &task, lp::LinearProgram &lp) override;
         bool update_constraints_g_value(const State& state, int g_value, lp::LPSolver& lp_solver) override;
 
+        std::shared_ptr<DominanceAnalysis> dominance_analysis;
+
         bool only_pruning;
         bool minimize_nfa;
         bool approximate_determinization;
 
-        explicit QualifiedDominanceConstraints(const bool only_pruning = false, const bool minimize_nfa = true, const bool approximate_determinization = false) : only_pruning(only_pruning), minimize_nfa(minimize_nfa), approximate_determinization(approximate_determinization)
+
+        explicit QualifiedDominanceConstraints(std::shared_ptr<DominanceAnalysis> dominance_analysis, const bool only_pruning = false, const bool minimize_nfa = true, const bool approximate_determinization = false) : dominance_analysis(std::move(dominance_analysis)), only_pruning(only_pruning), minimize_nfa(minimize_nfa), approximate_determinization(approximate_determinization)
         {}
 
     private:
         std::unique_ptr<TransformedFTSTask> transformed_task;
-        std::unique_ptr<qdominance::QualifiedFactoredDominanceRelation> factored_qdomrel = nullptr;
+        std::unique_ptr<FactoredDominanceRelation> factored_domrel = nullptr;
         struct GValuedState {
             std::vector<int> state;
             int g_value;

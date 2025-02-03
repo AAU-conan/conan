@@ -11,7 +11,7 @@ namespace fts {
 }
 
 namespace dominance {
-    class LocalStateRelation;
+    class DenseLocalStateRelation;
     class FactoredDominanceRelation;
 
     typedef std::vector<int> ExplicitState;
@@ -28,11 +28,11 @@ namespace dominance {
 
         static std::unique_ptr<LocalStateRelationBDD>
         precompute_dominating_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
-                                   const LocalStateRelation &state_relation);
+                                   const FactorDominanceRelation &state_relation);
 
         static std::unique_ptr<LocalStateRelationBDD>
         precompute_dominated_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
-                                  const LocalStateRelation &state_relation);
+                                  const FactorDominanceRelation &state_relation);
     };
 
     class DominanceRelationBDD {

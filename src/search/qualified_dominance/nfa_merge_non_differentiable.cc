@@ -6,7 +6,7 @@
 
 #include <boost/lexical_cast/detail/converter_numeric.hpp>
 
-#include "qualified_local_state_relation.h"
+#include "sparse_local_state_relation.h"
 #include "../algorithms/dynamic_bitset.h"
 #include "../utils/logging.h"
 
@@ -15,7 +15,7 @@
 using namespace mata::nfa;
 using Symbol = mata::Symbol;
 
-namespace qdominance {
+namespace dominance {
     [[nodiscard]] Nfa determinize(const Nfa& aut) {
         Nfa result{};
         result.alphabet = aut.alphabet;
@@ -85,7 +85,7 @@ namespace qdominance {
         // DON'T USE nfa AFTERWARDS
         detnfa.make_complete();
         if (!is_deterministic) {
-            detnfa = qdominance::determinize(detnfa);
+            detnfa = dominance::determinize(detnfa);
         }
 
         std::vector<std::vector<State>> partition = {{}, {}};
@@ -546,7 +546,7 @@ namespace qdominance {
     }
 
     std::pair<Nfa, std::vector<State>> minimize_determinize_hopcroft(const Nfa& nfa, bool is_deterministic) {
-        auto det_nfa = !is_deterministic? qdominance::determinize(nfa): nfa;
+        auto det_nfa = !is_deterministic? dominance::determinize(nfa): nfa;
         auto [min_nfa, old_to_new_map] = minimize_hopcroft(det_nfa);
         min_nfa.alphabet = nfa.alphabet;
         return {min_nfa, old_to_new_map};

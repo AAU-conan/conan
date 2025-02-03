@@ -15,7 +15,7 @@ namespace dominance {
     double FactoredDominanceRelation::get_percentage_simulations(bool ignore_equivalences) const {
         double percentage = 1;
         for (auto &sim: local_relations) {
-            percentage *= sim->get_percentage_simulations(false);
+            percentage *= static_cast<double>(sim->num_simulations()) / (sim->get_lts().size() * sim->get_lts().size());
         }
         if (ignore_equivalences) {
             percentage -= get_percentage_equivalences();
@@ -28,16 +28,21 @@ namespace dominance {
     double FactoredDominanceRelation::get_percentage_equal() const {
         double percentage = 1;
         for (auto &sim: local_relations) {
-            percentage *= 1 / (sim->num_states() * sim->num_states());
+            percentage *= 1. / (sim->get_lts().size() * sim->get_lts().size());
         }
         return percentage;
     }
 
-
     double FactoredDominanceRelation::get_percentage_equivalences() const {
         double percentage = 1;
         for (auto &sim: local_relations) {
-            percentage *= sim->get_percentage_equivalences();
+            int num_eq = 0;
+            int num_states = sim->get_lts().size();
+            for (size_t i = 0; i < num_states; ++i)
+                for (size_t j = 0; j < num_states; ++j)
+                    if (sim->similar(i, j))
+                        num_eq++;
+            percentage *= num_eq / (static_cast<double>(num_states) * num_states);
         }
         return percentage;
     }
@@ -54,7 +59,7 @@ namespace dominance {
     int FactoredDominanceRelation::num_simulations() const {
         int res = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res += local_relations[i]->num_simulations(true);
+            res += local_relations[i]->num_simulations() - local_relations[i]->get_lts().size();
         }
         return res;
     }
@@ -62,7 +67,7 @@ namespace dominance {
     double FactoredDominanceRelation::num_st_pairs() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res *= local_relations[i]->num_simulations(false);
+            res *= local_relations[i]->num_simulations() - local_relations[i]->get_lts().size();
         }
         return res;
     }
@@ -71,7 +76,7 @@ namespace dominance {
     double FactoredDominanceRelation::num_states_problem() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res *= local_relations[i]->num_states();
+            res *= local_relations[i]->get_lts().size();
         }
         return res;
     }
@@ -84,7 +89,7 @@ namespace dominance {
         int num_vars = 0;
         int num_vars_with_simulations = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            if (local_relations[i]->num_simulations(true) > 0) {
+            if (!local_relations[i]->is_identity()) {
                 num_vars_with_simulations++;
             }
             num_vars++;
@@ -102,38 +107,6 @@ namespace dominance {
             log << "Total st pairs: " << num_pairs << endl;
             log << "Percentage st pairs: " << num_pairs / (problem_size * problem_size) << endl;
         }
-        /*for(int i = 0; i < local_relations.size(); i++){
-          log << "States after simulation: " << local_relations[i]->num_states() << " "
-          << local_relations[i]->num_different_states() << endl;
-          }*/
     }
-/*
-    bool FactoredDominanceRelation::pruned_state(const State &state) const {
-        for (auto &sim: local_relations) {
-            if (sim->pruned(state)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    int FactoredDominanceRelation::get_cost(const State &state) const {
-        int cost = 0;
-        for (auto &sim: local_relations) {
-            int new_cost = sim->get_cost(state);
-            if (new_cost == -1) return -1;
-            cost = max(cost, new_cost);
-        }
-        return cost;
-    }
-
-    bool FactoredDominanceRelation::dominates(const State &t, const State &s) const {
-        for (auto &sim: local_relations) {
-            if (!sim->simulates(t, s)) {
-                return false;
-            }
-        }
-        return true;
-    }*/
 
 }

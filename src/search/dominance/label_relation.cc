@@ -14,7 +14,7 @@ using namespace fts;
 namespace dominance {
 
     LabelRelation::LabelRelation(const fts::FTSTask & fts_task,
-                                 const std::vector<std::unique_ptr<LocalStateRelation>> &sim) : num_labels(fts_task.get_num_labels()) {
+                                 const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) : num_labels(fts_task.get_num_labels()) {
         int num_factors = fts_task.get_num_variables();
         num_labels = fts_task.get_num_labels();
 
@@ -153,7 +153,7 @@ namespace dominance {
         return labels_dominated_in_all;
     }
 
-    bool LabelRelation::update(const FTSTask & task, const std::vector<std::unique_ptr<LocalStateRelation>> &sim) {
+    bool LabelRelation::update(const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {
         bool changes = false;
         for (int i = 0; i < task.get_num_variables(); ++i) {
             changes |= update(i, task.get_factor(i), *(sim[i]));
@@ -162,7 +162,7 @@ namespace dominance {
     }
 
 // TODO (efficiency): This version is inefficient. It could be improved by iterating only the right transitions (see inside the loop)
-    bool LabelRelation::update(int i, const LabelledTransitionSystem &lts, const LocalStateRelation &sim) {
+    bool LabelRelation::update(int i, const LabelledTransitionSystem &lts, const FactorDominanceRelation &sim) {
         bool changes = false;
         for (int l2: lts.get_relevant_labels()) {
             for (int l1: lts.get_relevant_labels()) {

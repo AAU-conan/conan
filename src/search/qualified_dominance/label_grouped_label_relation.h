@@ -26,23 +26,23 @@ namespace utils {
     class LogProxy;
 }
 
-namespace qdominance {
+namespace dominance {
     using TransitionIndex = size_t;
-    class QualifiedLocalStateRelation;
+    class FactorDominanceRelation;
 
     /*
      * Label relation represents the preorder relations on labels that
      * occur in a set of LTS
      */
-    class QualifiedLabelRelation {
+    class LabelGroupedLabelRelation {
         const fts::FTSTask &fts_task;
 
         std::vector<LabelGroupSimulationRelation> label_group_simulation_relations;
 
     public:
-        explicit QualifiedLabelRelation(const fts::FTSTask& fts_task);
+        explicit LabelGroupedLabelRelation(const fts::FTSTask& fts_task);
 
-        bool update(int factor, const QualifiedLocalStateRelation& sim);
+        bool update(int factor, const FactorDominanceRelation& sim);
 
         void print_label_dominance() const;
 

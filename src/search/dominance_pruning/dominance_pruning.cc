@@ -34,7 +34,7 @@ namespace dominance {
 
 #ifndef NDEBUG
         for (const auto& [i, rel] : std::views::enumerate(dominance_relation->get_local_relations())) {
-            rel->dump(log, transformed_task.fts_task->get_factor(i));
+            rel->dump(log);
         }
 #endif
     }

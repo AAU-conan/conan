@@ -25,7 +25,7 @@ namespace dominance {
 
 
         bool update(int i, const fts::LabelledTransitionSystem *lts,
-                    const LocalStateRelation &sim);
+                    const DenseLocalStateRelation &sim);
         /* bool update(int i, const LTSComplex  * lts,  */
         /*     	const SimulationRelation & sim); */
 

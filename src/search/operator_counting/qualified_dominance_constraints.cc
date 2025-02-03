@@ -13,15 +13,15 @@
 #include "../utils/graphviz.h"
 
 namespace operator_counting {
-    std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate = false);
+    std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelGroupedLabelRelation& label_relation, bool under_approximate = false);
     void draw_nfa(const std::string& file_name, const mata::nfa::Nfa& nfa, const fts::LabelledTransitionSystem& lts, const std::vector<std::vector<unsigned long>>& state_pair_to_nfa_state);
 
 
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const qdominance::QualifiedLocalStateRelation& rel, const qdominance::QualifiedLabelRelation& label_relation, bool under_approximate) {
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelGroupedLabelRelation& label_relation, bool under_approximate) {
         mata::nfa::Nfa nfa;
         auto all_labels = std::views::iota(0, lts.get_num_labels()) | std::ranges::to<std::vector>();
         nfa.alphabet = new mata::EnumAlphabet(all_labels.begin(), all_labels.end());
-        std::vector<std::vector<mata::nfa::State>> state_pair_to_nfa_state(rel.num_states(), std::vector<mata::nfa::State>(rel.num_states()));
+        std::vector<std::vector<mata::nfa::State>> state_pair_to_nfa_state(lts.size(), std::vector<mata::nfa::State>(lts.size()));
         // We know that all states where t simulates s, are in the same equivalence class, i.e. t always has a response to s
         const auto universally_true = nfa.add_state();
         const auto universally_false = nfa.add_state();
@@ -273,26 +273,21 @@ namespace operator_counting {
         fts::draw_fts("fts.dot", *transformed_task->fts_task);
 #endif
 
-        factored_qdomrel = qdominance::QualifiedLDSimulation(utils::Verbosity::DEBUG).compute_dominance_relation(*transformed_task->fts_task);
+        factored_domrel = dominance_analysis->compute_dominance_relation(*transformed_task->fts_task);
 
-#ifndef NDEBUG
-        factored_qdomrel->print_simulations();
-        factored_qdomrel->print_label_dominance();
-#endif
-
-        std::println("Number of simulations: ", factored_qdomrel->num_simulations());
-        std::println("Percentage simulations: ", factored_qdomrel->get_percentage_simulations(false));
+        std::println("Number of simulations: ", factored_domrel->num_simulations());
+        std::println("Percentage simulations: ", factored_domrel->get_percentage_simulations(false));
 
         // Create all the LP variables
-        for (size_t i = 0; i < factored_qdomrel->size(); ++i) {
+        for (size_t i = 0; i < factored_domrel->size(); ++i) {
             const auto& lts = transformed_task->fts_task->get_factor(i);
-            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_qdomrel)[i], factored_qdomrel->get_label_relation(), approximate_determinization);
+            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_domrel)[i], factored_domrel->get_label_relation(), approximate_determinization);
 #ifndef NDEBUG
             draw_nfa(std::format("nfa_premin_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
 #endif
             if (minimize_nfa) {
                 std::println("Automaton size before minimization for factor {}: {}", i, automaton.num_of_states());
-                auto [minimal_automaton, state_to_reduced_map] = qdominance::merge_non_differentiable_states(automaton, approximate_determinization);
+                auto [minimal_automaton, state_to_reduced_map] = dominance::merge_non_differentiable_states(automaton, approximate_determinization);
                 for (int s = 0; s < lts.size(); ++s) {
                     for (int t = 0; t < lts.size(); ++t) {
                         local_state_pair_to_nfa_state[s][t] = state_to_reduced_map[local_state_pair_to_nfa_state[s][t]];
@@ -303,7 +298,7 @@ namespace operator_counting {
             } else {
                 automaton.make_complete();
                 if (!approximate_determinization) {
-                    automaton = qdominance::determinize(automaton);
+                    automaton = dominance::determinize(automaton);
                 }
                 automaton.swap_final_nonfinal(); // Swap final and non-final states; nfa should be deterministic and complete
             }
@@ -330,7 +325,7 @@ namespace operator_counting {
                 automaton.initial = {static_cast<mata::nfa::State>(q)};
                 mata::nfa::Nfa reduced_automaton;
                 if (minimize_nfa) {
-                    reduced_automaton = minimize(automaton);
+                    reduced_automaton = mata::nfa::minimize(automaton);
                     reduced_automaton.alphabet = automaton.alphabet;
                     reduced_automaton.make_complete();
                 } else {
@@ -389,7 +384,7 @@ namespace operator_counting {
                 size_t num_dominations = 0;
                 for (size_t i = 0; i < previous_state.state.size(); ++i) {
                     // auto fvn = (*factored_qdomrel)[i].fact_value_names;
-                    if (factored_qdomrel->get_local_relations()[i]->simulates(previous_state.state[i], explicit_state[i]))
+                    if (factored_domrel->get_local_relations()[i]->simulates(previous_state.state[i], explicit_state[i]))
                         num_dominations += 1;
 #ifndef NDEBUG
                     std::cout << "    Adding " << state_pair_to_nfa_state.at(i).at(explicit_state[i]).at(previous_state.state[i]) << ": " << transformed_task->fts_task->get_factor(i).state_name(explicit_state[i]) << " <= " << transformed_task->fts_task->get_factor(i).state_name(previous_state.state[i]) << std::endl;
@@ -403,10 +398,10 @@ namespace operator_counting {
                     // nodes that are later or equal in the evaluation order.
                     break;
                 }
-                if (num_dominations == factored_qdomrel->size()) {
+                if (num_dominations == factored_domrel->size()) {
                     // If all factors dominate the previous state, then we can prune this state
                     return true;
-                } if (num_dominations == factored_qdomrel->size() - 1) {
+                } if (num_dominations == factored_domrel->size() - 1) {
                     init_state_constraints.emplace_back(initial_states);
                 }
             }
@@ -441,13 +436,14 @@ namespace operator_counting {
         QualifiedDominanceConstraintsFeature() : TypedFeature("qualified_dominance_constraints") {
             document_title("Qualified Dominance constraints");
             document_synopsis("");
+            add_option<std::shared_ptr<DominanceAnalysis>>("dominance", "Dominance Analysis Technique to use", "incremental_ld_simulation()");
             add_option<bool>("only_pruning", "Only use dominance to assign h=∞", "false");
             add_option<bool>("minimize_nfa", "Minimize the NFA before adding it to the LP", "true");
             add_option<bool>("approx_det", "Under-approximate the determinization of the transition response NA", "false");
         }
 
         [[nodiscard]] std::shared_ptr<QualifiedDominanceConstraints> create_component(const plugins::Options &opts, const utils::Context &) const override {
-            return std::make_shared<QualifiedDominanceConstraints>(opts.get<bool>("only_pruning"), opts.get<bool>("minimize_nfa"), opts.get<bool>("approx_det"));
+            return std::make_shared<QualifiedDominanceConstraints>(opts.get<std::shared_ptr<DominanceAnalysis>>("dominance"), opts.get<bool>("only_pruning"), opts.get<bool>("minimize_nfa"), opts.get<bool>("approx_det"));
         }
     };
 
