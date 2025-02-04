@@ -7,14 +7,136 @@
 #include "../utils/logging.h"
 #include "../merge_and_shrink/labels.h"
 #include "../factored_transition_system/label_map.h"
+#include "../plugins/plugin.h"
 
 using namespace std;
 using namespace fts;
 
 namespace dominance {
+    LabelRelation::LabelRelation(const fts::FTSTask& fts_task) : num_labels(fts_task.get_num_labels()), fts_task(fts_task) { }
 
-    LabelRelation::LabelRelation(const fts::FTSTask & fts_task,
-                                 const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) : num_labels(fts_task.get_num_labels()) {
+    void LabelRelation::dump(utils::LogProxy& log) const {
+        for (int i = 0; i < fts_task.get_factors().size(); ++i) {
+            log << std::format("Factor {}", i) << std::endl;
+            for (int l1 = 0; l1 < num_labels; ++l1) {
+                for (int l2 = 0; l2 < num_labels; ++l2) {
+                    if (l1 != l2 && label_dominates_label_in_all_other(i, l2, l1)) {
+                        log << std::format("Label {} dominates {} in all other", fts_task.get_factor(i).label_name(l2), fts_task.get_factor(i).label_name(l1)) << std::endl;
+                    }
+                }
+                if (noop_simulates_label_in_all_other(i, l1)) {
+                    log << std::format("NOOP dominates {} in all other", fts_task.get_factor(i).label_name(l1)) << std::endl;
+                }
+            }
+        }
+    }
+
+    bool DenseLabelRelation::label_dominates_label_in_all_other(int factor, int l1, int l2) const {
+        const LabelledTransitionSystem& lts = fts_task.get_factor(factor);
+        if (fts_task.get_label_cost(l1) > fts_task.get_label_cost(l2)) {
+            return false;
+        }
+
+        if (lts.is_relevant_label(l1)) {
+            if (lts.is_relevant_label(l2)) {
+                return dominates_in[l1][l2].contains_all_except(factor);
+            } else {
+                return dominated_by_noop_in[l1].contains_all_except(factor);
+            }
+        } else {
+            if (lts.is_relevant_label(l2)) {
+                return dominated_by_noop_in[l2].contains_all_except(factor);
+            } else {
+                return true;
+            }
+        }
+    }
+
+    bool DenseLabelRelation::noop_simulates_label_in_all_other(int factor, int l) const {
+        const LabelledTransitionSystem& lts = fts_task.get_factor(factor);
+        if (lts.is_relevant_label(l)) {
+            return dominated_by_noop_in[l].contains_all_except(factor);
+        } else {
+            return true;
+        }
+    }
+
+    bool DenseLabelRelation::update_factor(int factor, const FactorDominanceRelation& sim) {
+        bool changes = false;
+        const LabelledTransitionSystem& lts = fts_task.get_factor(factor);
+        for (int l2: lts.get_relevant_labels()) {
+            for (int l1: lts.get_relevant_labels()) {
+                if (l1 != l2 && simulates(l1, l2, factor)) {
+                    //std::log << "Check " << l1 << " " << l2 << std::endl;
+                    //std::log << "Num transitions: " << lts.get_transitions_label(l1).size()
+                    //		    << " " << lts.get_transitions_label(l2).size() << std::endl;
+                    //Check if it really simulates
+                    //For each transition s--l2-->t, and every label l1 that dominates
+                    //l2, exist s--l1-->t', t <= t'?
+                    for (const auto &tr: lts.get_transitions_label(l2)) {
+                        bool found = false;
+                        //TODO (efficiency): for(auto tr2 : lts.get_transitions_for_label_src(l1, tr.src)){
+                        for (const auto &tr2: lts.get_transitions_label(l1)) {
+                            if (tr2.src == tr.src &&
+                                sim.simulates(tr2.target, tr.target)) {
+                                found = true;
+                                break; //Stop checking this tr
+                            }
+                        }
+                        if (!found) {
+                            //std::log << "Not sim " << l1 << " " << l2 << " " << i << std::endl;
+                            set_not_simulates(l1, l2, factor);
+                            changes = true;
+                            break; //Stop checking trs of l1
+                        }
+                    }
+                }
+            }
+
+            //Is l2 simulated by irrelevant_labels in lts?
+            for (auto tr: lts.get_transitions_label(l2)) {
+                if (simulated_by_irrelevant[l2][factor] &&
+                    !sim.simulates(tr.src, tr.target)) {
+                    changes |= set_not_simulated_by_irrelevant(l2, factor);
+                    for (int l: lts.get_irrelevant_labels()) {
+                        if (simulates(l, l2, factor)) {
+                            changes = true;
+                            set_not_simulates(l, l2, factor);
+                        }
+                    }
+                    break;
+                }
+            }
+
+            //Does l2 simulates irrelevant_labels in lts?
+            if (simulates_irrelevant[l2][factor]) {
+                for (int s = 0; s < lts.size(); s++) {
+                    bool found = false;
+                    for (const auto &tr: lts.get_transitions_label(l2)) {
+                        if (tr.src == s && sim.simulates(tr.target, tr.src)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        //log << "Not simulates irrelevant: " << l2  << " in " << i << endl;
+                        simulates_irrelevant[l2][factor] = false;
+                        for (int l: lts.get_irrelevant_labels()) {
+                            if (simulates(l2, l, factor)) {
+                                set_not_simulates(l2, l, factor);
+                                changes = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return changes;
+    }
+
+    DenseLabelRelation::DenseLabelRelation(const fts::FTSTask & fts_task) : LabelRelation(fts_task) {
         int num_factors = fts_task.get_num_variables();
         num_labels = fts_task.get_num_labels();
 
@@ -35,205 +157,30 @@ namespace dominance {
                 }
             }
         }
+    }
 
-        for (int i = 0; i < num_factors; ++i) {
-            update(i, fts_task.get_factor(i), *(sim[i]));
+
+    static class LabelRelationFactoryPlugin final : public plugins::TypedCategoryPlugin<LabelRelationFactory> {
+    public:
+        LabelRelationFactoryPlugin() : TypedCategoryPlugin("LabelRelationFactory") {
+            document_synopsis( "A LabelRelationFactory creates LabelRelations for a given FTS task.");
         }
     }
+    _category_plugin;
 
-    void LabelRelation::dump_equivalent(utils::LogProxy &log) const {
-        vector<bool> redundant(dominates_in.size(), false);
-        int num_redundant = 0;
-        for (size_t l1 = 0; l1 < dominates_in.size(); ++l1) {
-            for (size_t l2 = l1 + 1; l2 < dominates_in.size(); ++l2) {
-                //TODO: wrong condition
-                if (!redundant[l2] && !dominates_in[l1][l2].is_none() &&
-                    dominates_in[l2][l1] == dominates_in[l1][l2]) {
-                    redundant[l2] = true;
-                    num_redundant++;
-                    //log << l1 << " equivalent to " << l2 << " in " << dominates_in[l1][l2] << endl;
-                }
-            }
-        }
-        log << "Redundant labels: " << num_redundant << endl;
-    }
-
-    void LabelRelation::dump_dominance(utils::LogProxy &) const {
-        //TODO: implement
-/*
-        for (size_t l1 = 0; l1 < dominates_in.size(); ++l1) {
-            for (size_t l2 = 0; l2 < dominates_in.size(); ++l2) {
-                if (!dominates_in[l1][l2].is_none() && dominates_in[l2][l1] != dominates_in[l1][l2]) {
-                   // log << l1 << " dominates " << l2 << " in " << dominates_in[l1][l2] << endl;
-//                    log << g_operators[l1].get_name() << " dominates " << g_operators[l2].get_name() << endl;
-                }
-            }
-        }
-*/
-    }
-
-    void LabelRelation::dump(utils::LogProxy &log) const {
-        for (size_t l = 0; l < dominates_in.size(); ++l) {
-            //if (labels->is_label_reduced(l)) log << "reduced";
-            if (l < 10) {
-                log << "l" << l << ": ";
-                dump(log, l);
-            } else {
-                log << "l" << l << ":";
-                dump(log, l);
-            }
-        }
-    }
-
-    void LabelRelation::dump(utils::LogProxy &, int ) const {
-        //log << "Dump l: " << label << "; " << " Dominated by noop: " << dominated_by_noop_in[label] << ", labels: ";
-
-/*        for (size_t l2 = 0; l2 < dominates_in[label].size(); ++l2) {
-            if (dominates_in[l2][label] >= 0 && dominates_in[l2][label] <= 9) log << " ";
-            log << dominates_in[l2][label] << " ";
-        }*/
-        //log << endl;
-    }
-
-    std::vector<int> LabelRelation::get_labels_dominated_in_all() const {
-        std::vector<int> labels_dominated_in_all;
-        //log << "We have " << num_labels << " labels "<< dominates_in.size() << " " << dominates_in[0].size()  << endl;
-        for (size_t l = 0; l < dominates_in.size(); ++l) {
-            //log << "Check: " << l << endl;
-            //labels->get_label_by_index(l)->dump();
-            if (dominated_by_noop_in[l].is_all()) {
-                labels_dominated_in_all.push_back(l);
-                continue;
-            }
-
-            // PIET-edit: Here we do not remove either label if they dominate each other in all LTSs.
-            // for (int l2 = 0; l2 < dominates_in.size(); ++l2){
-            //     if (l2 != l && dominates_in[l2][l] == DOMINATES_IN_ALL &&
-            //             !dominates_in[l][l2] == DOMINATES_IN_ALL){
-            //         labels_dominated_in_all.push_back(l);
-            //         break;
-            //     }
-            // }
-
-            // PIET-edit: Here we remove one of the two labels dominating each other in all LTSs.
-            for (size_t l2 = 0; l2 < dominates_in.size(); ++l2) {
-                //log << " with : " << l2 << " " << dominates_in[l2][l] << "  " << dominates_in[l][l2];
-                // if ((l == 118 && l2 == 279) || (l2 == 118 && l == 279)) {
-                // 	log << "HERE: " << dominates_in[l2][l] << " " << dominates_in[l][l2] << endl;
-                // 	log << (l2 < l) << " " << (dominates_in[l2][l] == DOMINATES_IN_ALL) << " " << (dominates_in[l][l2] != DOMINATES_IN_ALL) << endl;
-                // 	log <<  (l2 > l) << " " << (dominates_in[l2][l] == DOMINATES_IN_ALL) << endl;
-                // }
-
-                // if ( dominates_in[l2][l] == DOMINATES_IN_ALL &&
-                // 	 (dominates_in[l][l2] != DOMINATES_IN_ALL || l2 < l)) {
-                if ((l2 < l && dominates_in[l2][l].is_all() && !dominates_in[l][l2].is_all())
-                    || (l2 > l && dominates_in[l2][l].is_all())) {
-                    //log << " yes" << endl;
-                    labels_dominated_in_all.push_back(l);
-                    break;
-                }
-                //log << " no" << endl;
-            }
-
-
-            // PIET-edit: If we take proper care, this both dominating each other cannot ever happen.
-//        for (int l2 = 0; l2 < dominates_in.size(); ++l2) {
-//            if (l != l2 && dominates_in[l][l2] == DOMINATES_IN_ALL && dominates_in[l2][l] == DOMINATES_IN_ALL) {
-//                cerr << "Error: two labels dominating each other in all abstractions. This CANNOT happen!" << endl;
-//                cerr << l << "; " << l2 << endl;
-//                exit(1);
-//            }
-//            if (dominates_in[l2][l] == DOMINATES_IN_ALL) {
-//                labels_dominated_in_all.push_back(l);
-//                break;
-//            }
-//        }
+    using LabelGroupedLabelRelationFactory = LabelRelationFactoryImpl<DenseLabelRelation>;
+    class DenseLabelRelationFactoryFeature final : public plugins::TypedFeature<LabelRelationFactory, LabelGroupedLabelRelationFactory> {
+    public:
+        DenseLabelRelationFactoryFeature() : TypedFeature("dense_lr") {
+            document_title("Dense Label Relation");
+            document_synopsis("Stores the label relation in a dense matrix with compact factors");
         }
 
-        return labels_dominated_in_all;
-    }
-
-    bool LabelRelation::update(const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {
-        bool changes = false;
-        for (int i = 0; i < task.get_num_variables(); ++i) {
-            changes |= update(i, task.get_factor(i), *(sim[i]));
+        [[nodiscard]] shared_ptr<LabelGroupedLabelRelationFactory> create_component(
+        const plugins::Options &opts,
+        const utils::Context &) const override {
+            return plugins::make_shared_from_arg_tuples<LabelGroupedLabelRelationFactory>();
         }
-        return changes;
-    }
-
-// TODO (efficiency): This version is inefficient. It could be improved by iterating only the right transitions (see inside the loop)
-    bool LabelRelation::update(int i, const LabelledTransitionSystem &lts, const FactorDominanceRelation &sim) {
-        bool changes = false;
-        for (int l2: lts.get_relevant_labels()) {
-            for (int l1: lts.get_relevant_labels()) {
-                if (l1 != l2 && simulates(l1, l2, i)) {
-                    //std::log << "Check " << l1 << " " << l2 << std::endl;
-                    //std::log << "Num transitions: " << lts.get_transitions_label(l1).size()
-                    //		    << " " << lts.get_transitions_label(l2).size() << std::endl;
-                    //Check if it really simulates
-                    //For each transition s--l2-->t, and every label l1 that dominates
-                    //l2, exist s--l1-->t', t <= t'?
-                    for (const auto &tr: lts.get_transitions_label(l2)) {
-                        bool found = false;
-                        //TODO (efficiency): for(auto tr2 : lts.get_transitions_for_label_src(l1, tr.src)){
-                        for (const auto &tr2: lts.get_transitions_label(l1)) {
-                            if (tr2.src == tr.src &&
-                                sim.simulates(tr2.target, tr.target)) {
-                                found = true;
-                                break; //Stop checking this tr
-                            }
-                        }
-                        if (!found) {
-                            //std::log << "Not sim " << l1 << " " << l2 << " " << i << std::endl;
-                            set_not_simulates(l1, l2, i);
-                            changes = true;
-                            break; //Stop checking trs of l1
-                        }
-                    }
-                }
-            }
-
-            //Is l2 simulated by irrelevant_labels in lts?
-            for (auto tr: lts.get_transitions_label(l2)) {
-                if (simulated_by_irrelevant[l2][i] &&
-                    !sim.simulates(tr.src, tr.target)) {
-                    changes |= set_not_simulated_by_irrelevant(l2, i);
-                    for (int l: lts.get_irrelevant_labels()) {
-                        if (simulates(l, l2, i)) {
-                            changes = true;
-                            set_not_simulates(l, l2, i);
-                        }
-                    }
-                    break;
-                }
-            }
-
-            //Does l2 simulates irrelevant_labels in lts?
-            if (simulates_irrelevant[l2][i]) {
-                for (int s = 0; s < lts.size(); s++) {
-                    bool found = false;
-                    for (const auto &tr: lts.get_transitions_label(l2)) {
-                        if (tr.src == s && sim.simulates(tr.target, tr.src)) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        //log << "Not simulates irrelevant: " << l2  << " in " << i << endl;
-                        simulates_irrelevant[l2][i] = false;
-                        for (int l: lts.get_irrelevant_labels()) {
-                            if (simulates(l2, l, i)) {
-                                set_not_simulates(l2, l, i);
-                                changes = true;
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        return changes;
-    }
-
+    };
+    static plugins::FeaturePlugin<DenseLabelRelationFactoryFeature> _dense_plugin;
 }

@@ -23,25 +23,24 @@ namespace dominance {
 class IncrementalLDSimulation : public DominanceAnalysis {
     utils::LogProxy log;
     std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory;
+        std::shared_ptr<LabelRelationFactory> label_relation_factory;
 
 public:
-    explicit IncrementalLDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factory)
-        : log(utils::get_log_for_verbosity(verbosity)), factor_dominance_relation_factory(std::move(factory)) {
+    explicit IncrementalLDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory, std::shared_ptr<LabelRelationFactory> label_relation_factory)
+        : log(utils::get_log_for_verbosity(verbosity)), factor_dominance_relation_factory(std::move(factor_dominance_relation_factory)), label_relation_factory(std::move(label_relation_factory)) {
     };
 
-    virtual ~IncrementalLDSimulation() = default;
+    ~IncrementalLDSimulation() override = default;
     std::unique_ptr<FactoredDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) override;
     std::unique_ptr<FactoredDominanceRelation> compute_ld_simulation(const fts::FTSTask &task, utils::LogProxy &log);
 };
 
-
-
-    bool labels_simulate_labels(int factor, const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const LabelGroupedLabelRelation& label_relation);
+    bool labels_simulate_labels(int factor, const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const LabelRelation& label_relation);
 
     // Update the simulation relation for when t simulates s
-    bool update_pairs(int factor, FactorDominanceRelation& local_relation, const LabelGroupedLabelRelation& label_relation);
+    bool update_pairs(int factor, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
 
-    bool update_local_relation(int factor, FactorDominanceRelation& local_relation, const LabelGroupedLabelRelation& label_relation);
+    bool update_local_relation(int factor, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
 } // namespace dominance
 
 #endif

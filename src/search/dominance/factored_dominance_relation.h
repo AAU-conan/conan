@@ -23,9 +23,9 @@ namespace dominance {
     class FactoredDominanceRelation {
     protected:
         std::vector<std::unique_ptr<FactorDominanceRelation> > local_relations;
-        std::unique_ptr<LabelGroupedLabelRelation> label_relation;
+        std::unique_ptr<LabelRelation> label_relation;
     public:
-        explicit FactoredDominanceRelation(std::vector<std::unique_ptr<FactorDominanceRelation>> &&_local_relations, std::unique_ptr<LabelGroupedLabelRelation> &label_relation) :
+        explicit FactoredDominanceRelation(std::vector<std::unique_ptr<FactorDominanceRelation>> &&_local_relations, std::unique_ptr<LabelRelation> &label_relation) :
             local_relations (std::move(_local_relations)), label_relation(std::move(label_relation)) {
         }
 
@@ -67,7 +67,7 @@ namespace dominance {
             return *(local_relations[index]);
         }
 
-        [[nodiscard]] const LabelGroupedLabelRelation& get_label_relation() const {
+        [[nodiscard]] const LabelRelation& get_label_relation() const {
             return *label_relation;
         }
 

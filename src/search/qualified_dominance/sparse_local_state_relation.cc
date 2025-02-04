@@ -46,7 +46,7 @@ namespace dominance {
     }
 
     bool SparseLocalStateRelation::applySimulations(std::function<bool(int s, int t)>&& f) const {
-        for (const auto [s, t] : simulations) {
+        for (const auto& [s, t] : simulations) {
             if (f(s, t))
                 return true;
         }
@@ -54,7 +54,7 @@ namespace dominance {
     }
 
     bool SparseLocalStateRelation::removeSimulations(std::function<bool(int s, int t)>&& f) {
-        return 0 < erase_if(simulations, [f](std::pair<int,int> p) { return f(p.second, p.first); });
+        return 0 < erase_if(simulations, [f](std::pair<int,int> p) { return f(p.first, p.second); });
     }
 
     using SparseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<SparseLocalStateRelation>;

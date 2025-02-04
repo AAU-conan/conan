@@ -25,10 +25,40 @@ namespace dominance {
  * occur in a set of LTS
  */
     class LabelRelation {
+    protected:
         int num_labels;
-        //For each lts, matrix indicating whether l1 simulates l2
-        //std::vector<std::vector<std::vector<bool > > > dominates;
+        const fts::FTSTask& fts_task;
 
+    public:
+        explicit LabelRelation(const fts::FTSTask& fts_task);
+        virtual ~LabelRelation() = default;
+
+        [[nodiscard]] virtual bool label_dominates_label_in_all_other(int factor, int l1, int l2) const = 0;
+
+        [[nodiscard]] virtual bool noop_simulates_label_in_all_other(int factor, int l) const = 0;
+
+        virtual bool update_factor(int factor, const FactorDominanceRelation& sim) = 0;
+
+
+        void dump(utils::LogProxy &log) const;
+    };
+
+    class LabelRelationFactory {
+    public:
+        virtual ~LabelRelationFactory() = default;
+        virtual std::unique_ptr<LabelRelation> create(const fts::FTSTask& fts_task) = 0;
+    };
+
+    template<class LabelRelationType>
+    class LabelRelationFactoryImpl final : public LabelRelationFactory {
+        std::unique_ptr<LabelRelation> create(const fts::FTSTask& fts_task) override {
+            return std::make_unique<LabelRelationType>(fts_task);
+        }
+    };
+
+
+    class DenseLabelRelation : public LabelRelation {
+        // Matrix factors where l1 simulates l2
         std::vector<std::vector<AllNoneFactorIndex> > dominates_in;
 
         //Indicates whether labels are dominated by noop or other irrelevant
@@ -38,17 +68,23 @@ namespace dominance {
 
         std::vector<AllNoneFactorIndex> dominated_by_noop_in;
 
-        bool update(int i, const fts::LabelledTransitionSystem &lts, const FactorDominanceRelation &sim);
-
         //Returns true if l1 simulates l2 in lts
-        inline bool simulates(int l1, int l2, int lts) const {
+        [[nodiscard]] bool simulates(int l1, int l2, int factor) const {
             assert (l1 >= 0);
             assert((size_t)l1 < dominates_in.size());
             assert (l2 >= 0);
             assert((size_t)l2 < dominates_in[l1].size());
 
-            return dominates_in[l1][l2].contains(lts);
+            return dominates_in[l1][l2].contains(factor);
         }
+
+        [[nodiscard]] bool noop_simulates(int l, int factor) const  {
+            assert(l >= 0);
+            assert((size_t)l < dominated_by_noop_in.size());
+
+            return dominated_by_noop_in[l].contains(factor);
+        }
+
 
         inline void set_not_simulates(int l1, int l2, int lts) {
             //std::cout << "Not simulates: " << l1 << " to " << l2 << " in " << lts << std::endl;
@@ -64,10 +100,15 @@ namespace dominance {
         }
 
     public:
-        LabelRelation(const fts::FTSTask & fts_task,
-                      const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
 
-        bool update(const fts::FTSTask & fts_task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
+        [[nodiscard]] bool label_dominates_label_in_all_other(int factor, int l1, int l2) const override;
+
+        [[nodiscard]] bool noop_simulates_label_in_all_other(int factor, int l) const override;
+
+        bool update_factor(int factor, const FactorDominanceRelation& sim) override;
+
+        explicit DenseLabelRelation(const fts::FTSTask & fts_task);
+
 
         void dump(utils::LogProxy &log) const;
         void dump(utils::LogProxy &log, int label) const;
@@ -79,20 +120,6 @@ namespace dominance {
             return num_labels;
         }
 
-        std::vector<int> get_labels_dominated_in_all() const;
-
-        inline AllNoneFactorIndex get_dominated_by_noop_in(int l) const {
-            return dominated_by_noop_in[l];
-        }
-
-        inline bool dominated_by_noop(int l, int lts) const {
-            return dominated_by_noop_in[l].contains_all_except(lts);
-        }
-
-        //Returns true if l dominates l2 in lts (simulates l2 in all j \neq lts)
-        inline bool dominates(int l1, int l2, int lts) const {
-            return dominates_in[l1][l2].contains_all_except(lts);
-        }
     };
 }
     

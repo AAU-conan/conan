@@ -18,14 +18,14 @@ namespace dominance {
 
     std::unique_ptr<FactoredDominanceRelation> IncrementalLDSimulation::compute_ld_simulation(const fts::FTSTask &task, utils::LogProxy &log) {
         utils::Timer t;
-        std::unique_ptr<LabelGroupedLabelRelation> label_relation = std::make_unique<LabelGroupedLabelRelation>(task);
+        std::unique_ptr<LabelRelation> label_relation = std::make_unique<LabelGroupedLabelRelation>(task);
 
         std::vector<std::unique_ptr<FactorDominanceRelation>> local_relations;
         local_relations.reserve(task.get_num_variables());
 
         for (const auto &[factor, lts] : std::views::enumerate(task.get_factors())) {
             local_relations.push_back(factor_dominance_relation_factory->create(*lts));
-            label_relation->update(factor, *local_relations.back()); // Make sure to update the label relation at least
+            label_relation->update_factor(static_cast<int>(factor), *local_relations.back()); // Make sure to update the label relation at least
             // once per factor
         }
 
@@ -49,19 +49,25 @@ namespace dominance {
         do {
             changes = false;
             for (auto [factor, local_relation] : std::views::enumerate(local_relations)) {
-                if (update_local_relation(static_cast<int>(factor), *local_relation, *label_relation))
-                    changes |= label_relation->update(factor, *local_relation);
-                 }
-
+                changes |= update_local_relation(static_cast<int>(factor), *local_relation, *label_relation);
+                if (changes)
+                    changes |= label_relation->update_factor(factor, *local_relation);
+            }
             log << changes << " " << t() << std::endl;
         } while (changes);
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
+
+        for (const auto& sim : local_relations) {
+            sim->dump(log);
+        }
+        log << "Label relation: " << std::endl;
+        label_relation->dump(log);
 
         return std::make_unique<FactoredDominanceRelation>(std::move(local_relations), label_relation);
     }
 
     bool labels_simulate_labels(int factor, const std::unordered_set<int>& l1s, const std::vector<int>& l2s,
-        bool include_noop, const LabelGroupedLabelRelation& label_relation) {
+        bool include_noop, const LabelRelation& label_relation) {
         return std::ranges::all_of(l2s, [&](const auto& l2) {
             return (include_noop && label_relation.noop_simulates_label_in_all_other(factor, l2)) || std::ranges::any_of(l1s, [&](const auto& l1) {
                 return label_relation.label_dominates_label_in_all_other(factor, l1, l2);
@@ -70,7 +76,7 @@ namespace dominance {
     }
 
     bool update_pairs(int factor, FactorDominanceRelation& local_relation,
-        const LabelGroupedLabelRelation& label_relation) {
+        const LabelRelation& label_relation) {
         // Remove all simulation pairs (s, t) where it is not the case that
         // ∀s -lg-> s'( ∃t -lg'-> t' s.t. s' simulates t' and lg' simulates lg in all other factors or t simulates s' and noop simulates lg in all other factors)
         const auto& lts = local_relation.get_lts();
@@ -106,7 +112,7 @@ namespace dominance {
     }
 
     bool update_local_relation(int factor, FactorDominanceRelation& local_relation,
-        const LabelGroupedLabelRelation& label_relation) {
+        const LabelRelation& label_relation) {
         bool any_changes = false;
         bool changes = false;
         do {
@@ -133,7 +139,10 @@ namespace dominance {
 
             add_option<std::shared_ptr<FactorDominanceRelationFactory>>("fdr",
                                                        "The data structure to store the factor dominance relation",
-                                                       "dense_fdr()");
+                                                       "sparse_fdr()");
+            add_option<std::shared_ptr<LabelRelationFactory>>("lr",
+                                                       "The data structure to store the label relation",
+                                                       "grouped_lr()");
 
             utils::add_log_options_to_feature(*this);
         }
@@ -144,7 +153,8 @@ namespace dominance {
             const utils::Context&) const override {
             return plugins::make_shared_from_arg_tuples<IncrementalLDSimulation>(
                 utils::get_log_arguments_from_options(opts),
-                opts.get<std::shared_ptr<FactorDominanceRelationFactory>>("fdr"));
+                opts.get<std::shared_ptr<FactorDominanceRelationFactory>>("fdr"),
+                opts.get<std::shared_ptr<LabelRelationFactory>>("lr"));
         }
     };
 

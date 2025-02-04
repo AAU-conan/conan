@@ -20,14 +20,16 @@ namespace dominance {
     class LabelRelation;
 
     void update_local_relation(int lts_id, const LabelledTransitionSystem &lts, const LabelRelation &label_dominance, FactorDominanceRelation &local_relation);
+    bool update_label_relation(LabelRelation& label_relation, const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
 
     class LDSimulation : public DominanceAnalysis {
         utils::LogProxy log;
         std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory;
+        std::shared_ptr<LabelRelationFactory> label_relation_factory;
 
         std::unique_ptr<FactoredDominanceRelation> compute_ld_simulation(const fts::FTSTask & task, utils::LogProxy & log);
     public:
-        explicit LDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory);
+        explicit LDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory, std::shared_ptr<LabelRelationFactory> label_relation_factory);
 
         virtual ~LDSimulation() = default;
         std::unique_ptr<FactoredDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) override;

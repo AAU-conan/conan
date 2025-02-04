@@ -79,9 +79,9 @@ public:
     }
 
 #ifndef NDEBUG
-    std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.label_group_name(p.second), lts.label_group_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
-    std::println("{} simulations_noop: {}", factor, boost::algorithm::join(std::views::transform(simulations_noop, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
-    std::println("{} noop_simulations: {}", factor, boost::algorithm::join(std::views::transform(noop_simulations, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+    // std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.label_group_name(p.second), lts.label_group_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
+    // std::println("{} simulations_noop: {}", factor, boost::algorithm::join(std::views::transform(simulations_noop, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+    // std::println("{} noop_simulations: {}", factor, boost::algorithm::join(std::views::transform(noop_simulations, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
 #endif
   }
 

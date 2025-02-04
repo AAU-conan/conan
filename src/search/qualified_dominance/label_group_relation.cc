@@ -35,10 +35,9 @@ bool LabelGroupSimulationRelation::compute_simulates_noop(
 
 bool LabelGroupSimulationRelation::update(const FactorDominanceRelation &sim) {
   bool changes = false;
-  changes |=
-      0 < erase_if(simulations, [&](const std::pair<LabelGroup, LabelGroup> p) {
-        return !compute_simulates(p.first, p.second, sim);
-      });
+  changes |= 0 < erase_if(simulations, [&](const std::pair<LabelGroup, LabelGroup> p) {
+               return !compute_simulates(p.first, p.second, sim);
+             });
   changes |= 0 < erase_if(noop_simulations, [&](const LabelGroup lg) {
                return !compute_noop_simulates(lg, sim);
              });
@@ -46,9 +45,9 @@ bool LabelGroupSimulationRelation::update(const FactorDominanceRelation &sim) {
                return !compute_simulates_noop(lg, sim);
              });
 #ifndef NDEBUG
-  std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.label_group_name(p.second), lts.label_group_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
-  std::println("{} simulations_noop: {}", factor, boost::algorithm::join(std::views::transform(simulations_noop, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
-  std::println("{} noop_simulations: {}", factor, boost::algorithm::join(std::views::transform(noop_simulations, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+  // std::println("{} simulations: {}", factor, boost::algorithm::join(std::views::transform(simulations, [&](const auto& p) { return std::format("{} <= {}", lts.label_group_name(p.second), lts.label_group_name(p.first));}) | std::ranges::to<std::vector>(), ", "));
+  // std::println("{} simulations_noop: {}", factor, boost::algorithm::join(std::views::transform(simulations_noop, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
+  // std::println("{} noop_simulations: {}", factor, boost::algorithm::join(std::views::transform(noop_simulations, [&](const auto& p) { return std::format("{}", lts.label_group_name(p));}) | std::ranges::to<std::vector>(), ", "));
 #endif
   return changes;
 }

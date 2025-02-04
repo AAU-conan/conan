@@ -25,7 +25,9 @@ namespace dominance {
 
         log << "Initialize label dominance: " << task.get_num_labels() << " labels " << task.get_num_variables() << " systems." << std::endl;
 
-        LabelRelation label_relation {task, local_relations};
+        std::unique_ptr<LabelRelation> label_relation = label_relation_factory->create(task);
+        // Label relation is updated once before first iteration of local relation updates
+        update_label_relation(*label_relation, task, local_relations);
 
         int total_size = 0, max_size = 0, total_trsize = 0, max_trsize = 0;
         for (const auto & lts: task.get_factors()) {
@@ -44,29 +46,25 @@ namespace dominance {
         log << "Init LDSim in " << t() << ":" << std::flush;
         do {
             for (int i = 0; i < static_cast<int>(local_relations.size()); i++) {
-                update_local_relation(i, task.get_factor(i), label_relation, *(local_relations[i]));
+                update_local_relation(i, task.get_factor(i), *label_relation, *(local_relations[i]));
             }
             log << " " << t() << std::flush;
-        } while (label_relation.update(task, local_relations));
+        } while (update_label_relation(*label_relation, task, local_relations));
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
-/*
-        if(dump) {
-            for(int i = 0; i < _ltss.size(); i++){
-                //_ltss[i]->dump();
-                local_relations[i]->dump(_ltss[i]->get_names());
-            }
-        }
-*/
-        std::unique_ptr<LabelGroupedLabelRelation> fake_label_relation = std::make_unique<LabelGroupedLabelRelation>(task);
 
-        return std::make_unique<FactoredDominanceRelation>(std::move(local_relations), fake_label_relation);
+        for (const auto& sim : local_relations) {
+            sim->dump(log);
+        }
+        log << "Label relation: " << std::endl;
+        label_relation->dump(log);
+
+        return std::make_unique<FactoredDominanceRelation>(std::move(local_relations), label_relation);
     }
 
     void update_local_relation(int lts_id, const LabelledTransitionSystem &lts, const LabelRelation &label_dominance, FactorDominanceRelation &local_relation) {
         bool changes = true;
         while (changes) {
-            changes = false;
-            local_relation.removeSimulations([&](int s, int t) {
+            changes = local_relation.removeSimulations([&](int t, int s) {
                 //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
                 //Check if really t simulates s
                 //for each transition s--l->s':
@@ -79,7 +77,7 @@ namespace dominance {
                  //   assert(!labels_trs.empty());
                     for (int labels_tr : labels_trs) {
                         //log << "Checking label " << labels_trs[i] << " to " << trs.target << std::endl;
-                        if (local_relation.simulates(t, trs.target) && label_dominance.dominated_by_noop(labels_tr, lts_id)) {
+                        if (local_relation.simulates(t, trs.target) && label_dominance.noop_simulates_label_in_all_other(lts_id, labels_tr)) {
                             continue;
                         }
                         bool found =
@@ -87,7 +85,7 @@ namespace dominance {
                                     if (local_relation.simulates(trt.target, trs.target)) {
                                         const std::vector<int> &labels_trt = lts.get_labels(trt.label_group);
                                         for (int label_trt: labels_trt) {
-                                            if (label_dominance.dominates(label_trt, labels_tr, lts_id)) {
+                                            if (label_dominance.label_dominates_label_in_all_other(lts_id, label_trt, labels_tr)) {
                                                 return true;
                                             }
                                         }
@@ -106,8 +104,18 @@ namespace dominance {
         }
     }
 
-    LDSimulation::LDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory) :
-            log(utils::get_log_for_verbosity(verbosity)), factor_dominance_relation_factory(std::move(factor_dominance_relation_factory)) {
+    bool update_label_relation(LabelRelation& label_relation, const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {
+        bool changes = false;
+        for (int i = 0; i < task.get_num_variables(); ++i) {
+            changes |= label_relation.update_factor(i, *(sim[i]));
+        }
+        return changes;
+    }
+
+
+
+    LDSimulation::LDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory, std::shared_ptr<LabelRelationFactory> label_relation_factory) :
+            log(utils::get_log_for_verbosity(verbosity)), factor_dominance_relation_factory(std::move(factor_dominance_relation_factory)), label_relation_factory(std::move(label_relation_factory)) {
     }
 
 
@@ -135,6 +143,9 @@ namespace dominance {
             add_option<std::shared_ptr<FactorDominanceRelationFactory>>("fdr",
                                                        "The data structure to store the factor dominance relation",
                                                        "dense_fdr()");
+            add_option<std::shared_ptr<LabelRelationFactory>>("lr",
+                                                       "The data structure to store the label relation",
+                                                       "dense_lr()");
 
             utils::add_log_options_to_feature(*this);
         }
@@ -146,7 +157,8 @@ namespace dominance {
 
             return plugins::make_shared_from_arg_tuples<LDSimulation>(
                     utils::get_log_arguments_from_options(opts),
-                    opts.get<std::shared_ptr<FactorDominanceRelationFactory>>("fdr"));
+                    opts.get<std::shared_ptr<FactorDominanceRelationFactory>>("fdr"),
+                    opts.get<std::shared_ptr<LabelRelationFactory>>("lr"));
         }
     };
 
