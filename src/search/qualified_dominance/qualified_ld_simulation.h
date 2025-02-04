@@ -20,6 +20,10 @@ class FTSTask;
 }
 
 namespace dominance {
+/*
+ * A version of Label Dominance simulation that only updates the factors in the label relation that were changed by the
+ * last iteration of the state relation.
+ */
 class IncrementalLDSimulation : public DominanceAnalysis {
     utils::LogProxy log;
     std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory;

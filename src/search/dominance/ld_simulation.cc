@@ -52,11 +52,13 @@ namespace dominance {
         } while (update_label_relation(*label_relation, task, local_relations));
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
 
+#ifndef NDEBUG
         for (const auto& sim : local_relations) {
             sim->dump(log);
         }
         log << "Label relation: " << std::endl;
         label_relation->dump(log);
+#endif
 
         return std::make_unique<FactoredDominanceRelation>(std::move(local_relations), label_relation);
     }
