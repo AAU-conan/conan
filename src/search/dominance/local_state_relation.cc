@@ -29,9 +29,9 @@ namespace dominance {
 
     bool DenseLocalStateRelation::removeSimulations(std::function<bool(int s, int t)>&& f) {
         bool any = false;
-        for (size_t s = 0; s < relation.size(); ++s) {
-            for (size_t t = 0; t < relation.size(); ++t) {
-                if (simulates(s, t) && f(s, t)) {
+        for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
+            for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
+                if (s != t && simulates(s, t) && f(s, t)) {
                     relation[s][t] = false;
                     any = true;
                 }

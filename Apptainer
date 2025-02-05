@@ -13,10 +13,10 @@ Stage: build
 
 %post
     apt-get update
-    apt-get -y install --no-install-recommends cmake make g++-14 python3 g++-multilib git ca-certificates rustc cargo libboost-all-dev
+    apt-get -y install --no-install-recommends cmake make g++-14 python3 g++-multilib git ca-certificates libtool automake autoconf libboost-all-dev
 
     export cplex_DIR=/cplex
-    ./build.py -j 4
+    ./build.py release
 
 # Stage 2: Run the planner
 Bootstrap: docker
@@ -30,10 +30,7 @@ Stage: run
 %files
     fast-downward.py
     driver
-    src/plan
     src/translate
-    src/search/downward
-    src/search/unitcost
 
 %files from build
     /builds/release/bin/downward

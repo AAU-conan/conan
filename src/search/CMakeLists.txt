@@ -1190,6 +1190,7 @@ ExternalProject_Add(cudd
             COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
         PREFIX ${CMAKE_BINARY_DIR}/cudd
         CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS=-std=c++98\ -w --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
+        CMAKE_ARGS -DCMAKE_MAKE_PROGRAM=$(MAKE)
         BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
         INSTALL_COMMAND make install
         BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
@@ -1209,7 +1210,9 @@ ExternalProject_Add(mata
     GIT_REPOSITORY https://github.com/VeriFIT/mata
     GIT_TAG 1.6.9
     PREFIX ${CMAKE_BINARY_DIR}/mata
-    BUILD_COMMAND cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/mata && cmake --build build --parallel -j 16
+    PATCH_COMMAND
+        COMMAND sed -i "s/CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME/false/g" CMakeLists.txt
+    BUILD_COMMAND cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/mata && cmake --build build --parallel -j 18
     INSTALL_COMMAND cd build && make install
     BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/mata/lib/libmata.a
     BUILD_IN_SOURCE 1
