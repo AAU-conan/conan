@@ -38,8 +38,8 @@ namespace dominance {
         for (auto &sim: local_relations) {
             int num_eq = 0;
             int num_states = sim->get_lts().size();
-            for (size_t i = 0; i < num_states; ++i)
-                for (size_t j = 0; j < num_states; ++j)
+            for (int i = 0; i < num_states; ++i)
+                for (int j = 0; j < num_states; ++j)
                     if (sim->similar(i, j))
                         num_eq++;
             percentage *= num_eq / (static_cast<double>(num_states) * num_states);

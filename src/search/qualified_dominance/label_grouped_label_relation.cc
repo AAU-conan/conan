@@ -61,6 +61,7 @@ namespace dominance {
         [[nodiscard]] shared_ptr<LabelGroupedLabelRelationFactory> create_component(
         const plugins::Options &opts,
         const utils::Context &) const override {
+            utils::unused_variable(opts);
             return plugins::make_shared_from_arg_tuples<LabelGroupedLabelRelationFactory>();
         }
     };

@@ -53,9 +53,11 @@ namespace fts {
             }
         }
 
+        label_group_is_relevant.resize(label_groups.size(), false);
         for (const auto& [lg_i, _] : std::views::enumerate(label_groups)) {
             if (const auto lg = LabelGroup(static_cast<int>(lg_i)); !is_self_loop_everywhere_label(lg)) {
-                relevant_label_groups.insert(lg);
+                relevant_label_groups.push_back(lg);
+                label_group_is_relevant[lg_i] = true;
             }
         }
     }

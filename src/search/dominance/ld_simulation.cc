@@ -57,14 +57,16 @@ namespace dominance {
             sim->dump(log);
         }
         log << "Label relation: " << std::endl;
+
         label_relation->dump(log);
 #endif
-
         return std::make_unique<FactoredDominanceRelation>(std::move(local_relations), label_relation);
     }
 
-    void update_local_relation(int lts_id, const LabelledTransitionSystem &lts, const LabelRelation &label_dominance, FactorDominanceRelation &local_relation) {
+    bool update_local_relation(int lts_id, const LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
+                               FactorDominanceRelation& local_relation) {
         bool changes = true;
+        bool any_changes = false;
         while (changes) {
             changes = local_relation.removeSimulations([&](int t, int s) {
                 //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
@@ -103,7 +105,9 @@ namespace dominance {
                     return false;
                 });
             });
+            any_changes |= changes;
         }
+        return any_changes;
     }
 
     bool update_label_relation(LabelRelation& label_relation, const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {

@@ -44,7 +44,6 @@ public:
     // Update the simulation relation for when t simulates s
     bool update_pairs(int factor, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
 
-    bool update_local_relation(int factor, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
 } // namespace dominance
 
 #endif

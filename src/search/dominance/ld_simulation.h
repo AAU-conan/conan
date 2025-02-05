@@ -19,7 +19,8 @@ namespace fts {
 namespace dominance {
     class LabelRelation;
 
-    void update_local_relation(int lts_id, const LabelledTransitionSystem &lts, const LabelRelation &label_dominance, FactorDominanceRelation &local_relation);
+    bool update_local_relation(int lts_id, const LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
+                               FactorDominanceRelation& local_relation);
     bool update_label_relation(LabelRelation& label_relation, const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
 
     class LDSimulation : public DominanceAnalysis {

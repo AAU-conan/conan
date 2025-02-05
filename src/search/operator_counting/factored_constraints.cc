@@ -8,6 +8,7 @@
 
 namespace operator_counting {
     void FactoredConstraints::add_factor_lts_to_lp(const fts::LabelledTransitionSystem& lts, lp::LinearProgram& lp, int factor) {
+        utils::unused_variable(factor);
         LPVariables& lp_variables = lp.get_variables();
         LPConstraints& lp_constraints = lp.get_constraints();
 

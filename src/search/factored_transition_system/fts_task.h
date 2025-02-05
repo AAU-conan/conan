@@ -25,7 +25,7 @@ namespace fts {
     class FTSTask : public AbstractTask {
         // The abstract task that was used to generate this task. This is optional.
         // For now just used to preserve fact and action names, whenever they match
-        std::unique_ptr<FactNames> fact_names;
+        std::shared_ptr<FactNames> fact_names;
 
         std::vector<int> label_costs;
         std::vector<std::unique_ptr<LabelledTransitionSystem>> transition_systems;

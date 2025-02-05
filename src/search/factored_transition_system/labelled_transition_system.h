@@ -134,7 +134,8 @@ namespace fts {
         int num_labels;
         std::vector<bool> goal_states;
         AbstractStateRef init_state;
-        std::unordered_set<LabelGroup> relevant_label_groups;
+        std::vector<LabelGroup> relevant_label_groups;
+        std::vector<bool> label_group_is_relevant;
         std::vector<int> goal_distances; // TODO: Possibly unify with merge_and_shrink::Distances
 
 
@@ -206,23 +207,15 @@ namespace fts {
         }
 
         bool is_relevant_label_group(const LabelGroup &label_group) const {
-            return relevant_label_groups.contains(label_group);
+            return label_group_is_relevant.at(label_group.group);
         }
 
-        const std::unordered_set<LabelGroup>& get_relevant_label_groups() const {
+        const std::vector<LabelGroup>& get_relevant_label_groups() const {
             return relevant_label_groups;
         }
 
         AbstractStateRef get_initial_state() const {
             return init_state;
-        }
-
-        std::generator<int> get_relevant_labels() const {
-            for (const auto& lg : relevant_label_groups) {
-                for (int label : label_groups[lg.group]) {
-                    co_yield label;
-                }
-            }
         }
 
         //For each transition labelled with l, applya a function. If returns true, applies a break

@@ -15,6 +15,7 @@
 namespace operator_counting {
     std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelGroupedLabelRelation& label_relation, bool under_approximate = false);
     void draw_nfa(const std::string& file_name, const mata::nfa::Nfa& nfa, const fts::LabelledTransitionSystem& lts, const std::vector<std::vector<unsigned long>>& state_pair_to_nfa_state);
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate);
 
 
     [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate) {
