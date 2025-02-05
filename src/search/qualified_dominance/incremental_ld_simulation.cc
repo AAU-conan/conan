@@ -1,4 +1,4 @@
-#include "qualified_ld_simulation.h"
+#include "incremental_ld_simulation.h"
 
 #include "../factored_transition_system/fts_task.h"
 #include "label_grouped_label_relation.h"
@@ -12,8 +12,6 @@ using merge_and_shrink::TransitionSystem;
 using namespace dominance;
 
 namespace dominance {
-    bool update_local_relation_2(int lts_id, const LabelRelation& label_relation, FactorDominanceRelation& local_relation);
-
     std::unique_ptr<FactoredDominanceRelation> IncrementalLDSimulation::compute_dominance_relation(const fts::FTSTask& task) {
         return compute_ld_simulation(task, log);
     }
@@ -51,7 +49,7 @@ namespace dominance {
         do {
             changes = false;
             for (auto [factor, local_relation] : std::views::enumerate(local_relations)) {
-                changes |= update_local_relation_2(static_cast<int>(factor), *label_relation,  *local_relation);
+                changes |= update_local_relation(static_cast<int>(factor), local_relation->get_lts(), *label_relation,  *local_relation);
                 if (changes)
                     changes |= label_relation->update_factor(factor, *local_relation);
             }
@@ -129,56 +127,6 @@ namespace dominance {
 // #endif
 //         return any_changes;
 //     }
-
-    bool update_local_relation_2(int lts_id, const LabelRelation& label_dominance,
-                               FactorDominanceRelation& local_relation) {
-        bool changes = true;
-        bool any_changes = false;
-        const auto lts = local_relation.get_lts();
-        while (changes) {
-            changes = local_relation.removeSimulations([&](int t, int s) {
-                //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
-                //Check if really t simulates s
-                //for each transition s--l->s':
-                // a) with noop t >= s' and l dominated by noop?
-                // b) exist t--l'-->t', t' >= s' and l dominated by l'?
-                return local_relation.get_lts().applyPostSrc(s, [&](const auto &trs) {
-                    //log << "Checking transition " << s << " to " << trs.target << std::endl;
-
-                    const std::vector<int> &labels_trs = lts.get_labels(trs.label_group);
-                 //   assert(!labels_trs.empty());
-                    for (int labels_tr : labels_trs) {
-                        //log << "Checking label " << labels_trs[i] << " to " << trs.target << std::endl;
-                        if (local_relation.simulates(t, trs.target) && label_dominance.noop_simulates_label_in_all_other(lts_id, labels_tr)) {
-                            continue;
-                        }
-                        bool found =
-                                lts.applyPostSrc(t, [&](const auto &trt) {
-                                    if (local_relation.simulates(trt.target, trs.target)) {
-                                        const std::vector<int> &labels_trt = lts.get_labels(trt.label_group);
-                                        for (int label_trt: labels_trt) {
-                                            if (label_dominance.label_dominates_label_in_all_other(lts_id, label_trt, labels_tr)) {
-                                                return true;
-                                            }
-                                        }
-                                    }
-                                    return false;
-                                });
-
-                        if (!found) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                });
-            });
-            any_changes |= changes;
-        }
-        return any_changes;
-    }
-
-
 
     class IncrementalLDSimulationFeature : public plugins::TypedFeature<DominanceAnalysis, IncrementalLDSimulation> {
     public:

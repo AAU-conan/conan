@@ -3,7 +3,7 @@
 
 #include "constraint_generator.h"
 #include "../lp/lp_solver.h"
-#include "../qualified_dominance/qualified_ld_simulation.h"
+#include "../qualified_dominance/incremental_ld_simulation.h"
 
 namespace fts {
     struct TransformedFTSTask;

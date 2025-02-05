@@ -1,5 +1,5 @@
-#ifndef QUALIFIED_LABEL_RELATION_H
-#define QUALIFIED_LABEL_RELATION_H
+#ifndef LABEL_GROUPED_LABEL_RELATION_H
+#define LABEL_GROUPED_LABEL_RELATION_H
 
 #include <iostream>
 #include <vector>

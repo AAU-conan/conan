@@ -1,5 +1,5 @@
-#ifndef DOMINANCE_LD_SIMULATION_H
-#define DOMINANCE_LD_SIMULATION_H
+#ifndef DOMINANCE_INCREMENTAL_LD_SIMULATION_H
+#define DOMINANCE_INCREMENTAL_LD_SIMULATION_H
 
 #include "../dominance/all_none_factor_index.h"
 #include "../factored_transition_system/fts_task.h"
@@ -14,6 +14,7 @@
 #include "../utils/timer.h"
 #include "../dominance/dominance_analysis.h"
 #include "../dominance/factored_dominance_relation.h"
+#include "../dominance/ld_simulation.h"
 
 namespace fts {
 class FTSTask;

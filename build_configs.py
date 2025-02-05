@@ -1,9 +1,4 @@
-no_cudd = [
-    "-DUSE_CUDD=FALSE",
-    "-DLIBRARY_SYMBOLIC_ENABLED=FALSE",
-    "-DLIBRARY_SYMBOLIC_SEARCH_ENABLED=FALSE",
-]
-compile_commands = ["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"]
+compile_commands = ["-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"] # Export compile_commands.json for use with development tools
 gcc14 = [
     "-DCMAKE_CXX_COMPILER=g++-14"
 ]  # Set the C++ compiler to g++-14, for systems with old default compiler

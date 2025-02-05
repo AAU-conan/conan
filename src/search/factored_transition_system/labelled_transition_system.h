@@ -55,16 +55,6 @@ namespace fts {
     };
 }
 
-namespace std {
-    template <>
-    struct hash<fts::LabelGroup>
-    {
-        std::size_t operator()(const fts::LabelGroup& lg) const noexcept {
-            return std::hash<int>()(lg.group);
-        }
-    };
-}
-
 
 namespace fts {
     class LTSTransition {
