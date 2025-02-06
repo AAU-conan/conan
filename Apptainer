@@ -1,33 +1,43 @@
 Bootstrap: docker
-From: ubuntu:23.10
+From: ubuntu:24.04
 Stage: build
 
 %files
     src
     build.py
+    build_configs.py
 
 %post
     apt-get update
-    apt-get -y install --no-install-recommends cmake make g++ python3 g++-multilib
+    apt-get -y install --no-install-recommends cmake make gcc g++ python3 g++-multilib git ca-certificates automake
 
-    ./build.py
+    git clone https://github.com/alvaro-torralba/cudd.git
+    cd cudd
+    ./configure --enable-shared --enable-obj --build=x86-pc-linux-gnu "CFLAGS=-m64 -Wall -Wextra -g -O3" "CXXFLAGS=-m64 -Wall -Wextra -g -O3" "LDFLAGS=-m64"
+    make install
+    cd ..
+    
+    ./build.py -j 4
     
 # Stage 2: Run the planner
 Bootstrap: docker
-From: ubuntu:23.10
+From: ubuntu:24.04
 Stage: run
 
 # Copy planner binary and required files from Stage 1.
 %files
-    src/plan
-    src/translate
-    src/search/downward
-    src/search/unitcost
+    fast-downward.py
+    driver
     
 %files from build
-    /src/search/downward-release
-    /src/preprocess/preprocess
-        
+    /builds/release/bin/downward
+    /builds/release/bin/translate
+    /usr/local/lib/libcudd.a
+    /usr/local/lib/libcudd.so
+    /usr/local/lib/libcudd.la
+    /usr/local/include/cuddObj.hh
+    /usr/local/include/cudd.h
+    
 %post
     apt-get update
     apt-get -y install --no-install-recommends python3 time gawk
@@ -42,7 +52,7 @@ Stage: run
         die "usage: DOMAIN_FILE PROBLEM_FILE PLAN_FILE SEARCH_OPTIONS"
     fi
 
-    ./fast-downward.py  "$1" "$2" --plan-file "$3" "${@:4}" 
+    $SINGULARITY_ROOTFS/fast-downward.py --plan-file "$3"   "$1" "$2" "${@:4}" 
 
    
 
