@@ -106,7 +106,7 @@ def build(config_name, configure_parameters, build_parameters):
 
     build_cmd = [CMAKE, "--build", build_path]
     if NUM_CPUS:
-        build_cmd += ["-j", f"{NUM_CPUS - 2}"]
+        build_cmd += ["-j", f"{NUM_CPUS}"]
     if build_parameters:
         build_cmd += ["--"] + build_parameters
     try_run(build_cmd)
