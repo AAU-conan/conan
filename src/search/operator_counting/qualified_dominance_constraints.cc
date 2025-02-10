@@ -326,8 +326,6 @@ namespace operator_counting {
             state_pair_to_nfa_state.push_back(local_state_pair_to_nfa_state);
 
 #ifndef NDEBUG
-
-            std::println("Automaton final states: {}", automaton.final.size());
             draw_nfa(std::format("nfa_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
 
             // std::println("Label groups for factor {}", i);
@@ -340,7 +338,6 @@ namespace operator_counting {
             // }
 #endif
 
-            auto lts_nfa = lts_to_nfa(lts);
             init_variables.emplace_back();
             transition_variables.emplace_back();
             for (size_t q = 0; q < automaton.num_of_states(); ++q) {
@@ -352,21 +349,6 @@ namespace operator_counting {
                     reduced_automaton.make_complete();
                 } else {
                     reduced_automaton = automaton;
-                }
-
-                std::println("LP Automaton size f={} s={}: {}", i, q, reduced_automaton.num_of_states());
-
-                for (int s = 0; s < lts.size(); s++) {
-                    for (int t = 0; t < lts.size(); t++) {
-                        if (local_state_pair_to_nfa_state[s][t] == q) {
-                            auto lts_nfa_s = mata::nfa::Nfa(lts_nfa);
-                            lts_nfa_s.initial = {static_cast<mata::nfa::State>(s)};
-
-                            auto diff_nfa = mata::nfa::intersection(lts_nfa_s, mata::nfa::complement(reduced_automaton, *reduced_automaton.alphabet));
-
-                            std::println("LTS - QDOM f={} s={} t={}: {}", i, s, t, diff_nfa.num_of_states());
-                        }
-                    }
                 }
 
                 // draw_nfa(std::format("reduced_automaton_{}", q), reduced_automaton, lts, local_state_pair_to_nfa_state);
