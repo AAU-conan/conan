@@ -1034,7 +1034,7 @@ create_fast_downward_library(
         HELP "Qualified Dominance Analysis techniques"
         SOURCES
         qualified_dominance/sparse_local_state_relation
-        qualified_dominance/qualified_ld_simulation
+        qualified_dominance/incremental_ld_simulation
         qualified_dominance/label_group_relation
         qualified_dominance/label_grouped_label_relation
         qualified_dominance/nfa_merge_non_differentiable
