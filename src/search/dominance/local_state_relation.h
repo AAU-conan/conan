@@ -16,9 +16,12 @@ namespace merge_and_shrink{
 
 
 namespace dominance {
-
+    /**
+     * FactorDominanceRelation is abstract and represents the simulation relation between states in a single LTS.
+     */
     class FactorDominanceRelation {
     protected:
+        // TODO: Remove own LTS
         fts::LabelledTransitionSystem lts;
 
     public:
@@ -47,16 +50,32 @@ namespace dominance {
 
         virtual void cancel_simulation_computation() = 0;
 
-        virtual bool applySimulations(std::function<bool(int s, int t)> &&f) const = 0;
-        virtual bool removeSimulations(std::function<bool(int s, int t)> &&f) = 0;
+        /**
+         * Apply a function to simulations until the function returns true.
+         * @return True if the function returns true for any pair of states, false otherwise.
+         */
+        virtual bool apply_to_simulations_until(std::function<bool(int s, int t)> &&f) const = 0;
+
+        /**
+         * Remove simulations for which the function returns true.
+         * @return True if any simulation was removed, false otherwise.
+         */
+        virtual bool remove_simulations_if(std::function<bool(int s, int t)> &&f) = 0;
     };
 
+
+    /**
+     * Constructs the FactorDominanceRelation for a given LTS. Used for options for the plugins.
+     */
     class FactorDominanceRelationFactory {
     public:
         virtual ~FactorDominanceRelationFactory() = default;
         virtual std::unique_ptr<FactorDominanceRelation> create(const fts::LabelledTransitionSystem &lts) = 0;
     };
 
+    /*
+     * Generates instances of FactorDominanceRelationFactory for subtypes of FactorDominanceRelation.
+     */
     template<class DominanceRelation>
     class FactorDominanceRelationFactoryImpl : public FactorDominanceRelationFactory {
         std::unique_ptr<FactorDominanceRelation> create(const fts::LabelledTransitionSystem &lts) override {
@@ -65,8 +84,13 @@ namespace dominance {
     };
 
 
+    /**
+     * DenseLocalStateRelation represents the simulation relation between states in a single LTS. It is implemented as a
+     * dense matrix. An N x N matrix for the N states in the LTS, representing when one state simulates another.
+     */
     class DenseLocalStateRelation final : public FactorDominanceRelation {
     protected:
+        // Relations between states. relation[s][t] is true if s simulates t.
         std::vector<std::vector<bool> > relation;
 
         // Vectors of states dominated/dominating by each state. Lazily computed when needed.
@@ -95,8 +119,8 @@ namespace dominance {
             return relation;
         }
 
-        bool applySimulations(std::function<bool(int s, int t)> &&f) const override;
-        bool removeSimulations(std::function<bool(int s, int t)> &&f) override;
+        bool apply_to_simulations_until(std::function<bool(int s, int t)> &&f) const override;
+        bool remove_simulations_if(std::function<bool(int s, int t)> &&f) override;
     };
 }
 #endif

@@ -48,8 +48,8 @@ public:
   [[nodiscard]] int num_states() const { return lts.size(); }
 
   int num_simulations() const override;
-  bool applySimulations(std::function<bool(int s, int t)>&& f) const override;
-  bool removeSimulations(std::function<bool(int s, int t)>&& f) override;
+  bool apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const override;
+  bool remove_simulations_if(std::function<bool(int s, int t)>&& f) override;
 };
 } // namespace dominance
 #endif

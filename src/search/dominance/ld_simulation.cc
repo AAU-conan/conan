@@ -68,7 +68,7 @@ namespace dominance {
         bool changes = true;
         bool any_changes = false;
         while (changes) {
-            changes = local_relation.removeSimulations([&](int t, int s) {
+            changes = local_relation.remove_simulations_if([&](int t, int s) {
                 //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
                 //Check if really t simulates s
                 //for each transition s--l->s':

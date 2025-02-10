@@ -99,7 +99,7 @@ namespace dominance {
         return num;
     }
 
-    bool DenseLocalStateRelation::applySimulations(std::function<bool(int s, int t)>&& f) const {
+    bool DenseLocalStateRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
                 if (simulates(s, t) && f(s, t)) {
@@ -110,7 +110,7 @@ namespace dominance {
         return false;
     }
 
-    bool DenseLocalStateRelation::removeSimulations(std::function<bool(int s, int t)>&& f) {
+    bool DenseLocalStateRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
         bool any = false;
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {

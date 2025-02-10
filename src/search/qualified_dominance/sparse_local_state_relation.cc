@@ -63,7 +63,7 @@ namespace dominance {
         return simulates(s, t) && simulates(t, s);
     }
 
-    bool SparseLocalStateRelation::applySimulations(std::function<bool(int s, int t)>&& f) const {
+    bool SparseLocalStateRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
         for (const auto& [s, t] : simulations) {
             if (f(s, t))
                 return true;
@@ -71,7 +71,7 @@ namespace dominance {
         return false;
     }
 
-    bool SparseLocalStateRelation::removeSimulations(std::function<bool(int s, int t)>&& f) {
+    bool SparseLocalStateRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
         return 0 < erase_if(simulations, [f](std::pair<int,int> p) { return f(p.first, p.second); });
     }
 

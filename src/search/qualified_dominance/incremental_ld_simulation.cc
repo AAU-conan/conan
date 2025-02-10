@@ -83,7 +83,7 @@ namespace dominance {
         // Remove all simulation pairs (s, t) where it is not the case that
         // ∀s -lg-> s'( ∃t -lg'-> t' s.t. s' simulates t' and lg' simulates lg in all other factors or t simulates s' and noop simulates lg in all other factors)
         const auto& lts = local_relation.get_lts();
-        return local_relation.removeSimulations([&](int t, int s) {
+        return local_relation.remove_simulations_if([&](int t, int s) {
 #ifndef NDEBUG
             // std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
 #endif
