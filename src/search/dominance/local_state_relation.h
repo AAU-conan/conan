@@ -31,95 +31,21 @@ namespace dominance {
         [[nodiscard]] virtual inline bool simulates(int s, int t) const = 0;
         [[nodiscard]] virtual inline bool similar(int s, int t) const = 0;
 
-        const fts::LabelledTransitionSystem &get_lts() const {
+        [[nodiscard]] const fts::LabelledTransitionSystem &get_lts() const {
             return lts;
         }
 
-        virtual bool is_identity() const {
-            for (int i = 0; i < lts.size(); ++i) {
-                for (int j = i + 1; j < lts.size(); ++j) {
-                    if (simulates(i, j) || simulates(j, i)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
+        [[nodiscard]] virtual bool is_identity() const;
 
-        virtual void dump(utils::LogProxy &log) const {
-            log << "SIMREL:" << std::endl;
-            for (int j = 0; j < lts.size(); ++j) {
-                for (int i = 0; i < lts.size(); ++i) {
-                    if (simulates(j, i) && i != j) {
-                        if (simulates(i, j)) {
-                            if (j < i) {
-                                log << lts.state_name(i) << " <=> " << lts.state_name(j) << std::endl;
-                            }
-                        } else {
-                            log << lts.state_name(i) << " <= " << lts.state_name(j) << std::endl;
-                        }
-                    }
-                }
-            }
-        }
+        virtual void dump(utils::LogProxy &log) const;
 
+        [[nodiscard]] virtual int num_equivalences() const;
 
-        [[nodiscard]] virtual int num_equivalences() const {
-            int num = 0;
-            for (int i = 0; i < static_cast<int>(lts.size()); i++) {
-                for (int j = i + 1; j < lts.size(); j++) {
-                    if (similar(i, j)) {
-                        num++;
-                    }
-                }
-            }
-            return num;
-        }
+        [[nodiscard]] virtual int num_simulations() const;
 
-        [[nodiscard]] virtual int num_simulations() const {
-            int res = 0;
-            std::vector<bool> counted(lts.size(), false);
-            for (int i = 0; i < lts.size(); ++i) {
-                if (!counted[i]) {
-                    for (int j = i + 1; j < lts.size(); ++j) {
-                        if (similar(i, j)) {
-                            counted[j] = true;
-                        }
-                    }
-                }
-            }
-            for (int i = 0; i < lts.size(); ++i) {
-                if (!counted[i]) {
-                    for (int j = i + 1; j < lts.size(); ++j) {
-                        if (!counted[j]) {
-                            if (!similar(i, j) && (simulates(i, j) || simulates(j, i))) {
-                                res++;
-                            }
-                        }
-                    }
-                }
-            }
-            return res;
-        }
-
-        [[nodiscard]] virtual int num_different_states() const {
-            int num = 0;
-            std::vector<bool> counted(lts.size(), false);
-            for (int i = 0; i < static_cast<int>(counted.size()); i++) {
-                if (!counted[i]) {
-                    num++;
-                    for (int j = i + 1; j < lts.size(); j++) {
-                        if (similar(i, j)) {
-                            counted[j] = true;
-                        }
-                    }
-                }
-            }
-            return num;
-        }
+        [[nodiscard]] virtual int num_different_states() const;
 
         virtual void cancel_simulation_computation() = 0;
-
 
         virtual bool applySimulations(std::function<bool(int s, int t)> &&f) const = 0;
         virtual bool removeSimulations(std::function<bool(int s, int t)> &&f) = 0;

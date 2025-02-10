@@ -39,23 +39,11 @@ public:
 
   explicit SparseLocalStateRelation(const LabelledTransitionSystem &lts);
 
-  void print_simulations() const {
-    for (auto &sim : simulations) {
-      if (!lts.get_transitions(sim.first).empty() &&
-          !lts.get_transitions(sim.second).empty()) {
-        std::println("    {} <= {}", lts.state_name(sim.second),
-                     lts.state_name(sim.first));
-      }
-    }
-  }
+  void print_simulations() const;
 
-  [[nodiscard]] bool simulates(int t, int s) const override {
-    return s == t || simulations.contains({t, s});
-  }
+  [[nodiscard]] bool simulates(int t, int s) const override;
 
-  [[nodiscard]] bool similar(int s, int t) const override {
-    return simulates(s, t) && simulates(t, s);
-  }
+  [[nodiscard]] bool similar(int s, int t) const override;
 
   [[nodiscard]] int num_states() const { return lts.size(); }
 

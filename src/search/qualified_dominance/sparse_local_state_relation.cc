@@ -45,6 +45,24 @@ namespace dominance {
         }
     }
 
+    void SparseLocalStateRelation::print_simulations() const {
+        for (auto &sim : simulations) {
+            if (!lts.get_transitions(sim.first).empty() &&
+                !lts.get_transitions(sim.second).empty()) {
+                std::println("    {} <= {}", lts.state_name(sim.second),
+                             lts.state_name(sim.first));
+            }
+        }
+    }
+
+    bool SparseLocalStateRelation::simulates(int t, int s) const {
+        return s == t || simulations.contains({t, s});
+    }
+
+    bool SparseLocalStateRelation::similar(int s, int t) const {
+        return simulates(s, t) && simulates(t, s);
+    }
+
     bool SparseLocalStateRelation::applySimulations(std::function<bool(int s, int t)>&& f) const {
         for (const auto& [s, t] : simulations) {
             if (f(s, t))

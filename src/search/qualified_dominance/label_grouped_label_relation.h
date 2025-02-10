@@ -53,46 +53,9 @@ namespace dominance {
             return fts_task.get_num_labels();
         }
 
-        // ∀l2 ∈ lg2. ∃l1 ∈ lg1. ∀i != factor. l1 simulates l2 in factor i
-        [[nodiscard]] bool label_group_simulates_label_group_in_all_other(const int factor, const LabelGroup lg1, const LabelGroup lg2) const {
-            auto res = std::ranges::all_of(fts_task.get_factor(factor).get_labels(lg2), [&](const int l2) {
-                return std::ranges::any_of(fts_task.get_factor(factor).get_labels(lg1), [&](const int l1) {
-                    return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& i) {
-                        const auto& lts = fts_task.get_factor(i);
-                        return i == factor || (label_group_simulates(i, lts.get_group_label(l1), lts.get_group_label(l2)) && fts_task.get_label_cost(l1) <= fts_task.get_label_cost(l2));
-                    });
-                });
-            });
-#ifndef NDEBUG
-            // std::println("{} {}simulates {} in all other {}", fts_task.get_factor(factor).label_group_name(lg1), res ? "" : "not ", fts_task.get_factor(factor).label_group_name(lg2), factor);
-#endif
-            return res;
-        }
+        [[nodiscard]] bool label_dominates_label_in_all_other(const int factor, const int l1, const int l2) const override;
 
-        // ∀l ∈ lg. ∀i != factor. noop simulates l in factor i
-        [[nodiscard]] bool noop_simulates_label_group_in_all_other(const int factor, const LabelGroup lg) const {
-            auto res = std::ranges::all_of(fts_task.get_factor(factor).get_labels(lg), [&](const int l) {
-                return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& i) {
-                    const auto& lts = fts_task.get_factor(i);
-                    return i == factor || noop_simulates_label_group(i, lts.get_group_label(l));
-                });
-            });
-            return res;
-        }
-
-        [[nodiscard]] bool label_dominates_label_in_all_other(const int factor, const int l1, const int l2) const override {
-            return fts_task.get_label_cost(l1) <= fts_task.get_label_cost(l2) && std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& j) {
-                const auto& lts = fts_task.get_factor(j);
-                return j == factor || label_group_simulates(j, lts.get_group_label(l1), lts.get_group_label(l2));
-            });
-        }
-
-        [[nodiscard]] bool noop_simulates_label_in_all_other(const int factor, const int l) const override {
-            return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& j) {
-                const auto& lts = fts_task.get_factor(j);
-                return j == factor || noop_simulates_label_group(j, lts.get_group_label(l));
-            });
-        }
+        [[nodiscard]] bool noop_simulates_label_in_all_other(const int factor, const int l) const override;
     };
 }
 

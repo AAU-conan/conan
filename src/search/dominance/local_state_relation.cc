@@ -16,6 +16,89 @@ using merge_and_shrink::TransitionSystem;
 using fts::LabelledTransitionSystem;
 
 namespace dominance {
+
+    [[nodiscard]] bool FactorDominanceRelation::is_identity() const {
+        for (int i = 0; i < lts.size(); ++i) {
+            for (int j = i + 1; j < lts.size(); ++j) {
+                if (simulates(i, j) || simulates(j, i)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    void FactorDominanceRelation::dump(utils::LogProxy& log) const {
+        log << "SIMREL:" << std::endl;
+        for (int j = 0; j < lts.size(); ++j) {
+            for (int i = 0; i < lts.size(); ++i) {
+                if (simulates(j, i) && i != j) {
+                    if (simulates(i, j)) {
+                        if (j < i) {
+                            log << lts.state_name(i) << " <=> " << lts.state_name(j) << std::endl;
+                        }
+                    } else {
+                        log << lts.state_name(i) << " <= " << lts.state_name(j) << std::endl;
+                    }
+                }
+            }
+        }
+    }
+
+    int FactorDominanceRelation::num_equivalences() const {
+        int num = 0;
+        for (int i = 0; i < static_cast<int>(lts.size()); i++) {
+            for (int j = i + 1; j < lts.size(); j++) {
+                if (similar(i, j)) {
+                    num++;
+                }
+            }
+        }
+        return num;
+    }
+
+    int FactorDominanceRelation::num_simulations() const {
+        int res = 0;
+        std::vector<bool> counted(lts.size(), false);
+        for (int i = 0; i < lts.size(); ++i) {
+            if (!counted[i]) {
+                for (int j = i + 1; j < lts.size(); ++j) {
+                    if (similar(i, j)) {
+                        counted[j] = true;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < lts.size(); ++i) {
+            if (!counted[i]) {
+                for (int j = i + 1; j < lts.size(); ++j) {
+                    if (!counted[j]) {
+                        if (!similar(i, j) && (simulates(i, j) || simulates(j, i))) {
+                            res++;
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    int FactorDominanceRelation::num_different_states() const {
+        int num = 0;
+        std::vector<bool> counted(lts.size(), false);
+        for (int i = 0; i < static_cast<int>(counted.size()); i++) {
+            if (!counted[i]) {
+                num++;
+                for (int j = i + 1; j < lts.size(); j++) {
+                    if (similar(i, j)) {
+                        counted[j] = true;
+                    }
+                }
+            }
+        }
+        return num;
+    }
+
     bool DenseLocalStateRelation::applySimulations(std::function<bool(int s, int t)>&& f) const {
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
