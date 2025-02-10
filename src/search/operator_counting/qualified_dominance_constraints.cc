@@ -18,6 +18,25 @@ namespace operator_counting {
     [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate);
 
 
+    [[nodiscard]] mata::nfa::Nfa lts_to_nfa(const fts::LabelledTransitionSystem& lts) {
+        mata::nfa::Nfa nfa;
+
+        for (int s = 0; s < lts.size(); ++s) {
+            nfa.add_state(s);
+            if (lts.is_goal(s)) {
+                nfa.final.insert(static_cast<mata::nfa::State>(s));
+            }
+        }
+
+        for (const auto& t : lts.get_transitions()) {
+            for (const auto label : lts.get_labels(t.label_group)) {
+                nfa.delta.add(t.src, label, t.target);
+            }
+        }
+
+        return nfa;
+    }
+
     [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate) {
         mata::nfa::Nfa nfa;
         auto all_labels = std::views::iota(0, lts.get_num_labels()) | std::ranges::to<std::vector>();
@@ -320,6 +339,8 @@ namespace operator_counting {
             //     std::println(" ; {}", lts.fact_value_names.get_common_operators_name(lg));
             // }
 #endif
+
+            auto lts_nfa = lts_to_nfa(lts);
             init_variables.emplace_back();
             transition_variables.emplace_back();
             for (size_t q = 0; q < automaton.num_of_states(); ++q) {
@@ -331,6 +352,21 @@ namespace operator_counting {
                     reduced_automaton.make_complete();
                 } else {
                     reduced_automaton = automaton;
+                }
+
+                std::println("LP Automaton size f={} s={}: {}", i, q, reduced_automaton.num_of_states());
+
+                for (int s = 0; s < lts.size(); s++) {
+                    for (int t = 0; t < lts.size(); t++) {
+                        if (local_state_pair_to_nfa_state[s][t] == q) {
+                            auto lts_nfa_s = mata::nfa::Nfa(lts_nfa);
+                            lts_nfa_s.initial = {static_cast<mata::nfa::State>(s)};
+
+                            auto diff_nfa = mata::nfa::intersection(lts_nfa_s, mata::nfa::complement(reduced_automaton, *reduced_automaton.alphabet));
+
+                            std::println("LTS - QDOM f={} s={} t={}: {}", i, s, t, diff_nfa.num_of_states());
+                        }
+                    }
                 }
 
                 // draw_nfa(std::format("reduced_automaton_{}", q), reduced_automaton, lts, local_state_pair_to_nfa_state);

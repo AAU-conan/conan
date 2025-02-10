@@ -4,6 +4,7 @@
 #include <print>
 
 #include "../factored_transition_system/fts_task.h"
+#include "../factored_transition_system/labelled_transition_system.h"
 #include <mata/utils/utils.hh>
 
 using namespace fts;
@@ -34,24 +35,24 @@ public:
 
   explicit LabelGroupSimulationRelation(const LabelledTransitionSystem &lts,
                                         int factor)
-      : lts(lts), factor(factor) {
+    : lts(lts), factor(factor), noop_simulations(), simulations_noop() {
     const auto all_labels_groups =
-        std::views::iota(0, lts.get_num_label_groups()) |
-        std::views::transform([](auto lg) { return LabelGroup(lg); }) |
-        std::ranges::to<std::unordered_set>();
-   
+      std::views::iota(0, lts.get_num_label_groups()) |
+      std::views::transform([](auto lg) { return LabelGroup(lg); }) |
+      std::ranges::to<std::unordered_set>();
+
     std::unordered_map<int, std::set<int>> lg_sources;
-    for (const auto &lg : lts.get_relevant_label_groups()) {
+    for (const auto& lg : lts.get_relevant_label_groups()) {
       lg_sources.emplace(
-          lg.group,
-          lts.get_transitions_label_group(lg) |
-              std::views::transform([](const auto &tr) { return tr.src; }) |
-              std::ranges::to<std::set>());
+        lg.group,
+        lts.get_transitions_label_group(lg) |
+        std::views::transform([](const auto& tr) { return tr.src; }) |
+        std::ranges::to<std::set>());
     }
 
     // lg1 simulates lg2 only if lg2 can be applied whenever lg1 can
-    for (const auto &lg1 : lts.get_relevant_label_groups()) {
-      for (const auto &lg2 : lts.get_relevant_label_groups()) {
+    for (const auto& lg1 : lts.get_relevant_label_groups()) {
+      for (const auto& lg2 : lts.get_relevant_label_groups()) {
         if (std::ranges::includes(lg_sources.at(lg2.group),
                                   lg_sources.at(lg1.group))) {
           simulations.insert({lg2, lg1});
@@ -74,8 +75,8 @@ public:
                                      std::vector<std::vector<int>>(lts.size()));
     for (const auto tr : lts.get_transitions()) {
       label_group_state_targets.at(tr.label_group.group)
-          .at(tr.src)
-          .push_back(tr.target);
+                               .at(tr.src)
+                               .push_back(tr.target);
     }
 
 #ifndef NDEBUG
