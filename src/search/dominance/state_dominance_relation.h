@@ -20,12 +20,12 @@ namespace dominance {
  * Class that represents the collection of simulation relations for a factored task.
  * Uses unique_ptr so that it owns the local relations, and it cannot be copied away.
  */
-    class FactoredDominanceRelation {
+    class StateDominanceRelation {
     protected:
         std::vector<std::unique_ptr<FactorDominanceRelation> > local_relations;
         std::unique_ptr<LabelRelation> label_relation;
     public:
-        explicit FactoredDominanceRelation(std::vector<std::unique_ptr<FactorDominanceRelation>> &&_local_relations, std::unique_ptr<LabelRelation> &label_relation) :
+        explicit StateDominanceRelation(std::vector<std::unique_ptr<FactorDominanceRelation>> &&_local_relations, std::unique_ptr<LabelRelation> &label_relation) :
             local_relations (std::move(_local_relations)), label_relation(std::move(label_relation)) {
         }
 

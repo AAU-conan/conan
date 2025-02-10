@@ -1,7 +1,7 @@
 #ifndef DOMINANCE_DOMINANCE_RELATION_BDD_H
 #define DOMINANCE_DOMINANCE_RELATION_BDD_H
 
-#include "factored_dominance_relation.h"
+#include "state_dominance_relation.h"
 #include "../symbolic/bdd_manager.h"
 
 namespace fts {
@@ -12,7 +12,7 @@ namespace fts {
 
 namespace dominance {
     class DenseLocalStateRelation;
-    class FactoredDominanceRelation;
+    class StateDominanceRelation;
 
     typedef std::vector<int> ExplicitState;
 
@@ -40,7 +40,7 @@ namespace dominance {
         std::vector<std::unique_ptr<LocalStateRelationBDD>> local_bdd_representation;
 
     public:
-        DominanceRelationBDD (const FactoredDominanceRelation & dominance_relation,
+        DominanceRelationBDD (const StateDominanceRelation & dominance_relation,
                               const fts::FactoredSymbolicStateMapping &symbolic_mapping, bool dominated);
 
         BDD get_related_states(const ExplicitState &state) const;

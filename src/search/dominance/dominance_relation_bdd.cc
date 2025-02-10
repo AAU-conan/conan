@@ -6,7 +6,7 @@
 using namespace std;
 
 namespace dominance {
-    DominanceRelationBDD::DominanceRelationBDD(const FactoredDominanceRelation &dominance_relation,
+    DominanceRelationBDD::DominanceRelationBDD(const StateDominanceRelation &dominance_relation,
                                                const fts::FactoredSymbolicStateMapping &symbolic_mapping,
                                                bool dominated): dominated(dominated) {
         for (size_t i = 0; i < dominance_relation.size(); ++i) {

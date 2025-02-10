@@ -10,11 +10,11 @@ using std::vector;
 using merge_and_shrink::TransitionSystem;
 
 namespace dominance {
-    std::unique_ptr<FactoredDominanceRelation> LDSimulation::compute_dominance_relation(const fts::FTSTask &task) {
+    std::unique_ptr<StateDominanceRelation> LDSimulation::compute_dominance_relation(const fts::FTSTask &task) {
         return compute_ld_simulation(task, log);
     }
 
-    std::unique_ptr<FactoredDominanceRelation> LDSimulation::compute_ld_simulation(const fts::FTSTask & task, utils::LogProxy & log) {
+    std::unique_ptr<StateDominanceRelation> LDSimulation::compute_ld_simulation(const fts::FTSTask & task, utils::LogProxy & log) {
         utils::Timer t;
 
         std::vector<std::unique_ptr<FactorDominanceRelation>> local_relations;
@@ -60,7 +60,7 @@ namespace dominance {
 
         label_relation->dump(log);
 #endif
-        return std::make_unique<FactoredDominanceRelation>(std::move(local_relations), label_relation);
+        return std::make_unique<StateDominanceRelation>(std::move(local_relations), label_relation);
     }
 
     bool update_local_relation(int lts_id, const LabelledTransitionSystem& lts, const LabelRelation& label_dominance,

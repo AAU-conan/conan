@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "factored_dominance_relation.h"
+#include "state_dominance_relation.h"
 
 namespace fts {
     class FTSTask;
@@ -14,7 +14,7 @@ namespace dominance {
     public:
         virtual ~DominanceAnalysis() = default;
 
-        virtual std::unique_ptr<FactoredDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) = 0;
+        virtual std::unique_ptr<StateDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) = 0;
     };
 
 }

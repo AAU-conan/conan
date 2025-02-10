@@ -11,7 +11,7 @@ namespace dominance {
 
 
     std::unique_ptr<DominanceDatabase> DatabaseBDDMapDisjFactory::create(const std::shared_ptr<AbstractTask> & task,
-                                                                     std::shared_ptr<FactoredDominanceRelation> dominance_relation,
+                                                                     std::shared_ptr<StateDominanceRelation> dominance_relation,
                                                                       std::shared_ptr<fts::FactoredStateMapping> state_mapping) {
 
         auto vars = std::make_shared<SymVariables>(bdd_mgr, *variable_ordering_strategy, task);

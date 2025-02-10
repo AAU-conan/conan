@@ -12,11 +12,11 @@ namespace dominance {
         // key: g_value; value: vector<vector<int>> with the transformed states with that g_value
         std::map<int, std::vector<std::vector<int>>> previous_states_sorted;
 
-        std::shared_ptr<FactoredDominanceRelation> dominance_relation;
+        std::shared_ptr<StateDominanceRelation> dominance_relation;
         //std::shared_ptr<fts::FactoredStateMapping> state_mapping;
 
     public:
-        DatabasePreviousLowerG(std::shared_ptr<FactoredDominanceRelation> dominance_relation)
+        DatabasePreviousLowerG(std::shared_ptr<StateDominanceRelation> dominance_relation)
                                 //  std::shared_ptr<fts::FactoredStateMapping> state_mapping)
           : dominance_relation(dominance_relation) {//, state_mapping(state_mapping) {
         }
@@ -36,7 +36,7 @@ namespace dominance {
         }
 
         virtual std::unique_ptr<DominanceDatabase> create(const std::shared_ptr<AbstractTask> &,
-                                                          std::shared_ptr<FactoredDominanceRelation> dominance_relation,
+                                                          std::shared_ptr<StateDominanceRelation> dominance_relation,
                                                           std::shared_ptr<fts::FactoredStateMapping> ) override
         {
           return std::make_unique<DatabasePreviousLowerG>(dominance_relation);

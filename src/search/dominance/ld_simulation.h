@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <ostream>
-#include "factored_dominance_relation.h"
+#include "state_dominance_relation.h"
 #include "local_state_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
@@ -28,12 +28,12 @@ namespace dominance {
         std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory;
         std::shared_ptr<LabelRelationFactory> label_relation_factory;
 
-        std::unique_ptr<FactoredDominanceRelation> compute_ld_simulation(const fts::FTSTask & task, utils::LogProxy & log);
+        std::unique_ptr<StateDominanceRelation> compute_ld_simulation(const fts::FTSTask & task, utils::LogProxy & log);
     public:
         explicit LDSimulation(utils::Verbosity verbosity, std::shared_ptr<FactorDominanceRelationFactory> factor_dominance_relation_factory, std::shared_ptr<LabelRelationFactory> label_relation_factory);
 
         virtual ~LDSimulation() = default;
-        std::unique_ptr<FactoredDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) override;
+        std::unique_ptr<StateDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) override;
     };
 }
 

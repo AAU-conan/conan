@@ -35,7 +35,7 @@ namespace operator_counting {
 
     private:
         std::unique_ptr<TransformedFTSTask> transformed_task;
-        std::unique_ptr<FactoredDominanceRelation> factored_domrel = nullptr;
+        std::unique_ptr<StateDominanceRelation> factored_domrel = nullptr;
         struct GValuedState {
             std::vector<int> state;
             int g_value;

@@ -1,4 +1,4 @@
-#include "factored_dominance_relation.h"
+#include "state_dominance_relation.h"
 
 #include "local_state_relation.h"
 #include "../merge_and_shrink/transition_system.h"
@@ -12,7 +12,7 @@ using merge_and_shrink::TransitionSystem;
 
 namespace dominance {
 
-    double FactoredDominanceRelation::get_percentage_simulations(bool ignore_equivalences) const {
+    double StateDominanceRelation::get_percentage_simulations(bool ignore_equivalences) const {
         double percentage = 1;
         for (auto &sim: local_relations) {
             percentage *= static_cast<double>(sim->num_simulations()) / (sim->get_lts().size() * sim->get_lts().size());
@@ -25,7 +25,7 @@ namespace dominance {
         return percentage;
     }
 
-    double FactoredDominanceRelation::get_percentage_equal() const {
+    double StateDominanceRelation::get_percentage_equal() const {
         double percentage = 1;
         for (auto &sim: local_relations) {
             percentage *= 1. / (sim->get_lts().size() * sim->get_lts().size());
@@ -33,7 +33,7 @@ namespace dominance {
         return percentage;
     }
 
-    double FactoredDominanceRelation::get_percentage_equivalences() const {
+    double StateDominanceRelation::get_percentage_equivalences() const {
         double percentage = 1;
         for (auto &sim: local_relations) {
             int num_eq = 0;
@@ -48,7 +48,7 @@ namespace dominance {
     }
 
 
-    int FactoredDominanceRelation::num_equivalences() const {
+    int StateDominanceRelation::num_equivalences() const {
         int res = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
             res += local_relations[i]->num_equivalences();
@@ -56,7 +56,7 @@ namespace dominance {
         return res;
     }
 
-    int FactoredDominanceRelation::num_simulations() const {
+    int StateDominanceRelation::num_simulations() const {
         int res = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
             res += local_relations[i]->num_simulations() - local_relations[i]->get_lts().size();
@@ -64,7 +64,7 @@ namespace dominance {
         return res;
     }
 
-    double FactoredDominanceRelation::num_st_pairs() const {
+    double StateDominanceRelation::num_st_pairs() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
             res *= local_relations[i]->num_simulations() - local_relations[i]->get_lts().size();
@@ -73,7 +73,7 @@ namespace dominance {
     }
 
 
-    double FactoredDominanceRelation::num_states_problem() const {
+    double StateDominanceRelation::num_states_problem() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
             res *= local_relations[i]->get_lts().size();
@@ -82,7 +82,7 @@ namespace dominance {
     }
 
 
-    void FactoredDominanceRelation::dump_statistics(utils::LogProxy &log) const {
+    void StateDominanceRelation::dump_statistics(utils::LogProxy &log) const {
         int num_equi = num_equivalences();
         int num_sims = num_simulations();
 

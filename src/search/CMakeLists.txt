@@ -1016,7 +1016,7 @@ create_fast_downward_library(
         HELP "Dominance Analysis techniques"
         SOURCES
         dominance/dominance_analysis
-        dominance/factored_dominance_relation
+        dominance/state_dominance_relation
         dominance/label_relation
         dominance/ld_simulation
         dominance/local_state_relation

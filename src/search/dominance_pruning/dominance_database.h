@@ -11,7 +11,7 @@ namespace fts {
 }
 
 namespace dominance {
-    class FactoredDominanceRelation;
+    class StateDominanceRelation;
     typedef std::vector<int> ExplicitState;
 
     class DominanceDatabase {
@@ -25,7 +25,7 @@ namespace dominance {
     public:
         virtual ~DominanceDatabaseFactory() = default;
         virtual std::unique_ptr<DominanceDatabase> create(const std::shared_ptr<AbstractTask> &task,
-                                                          std::shared_ptr<FactoredDominanceRelation> dominance_relation,
+                                                          std::shared_ptr<StateDominanceRelation> dominance_relation,
                                                           std::shared_ptr<fts::FactoredStateMapping> state_mapping) = 0;
     };
 }

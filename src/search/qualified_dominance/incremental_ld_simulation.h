@@ -13,7 +13,7 @@
 #include "../utils/logging.h"
 #include "../utils/timer.h"
 #include "../dominance/dominance_analysis.h"
-#include "../dominance/factored_dominance_relation.h"
+#include "../dominance/state_dominance_relation.h"
 #include "../dominance/ld_simulation.h"
 
 namespace fts {
@@ -36,8 +36,8 @@ public:
     };
 
     ~IncrementalLDSimulation() override = default;
-    std::unique_ptr<FactoredDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) override;
-    std::unique_ptr<FactoredDominanceRelation> compute_ld_simulation(const fts::FTSTask &task, utils::LogProxy &log);
+    std::unique_ptr<StateDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) override;
+    std::unique_ptr<StateDominanceRelation> compute_ld_simulation(const fts::FTSTask &task, utils::LogProxy &log);
 };
 
     bool labels_simulate_labels(int factor, const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const LabelRelation& label_relation);
