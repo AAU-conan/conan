@@ -79,6 +79,7 @@ namespace fts {
 #endif
     }
 
+#ifndef NDEBUG
     NfaAggregatableFactValueNames::NfaAggregatableFactValueNames(const std::shared_ptr<FactNames>& fact_names,
                                                                  int variable): FactValueNames(fact_names, variable) {
         mata::Symbol next_symbol = 0;
@@ -190,4 +191,5 @@ namespace fts {
         }
         return result;
     }
+#endif
 } // fts

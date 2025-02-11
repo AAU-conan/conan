@@ -23,6 +23,7 @@ namespace dominance {
     class LabelRelation {
     protected:
         int num_labels;
+        // TODO: remove fts_task
         const fts::FTSTask& fts_task;
 
     public:

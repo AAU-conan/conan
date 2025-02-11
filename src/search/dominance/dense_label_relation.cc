@@ -151,19 +151,19 @@ namespace dominance {
         }
     }
 
-    using LabelGroupedLabelRelationFactory = LabelRelationFactoryImpl<DenseLabelRelation>;
-    class DenseLabelRelationFactoryFeature final : public plugins::TypedFeature<LabelRelationFactory, LabelGroupedLabelRelationFactory> {
+    using DenseLabelRelationFactory = LabelRelationFactoryImpl<DenseLabelRelation>;
+    class DenseLabelRelationFactoryFeature final : public plugins::TypedFeature<LabelRelationFactory, DenseLabelRelationFactory> {
     public:
         DenseLabelRelationFactoryFeature() : TypedFeature("dense_lr") {
             document_title("Dense Label Relation");
             document_synopsis("Stores the label relation in a dense matrix with compact factors");
         }
 
-        [[nodiscard]] std::shared_ptr<LabelGroupedLabelRelationFactory> create_component(
+        [[nodiscard]] std::shared_ptr<DenseLabelRelationFactory> create_component(
         const plugins::Options &opts,
         const utils::Context &) const override {
             utils::unused_variable(opts);
-            return plugins::make_shared_from_arg_tuples<LabelGroupedLabelRelationFactory>();
+            return plugins::make_shared_from_arg_tuples<DenseLabelRelationFactory>();
         }
     };
     static plugins::FeaturePlugin<DenseLabelRelationFactoryFeature> _dense_plugin;
