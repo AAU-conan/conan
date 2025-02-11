@@ -10,18 +10,11 @@
 
 namespace fts {
 
-    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts) {
+    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts) : fact_names(std::make_shared<NoFactNames>()) {
 
         LabelMap label_map (fts.get_labels());
-        std::shared_ptr<NoFactNames> fact_names = std::make_shared<NoFactNames>();
         for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map,
-#ifndef NDEBUG
-                NfaAggregatableFactValueNames(fact_names, ts)
-#else
-                FactValueNames(fact_names, ts)
-#endif
-            ));
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, *get_debug_or_release_fact_value_names(fact_names, ts)));
         }
 
         label_costs.resize(label_map.get_num_labels());
@@ -36,13 +29,7 @@ namespace fts {
 
         LabelMap label_map (fts.get_labels());
         for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map,
-#ifndef NDEBUG
-                NfaAggregatableFactValueNames(fact_names, ts)
-#else
-                FactValueNames(fact_names, ts)
-#endif
-                ));
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, *get_debug_or_release_fact_value_names(fact_names, ts)));
         }
 
         label_costs.resize(label_map.get_num_labels());

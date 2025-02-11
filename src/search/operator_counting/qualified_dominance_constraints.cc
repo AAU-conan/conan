@@ -7,10 +7,11 @@
 
 #include <print>
 
-#include <boost/unordered_map.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include "delete_relaxation_if_constraints.h"
 #include "../utils/graphviz.h"
+
 
 namespace operator_counting {
     std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelGroupedLabelRelation& label_relation, bool under_approximate = false);
