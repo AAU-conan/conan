@@ -1,7 +1,7 @@
 #include "label_relation_noop.h"
 
-#include "local_state_relation.h"
-#include "factored_dominance_relation.h"
+#include "factor_dominance_relation.h"
+#include "state_dominance_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 
 using namespace std;
@@ -100,7 +100,7 @@ namespace dominance {
         return labels_dominated_in_all;
     }
 
-    void LabelRelationNoop::init(const std::vector<LabelledTransitionSystem *> &lts,
+    void LabelRelationNoop::init(const std::vector<fts::LabelledTransitionSystem *> &lts,
                                  const DominanceRelation &sim,
                                  const LabelMap &labelMap) {
         num_labels = labelMap.get_num_labels();
@@ -149,8 +149,8 @@ namespace dominance {
 // }
 
 
-    bool LabelRelationNoop::update(const std::vector<LabelledTransitionSystem *> &lts,
-                                   const DominanceRelation &sim) {
+    bool LabelRelationNoop::update(const std::vector<fts::LabelledTransitionSystem *> &lts,
+                                   const FactorDominanceRelation &sim) {
         bool changes = false;
 
         for (int i = 0; i < lts.size(); ++i) {
@@ -172,7 +172,7 @@ namespace dominance {
 /* TODO: This version is inefficient. It could be improved by
  * iterating only the right transitions (see TODO inside the loop)
  */
-    bool LabelRelationNoop::update(int i, const LabelledTransitionSystem *lts,
+    bool LabelRelationNoop::update(int i, const fts::LabelledTransitionSystem *lts,
                                    const SimulationRelation &sim) {
         bool changes = false;
         for (int l2: lts->get_relevant_labels()) {

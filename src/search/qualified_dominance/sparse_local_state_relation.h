@@ -8,7 +8,7 @@
 #include "../factored_transition_system/fact_names.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "label_grouped_label_relation.h"
-#include "../dominance/local_state_relation.h"
+#include "../dominance/factor_dominance_relation.h"
 #include <mata/nfa/nfa.hh>
 
 

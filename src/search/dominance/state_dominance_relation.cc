@@ -1,8 +1,8 @@
 #include "state_dominance_relation.h"
 
-#include "local_state_relation.h"
+#include "factor_dominance_relation.h"
+#include "label_relation.h"
 #include "../merge_and_shrink/transition_system.h"
-#include "../merge_and_shrink/labels.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../utils/logging.h"
 
@@ -81,6 +81,12 @@ namespace dominance {
         return res;
     }
 
+
+    StateDominanceRelation::StateDominanceRelation(
+        std::vector<std::unique_ptr<FactorDominanceRelation>>&& _local_relations,
+        std::unique_ptr<LabelRelation>& label_relation):
+        local_relations (std::move(_local_relations)), label_relation(std::move(label_relation)) {
+    }
 
     void StateDominanceRelation::dump_statistics(utils::LogProxy &log) const {
         int num_equi = num_equivalences();

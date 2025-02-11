@@ -1,6 +1,7 @@
 #include "dominance_relation_bdd.h"
 
 #include "../factored_transition_system/symbolic_state_mapping.h"
+#include "state_dominance_relation.h"
 
 #include <cassert>
 using namespace std;
@@ -12,11 +13,11 @@ namespace dominance {
         for (size_t i = 0; i < dominance_relation.size(); ++i) {
             if (dominated) {
                 local_bdd_representation.push_back(
-                    LocalStateRelationBDD::precompute_dominated_bdds(symbolic_mapping[i],
+                    BDDFactorDominanceRelation::precompute_dominated_bdds(symbolic_mapping[i],
                                                                      *(dominance_relation.get_local_relations()[i])));
             } else {
                 local_bdd_representation.push_back(
-                    LocalStateRelationBDD::precompute_dominating_bdds(symbolic_mapping[i],
+                    BDDFactorDominanceRelation::precompute_dominating_bdds(symbolic_mapping[i],
                                                                       *(dominance_relation.get_local_relations()[i])));
             }
         }
@@ -38,8 +39,8 @@ namespace dominance {
     }
 
 
-    unique_ptr<LocalStateRelationBDD>
-    LocalStateRelationBDD::precompute_dominating_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
+    unique_ptr<BDDFactorDominanceRelation>
+    BDDFactorDominanceRelation::precompute_dominating_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
                                                       const dominance::FactorDominanceRelation &state_relation) {
         std::vector<BDD> dominance_bdds;
         const int num_states = state_relation.get_lts().size();
@@ -56,12 +57,12 @@ namespace dominance {
             }
             dominance_bdds.push_back(dominance);
         }
-        return std::make_unique<LocalStateRelationBDD>(std::move(dominance_bdds));
+        return std::make_unique<BDDFactorDominanceRelation>(std::move(dominance_bdds));
     }
 
 
-    unique_ptr<LocalStateRelationBDD>
-    LocalStateRelationBDD::precompute_dominated_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
+    unique_ptr<BDDFactorDominanceRelation>
+    BDDFactorDominanceRelation::precompute_dominated_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
                                                      const dominance::FactorDominanceRelation &state_relation) {
         std::vector<BDD> dominance_bdds;
         const int num_states = state_relation.get_lts().size();
@@ -77,6 +78,6 @@ namespace dominance {
             dominance_bdds.push_back(dominance);
         }
         assert (dominance_bdds.size() == static_cast<size_t>(num_states));
-        return std::make_unique<LocalStateRelationBDD>(std::move(dominance_bdds));
+        return std::make_unique<BDDFactorDominanceRelation>(std::move(dominance_bdds));
     }
 }

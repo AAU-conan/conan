@@ -6,6 +6,8 @@
 #include "../factored_transition_system/fts_task.h"
 #include "../factored_transition_system/fts_task_factory.h"
 #include "../factored_transition_system/factored_state_mapping.h"
+#include "../dominance/state_dominance_relation.h"
+#include "../dominance/label_relation.h"
 
 using namespace std;
 using plugins::Options;

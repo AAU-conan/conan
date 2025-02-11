@@ -4,7 +4,7 @@
 #include <vector>
 #include <ostream>
 #include "state_dominance_relation.h"
-#include "local_state_relation.h"
+#include "factor_dominance_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
 #include "../utils/logging.h"
@@ -14,14 +14,16 @@
 
 namespace fts {
     class FTSTask;
+    class LabelledTransitionSystem;
 }
 
 namespace dominance {
     class LabelRelation;
+    class LabelRelationFactory;
 
-    bool update_local_relation(int lts_id, const LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
+    bool update_local_relation(int lts_id, const fts::LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
                                FactorDominanceRelation& local_relation);
-    bool update_label_relation(LabelRelation& label_relation, const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
+    bool update_label_relation(LabelRelation& label_relation, const fts::FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim);
 
     class LDSimulation : public DominanceAnalysis {
         utils::LogProxy log;

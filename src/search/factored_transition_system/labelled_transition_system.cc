@@ -2,9 +2,7 @@
 
 #include "fact_names.h"
 #include "label_map.h"
-#include "../abstract_task.h"
 #include "../merge_and_shrink/transition_system.h"
-#include "../merge_and_shrink/labels.h"
 
 class AbstractTask;
 using namespace std;

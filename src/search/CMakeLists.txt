@@ -1019,7 +1019,7 @@ create_fast_downward_library(
         dominance/state_dominance_relation
         dominance/label_relation
         dominance/ld_simulation
-        dominance/local_state_relation
+        dominance/factor_dominance_relation
         dominance/dominance_relation_bdd
 #        dominance/label_relation_identity
 #        dominance/label_relation_noop

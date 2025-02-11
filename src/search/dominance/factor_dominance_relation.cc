@@ -1,4 +1,4 @@
-#include "local_state_relation.h"
+#include "factor_dominance_relation.h"
 
 #include "label_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
@@ -99,7 +99,7 @@ namespace dominance {
         return num;
     }
 
-    bool DenseLocalStateRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
+    bool DenseDominanceRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
                 if (simulates(s, t) && f(s, t)) {
@@ -110,7 +110,7 @@ namespace dominance {
         return false;
     }
 
-    bool DenseLocalStateRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
+    bool DenseDominanceRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
         bool any = false;
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
@@ -124,7 +124,7 @@ namespace dominance {
     }
 
 
-    void DenseLocalStateRelation::compute_list_dominated_states() {
+    void DenseDominanceRelation::compute_list_dominated_states() {
         dominated_states.resize(relation.size());
         dominating_states.resize(relation.size());
 
@@ -138,11 +138,11 @@ namespace dominance {
         }
     }
 
-    void DenseLocalStateRelation::cancel_simulation_computation() {
+    void DenseDominanceRelation::cancel_simulation_computation() {
         vector<vector<bool> >().swap(relation);
     }
 
-    DenseLocalStateRelation::DenseLocalStateRelation(const LabelledTransitionSystem& lts) : FactorDominanceRelation(lts),
+    DenseDominanceRelation::DenseDominanceRelation(const LabelledTransitionSystem& lts) : FactorDominanceRelation(lts),
         relation(lts.size(), vector<bool>(lts.size(), true)) {
         int num_states = lts.size();
         const std::vector<bool> &goal_states = lts.get_goal_states();
@@ -169,7 +169,7 @@ namespace dominance {
     }
     _category_plugin;
 
-    using DenseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<DenseLocalStateRelation>;
+    using DenseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<DenseDominanceRelation>;
     class DenseLocalStateRelationFactoryFeature final : public plugins::TypedFeature<FactorDominanceRelationFactory, DenseLocalStateRelationFactory> {
     public:
         DenseLocalStateRelationFactoryFeature() : TypedFeature("dense_fdr") {

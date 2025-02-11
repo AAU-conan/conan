@@ -63,7 +63,7 @@ namespace dominance {
         return std::make_unique<StateDominanceRelation>(std::move(local_relations), label_relation);
     }
 
-    bool update_local_relation(int lts_id, const LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
+    bool update_local_relation(int lts_id, const fts::LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
                                FactorDominanceRelation& local_relation) {
         bool changes = true;
         bool any_changes = false;
@@ -110,7 +110,7 @@ namespace dominance {
         return any_changes;
     }
 
-    bool update_label_relation(LabelRelation& label_relation, const FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {
+    bool update_label_relation(LabelRelation& label_relation, const fts::FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {
         bool changes = false;
         for (int i = 0; i < task.get_num_variables(); ++i) {
             changes |= label_relation.update_factor(i, *(sim[i]));

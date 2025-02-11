@@ -6,7 +6,7 @@
 #include <set>
 #include <cassert>
 #include "all_none_factor_index.h"
-#include "local_state_relation.h"
+#include "factor_dominance_relation.h"
 
 namespace fts {
     class FTSTask;

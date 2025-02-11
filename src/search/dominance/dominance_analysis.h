@@ -3,13 +3,13 @@
 
 #include <memory>
 
-#include "state_dominance_relation.h"
-
 namespace fts {
     class FTSTask;
 }
 
 namespace dominance {
+    class StateDominanceRelation;
+
     class DominanceAnalysis {
     public:
         virtual ~DominanceAnalysis() = default;

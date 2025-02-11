@@ -1,6 +1,6 @@
 #include "label_relation.h"
 
-#include "local_state_relation.h"
+#include "factor_dominance_relation.h"
 #include "state_dominance_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
