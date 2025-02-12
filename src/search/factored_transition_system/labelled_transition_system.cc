@@ -48,7 +48,7 @@ namespace fts {
 
         label_group_is_relevant.resize(label_groups.size(), false);
         for (const auto& [lg_i, _] : std::views::enumerate(label_groups)) {
-            if (const auto lg = LabelGroup(static_cast<int>(lg_i)); !is_self_loop_everywhere_label(lg)) {
+            if (const auto lg = LabelGroup(static_cast<int>(lg_i)); !irrelevant_label_group(lg)) {
                 relevant_label_groups.push_back(lg);
                 label_group_is_relevant[lg_i] = true;
             }
@@ -69,7 +69,18 @@ namespace fts {
 
     }
 
-    bool LabelledTransitionSystem::is_self_loop_everywhere_label(LabelGroup lg) const {
+    /*
+     * Returns true if the label group has a self-loop in every state and no other transitions
+     */
+    bool LabelledTransitionSystem::irrelevant_label_group(LabelGroup lg) const {
+        const auto &trs = get_transitions_label_group(lg);
+        return trs.size() == (size_t) num_states && is_self_loop_everywhere_label_group(lg);
+    }
+
+    /*
+     * Returns true if the label group has a self loop in every state
+     */
+    bool LabelledTransitionSystem::is_self_loop_everywhere_label_group(LabelGroup lg) const {
         const auto &trs = get_transitions_label_group(lg);
         if (trs.size() < (size_t) num_states) return false;
 

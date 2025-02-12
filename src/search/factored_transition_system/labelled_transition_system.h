@@ -145,7 +145,7 @@ namespace fts {
         std::vector<std::vector<TSTransition> > transitions_label_group;
 
 
-        bool is_self_loop_everywhere_label(LabelGroup lg) const;
+        bool is_self_loop_everywhere_label_group(LabelGroup lg) const;
 
     public:
         FactValueNames fact_value_names;
@@ -251,6 +251,7 @@ namespace fts {
         }
 
         void dump() const;
+        bool irrelevant_label_group(LabelGroup lg) const;
 
 
         auto get_irrelevant_labels() const {
