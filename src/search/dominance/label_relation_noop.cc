@@ -16,7 +16,7 @@ namespace dominance {
         return dominated_by_noop_in[l].remove(lts);
     }
 
-    bool NoopLabelRelation::update_factor(int factor, const FactorDominanceRelation& sim) {
+    bool NoopLabelRelation::update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) {
         bool changes = false;
         const fts::LabelledTransitionSystem& lts = fts_task.get_factor(factor);
         for (fts::LabelGroup lg: lts.get_relevant_label_groups()) {
@@ -34,16 +34,15 @@ namespace dominance {
         return changes;
     }
 
-    NoopLabelRelation::NoopLabelRelation(const fts::FTSTask& fts_task) : LabelRelation(fts_task) {
-        num_labels = fts_task.get_num_labels();
+    NoopLabelRelation::NoopLabelRelation(const fts::FTSTask& fts_task) : LabelRelation(fts_task.get_num_labels()) {
         dominated_by_noop_in.resize(num_labels, AllNoneFactorIndex::all_factors());
     }
 
-    bool NoopLabelRelation::label_dominates_label_in_all_other(int /*factor*/, int l1, int l2) const {
+    bool NoopLabelRelation::label_dominates_label_in_all_other(int /*factor*/, const fts::FTSTask& /*fts_task*/, int l1, int l2) const {
         return l1 == l2;
     }
 
-    bool NoopLabelRelation::noop_simulates_label_in_all_other(int factor, int l) const {
+    bool NoopLabelRelation::noop_simulates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l) const {
         return dominated_by_noop_in[l].contains_all_except(factor);
     }
 

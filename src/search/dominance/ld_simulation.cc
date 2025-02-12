@@ -46,27 +46,28 @@ namespace dominance {
         log << "Init LDSim in " << t() << ":" << std::flush;
         do {
             for (int i = 0; i < static_cast<int>(local_relations.size()); i++) {
-                update_local_relation(i, task.get_factor(i), *label_relation, *(local_relations[i]));
+                update_local_relation(i, task, *label_relation, *(local_relations[i]));
             }
             log << " " << t() << std::flush;
         } while (update_label_relation(*label_relation, task, local_relations));
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
 
 #ifndef NDEBUG
-        for (const auto& sim : local_relations) {
-            sim->dump(log);
+        for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
+            sim->dump(log, task.get_factor(factor));
         }
         log << "Label relation: " << std::endl;
 
-        label_relation->dump(log);
+        label_relation->dump(log, task);
 #endif
         return std::make_unique<StateDominanceRelation>(std::move(local_relations), label_relation);
     }
 
-    bool update_local_relation(int lts_id, const fts::LabelledTransitionSystem& lts, const LabelRelation& label_dominance,
+    bool update_local_relation(int lts_id, const fts::FTSTask& fts_task, const LabelRelation& label_dominance,
                                FactorDominanceRelation& local_relation) {
         bool changes = true;
         bool any_changes = false;
+        const fts::LabelledTransitionSystem& lts = fts_task.get_factor(lts_id);
         while (changes) {
             changes = local_relation.remove_simulations_if([&](int t, int s) {
                 //log << "Checking states " << lts->name(s) << " and " << lts->name(t) << endl;
@@ -74,14 +75,14 @@ namespace dominance {
                 //for each transition s--l->s':
                 // a) with noop t >= s' and l dominated by noop?
                 // b) exist t--l'-->t', t' >= s' and l dominated by l'?
-                return local_relation.get_lts().applyPostSrc(s, [&](const auto &trs) {
+                return lts.applyPostSrc(s, [&](const auto &trs) {
                     //log << "Checking transition " << s << " to " << trs.target << std::endl;
 
                     const std::vector<int> &labels_trs = lts.get_labels(trs.label_group);
                  //   assert(!labels_trs.empty());
                     for (int labels_tr : labels_trs) {
                         //log << "Checking label " << labels_trs[i] << " to " << trs.target << std::endl;
-                        if (local_relation.simulates(t, trs.target) && label_dominance.noop_simulates_label_in_all_other(lts_id, labels_tr)) {
+                        if (local_relation.simulates(t, trs.target) && label_dominance.noop_simulates_label_in_all_other(lts_id, fts_task, labels_tr)) {
                             continue;
                         }
                         bool found =
@@ -89,7 +90,7 @@ namespace dominance {
                                     if (local_relation.simulates(trt.target, trs.target)) {
                                         const std::vector<int> &labels_trt = lts.get_labels(trt.label_group);
                                         for (int label_trt: labels_trt) {
-                                            if (label_dominance.label_dominates_label_in_all_other(lts_id, label_trt, labels_tr)) {
+                                            if (label_dominance.label_dominates_label_in_all_other(lts_id, fts_task, label_trt, labels_tr)) {
                                                 return true;
                                             }
                                         }
@@ -113,7 +114,7 @@ namespace dominance {
     bool update_label_relation(LabelRelation& label_relation, const fts::FTSTask & task, const std::vector<std::unique_ptr<FactorDominanceRelation>> &sim) {
         bool changes = false;
         for (int i = 0; i < task.get_num_variables(); ++i) {
-            changes |= label_relation.update_factor(i, *(sim[i]));
+            changes |= label_relation.update_factor(i, task, *(sim[i]));
         }
         return changes;
     }

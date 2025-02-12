@@ -16,7 +16,7 @@ using namespace fts;
 
 namespace dominance {
 
-    LabelGroupedLabelRelation::LabelGroupedLabelRelation(const fts::FTSTask & fts_task) : LabelRelation(fts_task) {
+    LabelGroupedLabelRelation::LabelGroupedLabelRelation(const fts::FTSTask & fts_task) : LabelRelation(fts_task.get_num_labels()) {
         for (size_t i = 0; i < fts_task.get_factors().size(); ++i) {
             const auto& lts = fts_task.get_factor(i);
             label_group_simulation_relations.emplace_back(lts, i);
@@ -31,7 +31,7 @@ namespace dominance {
         return label_group_simulation_relations.at(factor).noop_simulates(lg);
     }
 
-    bool LabelGroupedLabelRelation::label_dominates_label_in_all_other(const int factor, const int l1,
+    bool LabelGroupedLabelRelation::label_dominates_label_in_all_other(const int factor, const fts::FTSTask& fts_task, const int l1,
         const int l2) const {
         return fts_task.get_label_cost(l1) <= fts_task.get_label_cost(l2) && std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& j) {
             const auto& lts = fts_task.get_factor(j);
@@ -39,14 +39,14 @@ namespace dominance {
         });
     }
 
-    bool LabelGroupedLabelRelation::noop_simulates_label_in_all_other(const int factor, const int l) const {
+    bool LabelGroupedLabelRelation::noop_simulates_label_in_all_other(const int factor, const fts::FTSTask& fts_task, const int l) const {
         return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& j) {
             const auto& lts = fts_task.get_factor(j);
             return j == factor || noop_simulates_label_group(j, lts.get_group_label(l));
         });
     }
 
-    bool LabelGroupedLabelRelation::update_factor(int factor, const FactorDominanceRelation& sim) {
+    bool LabelGroupedLabelRelation::update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) {
         return label_group_simulation_relations.at(factor).update(sim);
     }
 

@@ -33,7 +33,7 @@ namespace dominance {
         simulations.clear();
     }
 
-    SparseLocalStateRelation::SparseLocalStateRelation(const LabelledTransitionSystem& lts) : FactorDominanceRelation(lts) {
+    SparseLocalStateRelation::SparseLocalStateRelation(const LabelledTransitionSystem& lts) : FactorDominanceRelation(lts.size()) {
         // Add all pairs that satisfy the goal condition
         for (int s = 0; s < lts.size(); ++s) {
             for (int t = 0; t < lts.size(); ++t) {
@@ -41,16 +41,6 @@ namespace dominance {
                     // Only add t-transition responses if goal(s) => goal(t)
                     simulations.emplace(t, s);
                 }
-            }
-        }
-    }
-
-    void SparseLocalStateRelation::print_simulations() const {
-        for (auto &sim : simulations) {
-            if (!lts.get_transitions(sim.first).empty() &&
-                !lts.get_transitions(sim.second).empty()) {
-                std::println("    {} <= {}", lts.state_name(sim.second),
-                             lts.state_name(sim.first));
             }
         }
     }

@@ -14,9 +14,9 @@
 
 
 namespace operator_counting {
-    std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelGroupedLabelRelation& label_relation, bool under_approximate = false);
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const fts::FTSTask& task, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate);
     void draw_nfa(const std::string& file_name, const mata::nfa::Nfa& nfa, const fts::LabelledTransitionSystem& lts, const std::vector<std::vector<unsigned long>>& state_pair_to_nfa_state);
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate);
+    [[nodiscard]] mata::nfa::Nfa lts_to_nfa(const fts::LabelledTransitionSystem& lts);
 
 
     [[nodiscard]] mata::nfa::Nfa lts_to_nfa(const fts::LabelledTransitionSystem& lts) {
@@ -38,7 +38,8 @@ namespace operator_counting {
         return nfa;
     }
 
-    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(const int factor, const LabelledTransitionSystem& lts, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate) {
+    [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const fts::FTSTask& task, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate) {
+        const auto& lts = task.get_factor(factor);
         mata::nfa::Nfa nfa;
         auto all_labels = std::views::iota(0, lts.get_num_labels()) | std::ranges::to<std::vector>();
         nfa.alphabet = new mata::EnumAlphabet(all_labels.begin(), all_labels.end());
@@ -86,13 +87,13 @@ namespace operator_counting {
                             mata::nfa::StateSet t_targets;
                             for (const auto t_tr : t_transitions) {
                                 for (auto t_label : lts.get_labels(t_tr.label_group)) {
-                                    if (label_relation.label_dominates_label_in_all_other(factor, t_label, s_label)) {
+                                    if (label_relation.label_dominates_label_in_all_other(factor, task, t_label, s_label)) {
                                         t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t_tr.target));
                                     }
                                 }
                             }
 
-                            if (label_relation.noop_simulates_label_in_all_other(factor, s_label)) {
+                            if (label_relation.noop_simulates_label_in_all_other(factor, task, s_label)) {
                                 t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t));
                             }
 
@@ -302,7 +303,7 @@ namespace operator_counting {
         // Create all the LP variables
         for (size_t i = 0; i < factored_domrel->size(); ++i) {
             const auto& lts = transformed_task->fts_task->get_factor(i);
-            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, lts, (*factored_domrel)[i], factored_domrel->get_label_relation(), approximate_determinization);
+            auto [automaton, local_state_pair_to_nfa_state] = construct_transition_response_nfa(i, *transformed_task->fts_task, (*factored_domrel)[i], factored_domrel->get_label_relation(), approximate_determinization);
 #ifndef NDEBUG
             draw_nfa(std::format("nfa_premin_{}.dot", i), automaton, lts, local_state_pair_to_nfa_state);
 #endif

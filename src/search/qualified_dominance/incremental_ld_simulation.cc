@@ -12,6 +12,8 @@ using merge_and_shrink::TransitionSystem;
 using namespace dominance;
 
 namespace dominance {
+    bool update_pairs(int factor, const fts::FTSTask& task, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
+    
     std::unique_ptr<StateDominanceRelation> IncrementalLDSimulation::compute_dominance_relation(const fts::FTSTask& task) {
         return compute_ld_simulation(task, log);
     }
@@ -25,7 +27,7 @@ namespace dominance {
 
         for (const auto &[factor, lts] : std::views::enumerate(task.get_factors())) {
             local_relations.push_back(factor_dominance_relation_factory->create(*lts));
-            label_relation->update_factor(static_cast<int>(factor), *local_relations.back()); // Make sure to update the label relation at least
+            label_relation->update_factor(static_cast<int>(factor), task, *local_relations.back()); // Make sure to update the label relation at least
             // once per factor
         }
 
@@ -49,40 +51,41 @@ namespace dominance {
         do {
             changes = false;
             for (auto [factor, local_relation] : std::views::enumerate(local_relations)) {
-                changes |= update_local_relation(static_cast<int>(factor), local_relation->get_lts(), *label_relation,  *local_relation);
+                changes |= update_local_relation(static_cast<int>(factor), task, *label_relation,  *local_relation);
                 if (changes)
-                    changes |= label_relation->update_factor(factor, *local_relation);
+                    changes |= label_relation->update_factor(factor, task, *local_relation);
             }
             log << changes << " " << t() << std::endl;
         } while (changes);
         log << std::endl << "LDSimulation finished: " << t() << std::endl;
 
 #ifndef NDEBUG
-        for (const auto& sim : local_relations) {
-            sim->dump(log);
+        for (const auto& [factor, sim] : std::views::enumerate(local_relations)) {
+            sim->dump(log, task.get_factor(factor));
         }
         log << "Label relation: " << std::endl;
-        label_relation->dump(log);
+
+        label_relation->dump(log, task);
 #endif
 
         return std::make_unique<StateDominanceRelation>(std::move(local_relations), label_relation);
     }
 
 
-    bool labels_simulate_labels(int factor, const std::unordered_set<int>& l1s, const std::vector<int>& l2s,
+    bool labels_simulate_labels(int factor, const fts::FTSTask& task, const std::unordered_set<int>& l1s, const std::vector<int>& l2s,
         bool include_noop, const LabelRelation& label_relation) {
         return std::ranges::all_of(l2s, [&](const auto& l2) {
-            return (include_noop && label_relation.noop_simulates_label_in_all_other(factor, l2)) || std::ranges::any_of(l1s, [&](const auto& l1) {
-                return label_relation.label_dominates_label_in_all_other(factor, l1, l2);
+            return (include_noop && label_relation.noop_simulates_label_in_all_other(factor, task, l2)) || std::ranges::any_of(l1s, [&](const auto& l1) {
+                return label_relation.label_dominates_label_in_all_other(factor, task, l1, l2);
             });
         });
     }
 
 
-    bool update_pairs(int factor, FactorDominanceRelation& local_relation, const LabelRelation& label_relation) {
+    bool update_pairs(int factor, const fts::FTSTask& task, FactorDominanceRelation& local_relation, const LabelRelation& label_relation) {
         // Remove all simulation pairs (s, t) where it is not the case that
         // ∀s -lg-> s'( ∃t -lg'-> t' s.t. s' simulates t' and lg' simulates lg in all other factors or t simulates s' and noop simulates lg in all other factors)
-        const auto& lts = local_relation.get_lts();
+        const auto& lts = task.get_factor(factor);
         return local_relation.remove_simulations_if([&](int t, int s) {
 #ifndef NDEBUG
             // std::println("Checking {} <= {}", lts.state_name(s), lts.state_name(t));
@@ -106,7 +109,7 @@ namespace dominance {
                     }
                 }
 
-                return labels_simulate_labels(factor, t_labels, lts.get_labels(s_tr.label_group), local_relation.simulates(t, s_tr.target), label_relation);
+                return labels_simulate_labels(factor, task, t_labels, lts.get_labels(s_tr.label_group), local_relation.simulates(t, s_tr.target), label_relation);
 #ifndef NDEBUG
                 // std::println("        {0} --noop-> {0} does {1}simulate", lts.state_name(t), noop_simulates_tr(t, s_tr, label_relation)? "" : "not ");
 #endif

@@ -43,7 +43,7 @@ namespace dominance {
     BDDFactorDominanceRelation::precompute_dominating_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
                                                       const dominance::FactorDominanceRelation &state_relation) {
         std::vector<BDD> dominance_bdds;
-        const int num_states = state_relation.get_lts().size();
+        const int num_states = state_relation.get_num_states();
         dominance_bdds.reserve(num_states);
         for (int i = 0; i < num_states; ++i) {
             assert(state_relation.simulates(i, i));
@@ -65,7 +65,7 @@ namespace dominance {
     BDDFactorDominanceRelation::precompute_dominated_bdds(const fts::SymbolicStateMapping &symbolic_mapping,
                                                      const dominance::FactorDominanceRelation &state_relation) {
         std::vector<BDD> dominance_bdds;
-        const int num_states = state_relation.get_lts().size();
+        const int num_states = state_relation.get_num_states();
         dominance_bdds.reserve(num_states);
         for (int i = 0; i < num_states; ++i) {
             assert(state_relation.simulates(i, i));

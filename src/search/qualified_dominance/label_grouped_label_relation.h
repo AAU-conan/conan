@@ -41,21 +41,16 @@ namespace dominance {
     public:
         explicit LabelGroupedLabelRelation(const fts::FTSTask& fts_task);
 
-        bool update_factor(int factor, const FactorDominanceRelation& sim) override;
+        bool update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) override;
 
         void print_label_dominance() const;
 
         [[nodiscard]] bool label_group_simulates(int factor, fts::LabelGroup lg1, fts::LabelGroup lg2) const;
         [[nodiscard]] bool noop_simulates_label_group(int factor, fts::LabelGroup lg) const;
 
+        [[nodiscard]] bool label_dominates_label_in_all_other(const int factor, const fts::FTSTask& fts_task, const int l1, const int l2) const override;
 
-        [[nodiscard]] int get_num_labels() const {
-            return fts_task.get_num_labels();
-        }
-
-        [[nodiscard]] bool label_dominates_label_in_all_other(const int factor, const int l1, const int l2) const override;
-
-        [[nodiscard]] bool noop_simulates_label_in_all_other(const int factor, const int l) const override;
+        [[nodiscard]] bool noop_simulates_label_in_all_other(const int factor, const fts::FTSTask& fts_task, const int l) const override;
     };
 }
 

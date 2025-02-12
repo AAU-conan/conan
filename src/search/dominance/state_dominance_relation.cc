@@ -15,7 +15,7 @@ namespace dominance {
     double StateDominanceRelation::get_percentage_simulations(bool ignore_equivalences) const {
         double percentage = 1;
         for (auto &sim: local_relations) {
-            percentage *= static_cast<double>(sim->num_simulations()) / (sim->get_lts().size() * sim->get_lts().size());
+            percentage *= static_cast<double>(sim->num_simulations()) / (sim->get_num_states() * sim->get_num_states());
         }
         if (ignore_equivalences) {
             percentage -= get_percentage_equivalences();
@@ -28,7 +28,7 @@ namespace dominance {
     double StateDominanceRelation::get_percentage_equal() const {
         double percentage = 1;
         for (auto &sim: local_relations) {
-            percentage *= 1. / (sim->get_lts().size() * sim->get_lts().size());
+            percentage *= 1. / (sim->get_num_states() * sim->get_num_states());
         }
         return percentage;
     }
@@ -37,7 +37,7 @@ namespace dominance {
         double percentage = 1;
         for (auto &sim: local_relations) {
             int num_eq = 0;
-            int num_states = sim->get_lts().size();
+            int num_states = sim->get_num_states();
             for (int i = 0; i < num_states; ++i)
                 for (int j = 0; j < num_states; ++j)
                     if (sim->similar(i, j))
@@ -59,7 +59,7 @@ namespace dominance {
     int StateDominanceRelation::num_simulations() const {
         int res = 0;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res += local_relations[i]->num_simulations() - local_relations[i]->get_lts().size();
+            res += local_relations[i]->num_simulations() - local_relations[i]->get_num_states();
         }
         return res;
     }
@@ -67,7 +67,7 @@ namespace dominance {
     double StateDominanceRelation::num_st_pairs() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res *= local_relations[i]->num_simulations() - local_relations[i]->get_lts().size();
+            res *= local_relations[i]->num_simulations() - local_relations[i]->get_num_states();
         }
         return res;
     }
@@ -76,7 +76,7 @@ namespace dominance {
     double StateDominanceRelation::num_states_problem() const {
         double res = 1;
         for (size_t i = 0; i < local_relations.size(); i++) {
-            res *= local_relations[i]->get_lts().size();
+            res *= local_relations[i]->get_num_states();
         }
         return res;
     }

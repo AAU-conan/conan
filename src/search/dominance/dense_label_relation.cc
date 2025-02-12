@@ -40,15 +40,15 @@ namespace dominance {
         return num_labels;
     }
 
-    bool DenseLabelRelation::label_dominates_label_in_all_other(int factor, int l1, int l2) const {
+    bool DenseLabelRelation::label_dominates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l1, int l2) const {
         return dominates_in[l1][l2].contains_all_except(factor);
     }
 
-    bool DenseLabelRelation::noop_simulates_label_in_all_other(int factor, int l) const {
+    bool DenseLabelRelation::noop_simulates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l) const {
         return dominated_by_noop_in[l].contains_all_except(factor);
     }
 
-    bool DenseLabelRelation::update_factor(int factor, const FactorDominanceRelation& sim) {
+    bool DenseLabelRelation::update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) {
         bool changes = false;
         const fts::LabelledTransitionSystem& lts = fts_task.get_factor(factor);
         for (fts::LabelGroup lg_2: lts.get_relevant_label_groups()) {
@@ -128,7 +128,7 @@ namespace dominance {
         return changes;
     }
 
-    DenseLabelRelation::DenseLabelRelation(const fts::FTSTask & fts_task) : LabelRelation(fts_task) {
+    DenseLabelRelation::DenseLabelRelation(const fts::FTSTask & fts_task) : LabelRelation(fts_task.get_num_labels()) {
         int num_factors = fts_task.get_num_variables();
         num_labels = fts_task.get_num_labels();
 

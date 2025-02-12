@@ -1022,6 +1022,7 @@ create_fast_downward_library(
         dominance/label_relation_noop.h
         dominance/ld_simulation
         dominance/factor_dominance_relation
+        dominance/dense_dominance_relation
         dominance/dominance_relation_bdd
 #        dominance/label_relation_identity
 #        dominance/label_relation_noop

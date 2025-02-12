@@ -40,7 +40,7 @@ public:
     std::unique_ptr<StateDominanceRelation> compute_ld_simulation(const fts::FTSTask &task, utils::LogProxy &log);
 };
 
-    bool labels_simulate_labels(int factor, const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const LabelRelation& label_relation);
+    bool labels_simulate_labels(int factor, const fts::FTSTask& task, const std::unordered_set<int>& l1s, const std::vector<int>& l2s, bool include_noop, const LabelRelation& label_relation);
 
     // Update the simulation relation for when t simulates s
     bool update_pairs(int factor, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
