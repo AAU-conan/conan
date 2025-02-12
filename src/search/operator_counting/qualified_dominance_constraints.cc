@@ -392,8 +392,6 @@ namespace operator_counting {
 #endif
         }
 
-        lp_solver.write_lp("lp.lp");
-
         // The constraints for each previous state, the set of initial states for each factor such that one of them must
         // reach a goal state to satisfy the constraint.
         std::vector<std::vector<mata::nfa::State>> init_state_constraints;
