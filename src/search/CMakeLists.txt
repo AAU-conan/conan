@@ -1024,6 +1024,7 @@ create_fast_downward_library(
         dominance/factor_dominance_relation
         dominance/dense_dominance_relation
         dominance/dominance_relation_bdd
+        dominance/all_none_factor_index
 #        dominance/label_relation_identity
 #        dominance/label_relation_noop
         DEPENDS
