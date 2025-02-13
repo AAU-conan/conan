@@ -7,6 +7,8 @@
 
 #include "factor_dominance_relation.h"
 
+class State;
+
 namespace merge_and_shrink {
     class TransitionSystem;
 }
@@ -71,9 +73,7 @@ namespace dominance {
         }
 
         //Methods to use the simulation
-//        bool pruned_state(const State &state) const;
-//        int get_cost(const State &state) const;
-//        bool dominates(const State &t, const State &s) const;
+        [[nodiscard]] bool dominates(const State &t, const State &s) const;
 
     // TODO (future): Integrate methods for task transformation from the fd_simulation repository
 

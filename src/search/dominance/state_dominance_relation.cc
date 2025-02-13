@@ -2,6 +2,7 @@
 
 #include "factor_dominance_relation.h"
 #include "label_relation.h"
+#include "../task_proxy.h"
 #include "../merge_and_shrink/transition_system.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../utils/logging.h"
@@ -31,6 +32,17 @@ namespace dominance {
             percentage *= 1. / (sim->get_num_states() * sim->get_num_states());
         }
         return percentage;
+    }
+
+    bool StateDominanceRelation::dominates(const State& t, const State& s) const {
+        t.unpack();
+        s.unpack();
+        for (auto [i, sim]: std::views::enumerate(local_relations)) {
+            if (!sim->simulates(t.get_unpacked_values()[i], s.get_unpacked_values()[i])) {
+                return false;
+            }
+        }
+        return true;
     }
 
     double StateDominanceRelation::get_percentage_equivalences() const {
