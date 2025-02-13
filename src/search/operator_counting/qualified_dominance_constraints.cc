@@ -4,14 +4,19 @@
 #include "../factored_transition_system/fts_task_factory.h"
 #include "../factored_transition_system/draw_fts.h"
 #include "../plugins/plugin.h"
+#include "delete_relaxation_if_constraints.h"
+#include "../utils/graphviz.h"
+#include "../dominance/factor_dominance_relation.h"
+#include "../dominance/label_relation.h"
+#include "../dominance/dominance_analysis.h"
+#include "../dominance/state_dominance_relation.h"
 
 #include <print>
 
 #include <boost/algorithm/string/join.hpp>
 
-#include "delete_relaxation_if_constraints.h"
-#include "../utils/graphviz.h"
 
+using namespace dominance;
 
 namespace operator_counting {
     [[nodiscard]] std::pair<mata::nfa::Nfa,std::vector<std::vector<mata::nfa::State>>> construct_transition_response_nfa(int factor, const fts::FTSTask& task, const FactorDominanceRelation& rel, const LabelRelation& label_relation, bool under_approximate);
@@ -286,7 +291,7 @@ namespace operator_counting {
 
     void QualifiedDominanceConstraints::initialize_constraints(const std::shared_ptr<AbstractTask>& task, lp::LinearProgram& lp) {
         fts::AtomicTaskFactory fts_factory;
-        transformed_task = std::make_unique<TransformedFTSTask>(fts_factory.transform_to_fts(task));
+        transformed_task = std::make_unique<fts::TransformedFTSTask>(fts_factory.transform_to_fts(task));
 
 #ifndef NDEBUG
         for (int l = 0; l < task->get_num_operators(); l++) {

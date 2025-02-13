@@ -3,22 +3,9 @@
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../merge_and_shrink/transition_system.h"
 #include "../utils/logging.h"
-#include "label_grouped_label_relation.h"
-#include "../utils/graphviz.h"
 #include "../plugins/plugin.h"
 
-#include <cassert>
-#include <cstdlib>
-#include <iostream>
-#include <numeric>
-#include <ext/slist>
 #include <utility>
-#include <print>
-
-#include <mata/nfa/nfa.hh>
-
-#include "../factored_transition_system/fts_task.h"
-
 
 using namespace std;
 using merge_and_shrink::TransitionSystem;

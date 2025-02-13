@@ -9,10 +9,10 @@
 #include <generator>
 #include <print>
 
-#include "../dominance/all_none_factor_index.h"
+#include "all_none_factor_index.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "label_group_relation.h"
-#include "../dominance/label_relation.h"
+#include "label_relation.h"
 
 
 using namespace dominance;

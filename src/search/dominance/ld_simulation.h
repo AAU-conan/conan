@@ -2,14 +2,8 @@
 #define DOMINANCE_LD_SIMULATION_H
 
 #include <vector>
-#include <ostream>
-#include "state_dominance_relation.h"
-#include "factor_dominance_relation.h"
-#include "../factored_transition_system/labelled_transition_system.h"
-#include "../factored_transition_system/fts_task.h"
 #include "../utils/logging.h"
 
-#include "../utils/timer.h"
 #include "dominance_analysis.h"
 
 namespace fts {
@@ -18,6 +12,8 @@ namespace fts {
 }
 
 namespace dominance {
+    class FactorDominanceRelationFactory;
+    class FactorDominanceRelation;
     class LabelRelation;
     class LabelRelationFactory;
 

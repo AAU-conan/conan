@@ -9,7 +9,6 @@
 #include <cassert>
 #include <generator>
 #include <ranges>
-#include <iostream>
 #include <memory>
 
 #include "fact_names.h"
@@ -55,15 +54,7 @@ namespace fts {
     };
 }
 
-namespace std {
-    template <>
-    struct hash<fts::LabelGroup>
-    {
-        std::size_t operator()(const fts::LabelGroup& lg) const noexcept {
-            return std::hash<int>()(lg.group);
-        }
-    };
-}
+
 
 namespace fts {
     class LTSTransition {

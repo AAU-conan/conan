@@ -1,6 +1,6 @@
 #include "label_group_relation.h"
 #include "label_grouped_label_relation.h"
-#include "../dominance/state_dominance_relation.h"
+#include "state_dominance_relation.h"
 
 namespace dominance {
   LabelGroupSimulationRelation::LabelGroupSimulationRelation(const LabelledTransitionSystem& lts, int factor): lts(lts), factor(factor), noop_simulations(), simulations_noop() {

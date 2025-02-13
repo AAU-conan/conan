@@ -1,27 +1,23 @@
 #ifndef DOMINANCE_INCREMENTAL_LD_SIMULATION_H
 #define DOMINANCE_INCREMENTAL_LD_SIMULATION_H
 
-#include "../dominance/all_none_factor_index.h"
-#include "../factored_transition_system/fts_task.h"
-#include "../factored_transition_system/labelled_transition_system.h"
-#include "../utils/logging.h"
-#include "sparse_local_state_relation.h"
 #include <fstream>
-#include <ostream>
 #include <vector>
+#include <unordered_set>
 
+#include "dominance_analysis.h"
 #include "../utils/logging.h"
-#include "../utils/timer.h"
-#include "../dominance/dominance_analysis.h"
-#include "../dominance/state_dominance_relation.h"
-#include "../dominance/ld_simulation.h"
 
 namespace fts {
 class FTSTask;
 }
 
 namespace dominance {
-/*
+    class FactorDominanceRelation;
+    class LabelRelation;
+    class LabelRelationFactory;
+    class FactorDominanceRelationFactory;
+    /*
  * A version of Label Dominance simulation that only updates the factors in the label relation that were changed by the
  * last iteration of the state relation.
  */

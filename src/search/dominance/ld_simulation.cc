@@ -1,7 +1,9 @@
 #include "ld_simulation.h"
 
+#include "factor_dominance_relation.h"
 #include "../factored_transition_system/fts_task.h"
 #include "label_relation.h"
+#include "state_dominance_relation.h"
 
 #include "../plugins/plugin.h"
 #include "../utils/markup.h"

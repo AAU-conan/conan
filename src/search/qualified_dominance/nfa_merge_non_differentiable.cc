@@ -6,7 +6,7 @@
 
 #include <boost/lexical_cast/detail/converter_numeric.hpp>
 
-#include "sparse_local_state_relation.h"
+#include "../dominance/sparse_local_state_relation.h"
 #include "../algorithms/dynamic_bitset.h"
 #include "../utils/logging.h"
 

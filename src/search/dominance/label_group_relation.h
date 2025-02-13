@@ -1,11 +1,12 @@
 #ifndef LABEL_GROUP_RELATION_H
 #define LABEL_GROUP_RELATION_H
+#include <unordered_set>
+#include <vector>
 
-#include <print>
-
-#include "../factored_transition_system/fts_task.h"
 #include "../factored_transition_system/labelled_transition_system.h"
+
 #include <mata/utils/utils.hh>
+
 
 using namespace fts;
 
@@ -13,6 +14,17 @@ namespace dominance {
 class FactorDominanceRelation;
 class LabelGroupedLabelRelation;
 } // namespace dominance
+
+namespace std {
+    template <>
+    struct hash<fts::LabelGroup>
+    {
+        std::size_t operator()(const fts::LabelGroup& lg) const noexcept {
+            return std::hash<int>()(lg.group);
+        }
+    };
+}
+
 
 namespace dominance {
 class LabelGroupSimulationRelation {

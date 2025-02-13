@@ -1,16 +1,9 @@
 #ifndef SPARSE_LOCAL_STATE_RELATION_H
 #define SPARSE_LOCAL_STATE_RELATION_H
 
-#include <string>
 #include <unordered_set>
-#include <vector>
 
-#include "../factored_transition_system/fact_names.h"
-#include "../factored_transition_system/labelled_transition_system.h"
-#include "label_grouped_label_relation.h"
-#include "../dominance/factor_dominance_relation.h"
-#include <mata/nfa/nfa.hh>
-
+#include "factor_dominance_relation.h"
 
 namespace merge_and_shrink {
 class TransitionSystem;
@@ -37,7 +30,7 @@ public:
 
   void cancel_simulation_computation() override;
 
-  explicit SparseLocalStateRelation(const LabelledTransitionSystem &lts);
+  explicit SparseLocalStateRelation(const fts::LabelledTransitionSystem &lts);
 
   void print_simulations() const;
 

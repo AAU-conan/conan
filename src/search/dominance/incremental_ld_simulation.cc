@@ -1,10 +1,12 @@
 #include "incremental_ld_simulation.h"
 
+#include "factor_dominance_relation.h"
 #include "../factored_transition_system/fts_task.h"
 #include "label_grouped_label_relation.h"
+#include "ld_simulation.h"
+#include "state_dominance_relation.h"
 
 #include "../plugins/plugin.h"
-#include "../utils/markup.h"
 
 using std::vector;
 using merge_and_shrink::TransitionSystem;
@@ -12,8 +14,6 @@ using merge_and_shrink::TransitionSystem;
 using namespace dominance;
 
 namespace dominance {
-    bool update_pairs(int factor, const fts::FTSTask& task, FactorDominanceRelation& local_relation, const LabelRelation& label_relation);
-
     std::unique_ptr<StateDominanceRelation> IncrementalLDSimulation::compute_dominance_relation(const fts::FTSTask& task) {
         return compute_ld_simulation(task, log);
     }

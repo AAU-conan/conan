@@ -435,7 +435,6 @@ create_fast_downward_library(
     HELP "Eager search"
     SOURCES
         search_algorithms/eager_search
-        utils/search_space_draw
     DEPENDS
         null_pruning_method
         ordered_set
@@ -888,8 +887,6 @@ create_fast_downward_library(
         operator_counting/operator_counting_heuristic
         operator_counting/pho_constraints
         operator_counting/state_equation_constraints
-        operator_counting/qualified_dominance_constraints
-        operator_counting/qdom_lm_constraints
         operator_counting/contrastive_landmarks
         operator_counting/factored_constraints
     DEPENDS lp_solver landmark_cut_heuristic pdbs task_properties
@@ -1025,6 +1022,10 @@ create_fast_downward_library(
         dominance/dense_dominance_relation
         dominance/dominance_relation_bdd
         dominance/all_none_factor_index
+        dominance/sparse_local_state_relation
+        dominance/incremental_ld_simulation
+        dominance/label_group_relation
+        dominance/label_grouped_label_relation
 #        dominance/label_relation_identity
 #        dominance/label_relation_noop
         DEPENDS
@@ -1037,16 +1038,21 @@ create_fast_downward_library(
         NAME qualified_dominance
         HELP "Qualified Dominance Analysis techniques"
         SOURCES
-        qualified_dominance/sparse_local_state_relation
-        qualified_dominance/incremental_ld_simulation
-        qualified_dominance/label_group_relation
-        qualified_dominance/label_grouped_label_relation
+        operator_counting/qualified_dominance_constraints
         qualified_dominance/nfa_merge_non_differentiable
         DEPENDS
         dominance
         factored_transition_system
 )
 
+create_fast_downward_library(
+    NAME search_space_draw
+    HELP "Draws the search space"
+    SOURCES
+    utils/search_space_draw
+    DEPENDS
+    eager_search
+)
 
 create_fast_downward_library(
         NAME dominance_pruning
