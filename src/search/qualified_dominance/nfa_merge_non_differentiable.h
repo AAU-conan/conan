@@ -1,5 +1,5 @@
-#ifndef NFA_MERGE_NON_DIFFERENTIABLE_H
-#define NFA_MERGE_NON_DIFFERENTIABLE_H
+#ifndef QUALIFIED_DOMINANCE_NFA_MERGE_NON_DIFFERENTIABLE_H
+#define QUALIFIED_DOMINANCE_NFA_MERGE_NON_DIFFERENTIABLE_H
 
 #include <mata/nfa/nfa.hh>
 #include <vector>
@@ -15,4 +15,4 @@ namespace dominance {
     [[nodiscard]] std::pair<mata::nfa::Nfa, std::vector<mata::nfa::State>> minimize_hopcroft(const mata::nfa::Nfa& nfa);
 }
 
-#endif //NFA_MERGE_NON_DIFFERENTIABLE_H
+#endif

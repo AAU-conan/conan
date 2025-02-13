@@ -45,4 +45,4 @@ namespace dominance {
 
 
 
-#endif //DENSE_LABEL_RELATION_H
+#endif

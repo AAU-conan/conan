@@ -1,5 +1,5 @@
-#ifndef LABEL_GROUP_RELATION_H
-#define LABEL_GROUP_RELATION_H
+#ifndef DOMINANCE_LABEL_GROUP_RELATION_H
+#define DOMINANCE_LABEL_GROUP_RELATION_H
 #include <unordered_set>
 #include <vector>
 
@@ -69,4 +69,4 @@ public:
 };
 } // namespace dominance
 
-#endif // LABEL_GROUP_RELATION_H
+#endif

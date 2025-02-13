@@ -46,4 +46,4 @@ namespace dominance {
     };
 }
 
-#endif //DENSE_DOMINANCE_RELATION_H
+#endif
