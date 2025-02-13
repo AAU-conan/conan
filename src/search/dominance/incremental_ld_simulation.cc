@@ -49,11 +49,15 @@ namespace dominance {
         log << "Init LDSim in " << t() << ":" << std::endl << std::flush;
         bool changes;
         do {
-            changes = false;
+            std::vector<long> changed_factors;
             for (auto [factor, local_relation] : std::views::enumerate(local_relations)) {
-                changes |= update_local_relation(static_cast<int>(factor), task, *label_relation,  *local_relation);
-                if (changes)
-                    changes |= label_relation->update_factor(factor, task, *local_relation);
+                bool factor_changes = update_local_relation(static_cast<int>(factor), task, *label_relation,  *local_relation);
+                if (factor_changes)
+                    changed_factors.push_back(factor);
+            }
+            changes = false;
+            for (long factor : changed_factors) {
+                changes |= label_relation->update_factor(factor, task, *local_relations[factor]);
             }
             log << changes << " " << t() << std::endl;
         } while (changes);
