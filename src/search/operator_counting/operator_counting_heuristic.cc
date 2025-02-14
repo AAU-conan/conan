@@ -33,6 +33,10 @@ OperatorCountingHeuristic::OperatorCountingHeuristic(
     for (const auto &generator : constraint_generators) {
         generator->initialize_constraints(task, lp);
     }
+#ifndef NDEBUG
+    lp_variables = named_vector::NamedVector(lp.get_variables());
+#endif
+    std::cout << "Number of lp variables: " << lp.get_variables().size() << std::endl;
     lp_solver.load_problem(lp);
 }
 

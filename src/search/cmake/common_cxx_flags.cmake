@@ -1,7 +1,7 @@
 include_guard(GLOBAL)
 
 add_library(common_cxx_flags INTERFACE)
-target_compile_features(common_cxx_flags INTERFACE cxx_std_20)
+target_compile_features(common_cxx_flags INTERFACE cxx_std_23)
 
 set(using_gcc_like "$<CXX_COMPILER_ID:ARMClang,AppleClang,Clang,GNU,LCC>")
 set(using_gcc "$<CXX_COMPILER_ID:GNU>")
@@ -11,11 +11,11 @@ set(using_gcc_like_debug "$<AND:${using_gcc_like},$<CONFIG:DEBUG>>")
 set(should_use_glibcxx_debug "$<AND:${using_gcc_like_debug},$<BOOL:${USE_GLIBCXX_DEBUG}>>")
 
 target_compile_options(common_cxx_flags INTERFACE
-    "$<${using_gcc_like}:-O3;-g>")
+    "$<${using_gcc_like}:-g>")
 target_link_options(common_cxx_flags INTERFACE
     "$<${using_gcc_like}:-g>")
 target_compile_options(common_cxx_flags INTERFACE
-    "$<${using_gcc_like_release}:-DNDEBUG;-fomit-frame-pointer>")
+    "$<${using_gcc_like_release}:-O3;-DNDEBUG;-fomit-frame-pointer>")
 target_compile_definitions(common_cxx_flags INTERFACE
     "$<${should_use_glibcxx_debug}:_GLIBCXX_DEBUG>")
 # Enable exceptions for MSVC.

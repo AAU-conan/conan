@@ -1,23 +1,23 @@
 #include "labelled_transition_system.h"
 
+#include <utility>
+
+#include "fact_names.h"
 #include "label_map.h"
 #include "../merge_and_shrink/transition_system.h"
-#include "../merge_and_shrink/labels.h"
 
+class AbstractTask;
 using namespace std;
 
 namespace fts {
     LabelledTransitionSystem::LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &ts,
-                                                       const LabelMap &labelMap) :
-            num_states(ts.get_size()), goal_states(ts.get_goal_states()) {
-
-        int num_labels = labelMap.get_num_labels();
+                                                       const LabelMap &labelMap,
+                                                       std::shared_ptr<FactValueNames> fact_value_names) :
+            num_states(ts.get_size()), num_labels(labelMap.get_num_labels()), goal_states(ts.get_goal_states()), init_state(ts.get_init_state()), fact_value_names(std::move(fact_value_names)) {
 
         label_group_of_label.resize(num_labels, LabelGroup(-1));
-        label_groups.reserve(num_labels);
 
         transitions_src.resize(num_states);
-        transitions_label_group.reserve(num_labels);
 
         for (const auto & local_label_info : ts) {
             const auto & abs_tr = local_label_info.get_transitions();
@@ -31,7 +31,6 @@ namespace fts {
                     if(maybe_new_label_id.has_value()) {
                         int new_label_id = maybe_new_label_id.value();
                         new_label_group.push_back(new_label_id);
-                        relevant_labels.push_back(new_label_id);
                         label_group_of_label[new_label_id] = new_label_group_id;
                     }
                 }
@@ -49,13 +48,25 @@ namespace fts {
             }
         }
 
-#ifndef NDEBUG
-        for (int label_no = 0; label_no < num_labels; label_no++) {
-            is_relevant_label(label_no);
+        label_group_is_relevant.resize(label_groups.size(), false);
+        for (const auto& [lg_i, _] : std::views::enumerate(label_groups)) {
+            if (const auto lg = LabelGroup(static_cast<int>(lg_i)); !irrelevant_label_group(lg)) {
+                relevant_label_groups.push_back(lg);
+                label_group_is_relevant[lg_i] = true;
+            }
         }
-#endif
+    }
 
-        //TODO: get distances if they are already computed.
+    std::string LabelledTransitionSystem::state_name(int s) const {
+        return fact_value_names->get_fact_value_name(s);
+    }
+
+    std::string LabelledTransitionSystem::label_name(int label) const {
+        return fact_value_names->get_operator_name(label, false);
+    }
+
+    std::string LabelledTransitionSystem::label_group_name(const LabelGroup& lg) const {
+        return fact_value_names->get_common_operators_name(get_labels(lg));
     }
 
     void LabelledTransitionSystem::dump() const {
@@ -72,9 +83,19 @@ namespace fts {
 
     }
 
-    bool LabelledTransitionSystem::is_self_loop_everywhere_label(int label) const {
-        if (!is_relevant_label(label)) return true;
-        const auto &trs = get_transitions_label(label);
+    /*
+     * Returns true if the label group has a self-loop in every state and no other transitions
+     */
+    bool LabelledTransitionSystem::irrelevant_label_group(LabelGroup lg) const {
+        const auto &trs = get_transitions_label_group(lg);
+        return trs.size() == (size_t) num_states && is_self_loop_everywhere_label_group(lg);
+    }
+
+    /*
+     * Returns true if the label group has a self loop in every state
+     */
+    bool LabelledTransitionSystem::is_self_loop_everywhere_label_group(LabelGroup lg) const {
+        const auto &trs = get_transitions_label_group(lg);
         if (trs.size() < (size_t) num_states) return false;
 
         // This assumes that there is no repeated transition

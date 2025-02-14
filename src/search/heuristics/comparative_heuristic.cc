@@ -2,22 +2,23 @@
 #include "../plugins/plugin.h"
 #include <ranges>
 #include <format>
+#include <boost/algorithm/string/join.hpp>
+#include <print>
 
 class Evaluator;
 
 EvaluationResult ComparativeHeuristic::compute_result(EvaluationContext& eval_context) {
-    std::vector<EvaluationResult> results;
-    for (const auto& heuristic : comparison_heuristics) {
-        results.push_back(heuristic->compute_result(eval_context));
-    }
-    for (size_t i = 0; i < comparison_heuristics.size(); ++i) {
-        log << comparison_heuristics.at(i)->get_description() << ": " << results.at(i).get_evaluator_value() << ", ";
-    }
-    log << std::endl;
+    const auto results = comparison_heuristics | std::views::transform([&eval_context](const auto& heuristic) {
+        return heuristic->compute_result(eval_context);
+    }) | std::ranges::to<std::vector<EvaluationResult>>();
+    std::println("{}", boost::algorithm::join(std::views::zip(comparison_heuristics, results) | std::views::transform([](const std::pair<std::shared_ptr<Evaluator>, EvaluationResult>& pair) {
+        return std::format("{}: {}", pair.first->get_description(), pair.second.get_evaluator_value());
+    }) | std::ranges::to<std::vector<std::string>>(), ", "));
     return results.front();
 }
 
 int ComparativeHeuristic::compute_heuristic(const State& ancestor_state) {
+    utils::unused_variable(ancestor_state);
     throw std::runtime_error("Should not be reachable");
 }
 

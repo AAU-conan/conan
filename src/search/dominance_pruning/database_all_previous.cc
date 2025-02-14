@@ -1,6 +1,6 @@
 #include "database_all_previous.h"
 
-#include "../dominance/factored_dominance_relation.h"
+#include "../dominance/state_dominance_relation.h"
 #include "../plugins/plugin.h"
 
 namespace dominance {

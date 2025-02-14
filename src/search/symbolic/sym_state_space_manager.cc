@@ -19,7 +19,7 @@ namespace symbolic {
             min_transition_cost(0), hasTR0(false) {
 
         if (relevant_vars.empty()) {
-            for (int i = 0; i < v->get_num_variables(); ++i) {
+            for (int i = 0; i < static_cast<int>(v->get_num_variables()); ++i) {
                 relevant_vars.insert(i);
             }
         }

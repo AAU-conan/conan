@@ -1,12 +1,7 @@
-#ifndef MERGE_AND_SHRINK_LABEL_RELATION_H
-#define MERGE_AND_SHRINK_LABEL_RELATION_H
+#ifndef DOMINANCE_LABEL_RELATION_H
+#define DOMINANCE_LABEL_RELATION_H
 
-#include <iostream>
-#include <vector>
-#include <set>
-#include <cassert>
-#include "all_none_factor_index.h"
-#include "local_state_relation.h"
+#include <memory>
 
 namespace fts {
     class FTSTask;
@@ -19,79 +14,40 @@ namespace utils {
 }
 
 namespace dominance {
+    class FactorDominanceRelation;
 
-/* 
- * Label relation represents the preorder relations on labels that
- * occur in a set of LTS
- */
+    /*
+     * Label relation represents the preorder relations on labels that
+     * occur in a set of LTS
+     */
     class LabelRelation {
+    protected:
         int num_labels;
-        //For each lts, matrix indicating whether l1 simulates l2
-        //std::vector<std::vector<std::vector<bool > > > dominates;
-
-        std::vector<std::vector<AllNoneFactorIndex> > dominates_in;
-
-        //Indicates whether labels are dominated by noop or other irrelevant
-        //variables in theta
-        std::vector<std::vector<bool> > simulated_by_irrelevant;
-        std::vector<std::vector<bool> > simulates_irrelevant;
-
-        std::vector<AllNoneFactorIndex> dominated_by_noop_in;
-
-        bool update(int i, const fts::LabelledTransitionSystem &lts, const LocalStateRelation &sim);
-
-        //Returns true if l1 simulates l2 in lts
-        inline bool simulates(int l1, int l2, int lts) const {
-            assert (l1 >= 0);
-            assert((size_t)l1 < dominates_in.size());
-            assert (l2 >= 0);
-            assert((size_t)l2 < dominates_in[l1].size());
-
-            return dominates_in[l1][l2].contains(lts);
-        }
-
-        inline void set_not_simulates(int l1, int l2, int lts) {
-            //std::cout << "Not simulates: " << l1 << " to " << l2 << " in " << lts << std::endl;
-            dominates_in[l1][l2].remove(lts);
-        }
-
-        inline bool set_not_simulated_by_irrelevant(int l, int lts) {
-            //std::cout << "Not simulated by irrelevant: " << l << " in " << lts << std::endl;
-
-            //Returns if there were changes in dominated_by_noop_in
-            simulated_by_irrelevant[l][lts] = false;
-            return dominated_by_noop_in[l].remove(lts);
-        }
 
     public:
-        LabelRelation(const fts::FTSTask & fts_task,
-                      const std::vector<std::unique_ptr<LocalStateRelation>> &sim);
+        explicit LabelRelation(int num_labels);
+        virtual ~LabelRelation() = default;
 
-        bool update(const fts::FTSTask & fts_task, const std::vector<std::unique_ptr<LocalStateRelation>> &sim);
+        [[nodiscard]] virtual bool label_dominates_label_in_all_other(int factor, const fts::FTSTask& fts_task, int l1, int l2) const = 0;
 
-        void dump(utils::LogProxy &log) const;
-        void dump(utils::LogProxy &log, int label) const;
-        void dump_equivalent(utils::LogProxy &log) const;
-        void dump_dominance(utils::LogProxy &log) const;
+        [[nodiscard]] virtual bool noop_dominates_label_in_all_other(int factor, const fts::FTSTask& fts_task, int l) const = 0;
+
+        virtual bool update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) = 0;
 
 
-        inline int get_num_labels() const {
-            return num_labels;
-        }
+        void dump(utils::LogProxy &log, const fts::FTSTask& fts_task) const;
+    };
 
-        std::vector<int> get_labels_dominated_in_all() const;
+    class LabelRelationFactory {
+    public:
+        virtual ~LabelRelationFactory() = default;
+        virtual std::unique_ptr<LabelRelation> create(const fts::FTSTask& fts_task) = 0;
+    };
 
-        inline AllNoneFactorIndex get_dominated_by_noop_in(int l) const {
-            return dominated_by_noop_in[l];
-        }
-
-        inline bool dominated_by_noop(int l, int lts) const {
-            return dominated_by_noop_in[l].contains_all_except(lts);
-        }
-
-        //Returns true if l dominates l2 in lts (simulates l2 in all j \neq lts)
-        inline bool dominates(int l1, int l2, int lts) const {
-            return dominates_in[l1][l2].contains_all_except(lts);
+    template<class LabelRelationType>
+    class LabelRelationFactoryImpl final : public LabelRelationFactory {
+        std::unique_ptr<LabelRelation> create(const fts::FTSTask& fts_task) override {
+            return std::make_unique<LabelRelationType>(fts_task);
         }
     };
 }

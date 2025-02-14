@@ -1,8 +1,8 @@
 #include "fts_task.h"
 
 #include <cassert>
-#include <format>
 
+#include "fact_names.h"
 #include "../utils/system.h"
 #include "labelled_transition_system.h"
 #include "../merge_and_shrink/factored_transition_system.h"
@@ -11,11 +11,11 @@
 
 namespace fts {
 
-    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts) {
+    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts) : fact_names(std::make_shared<NoFactNames>()) {
 
         LabelMap label_map (fts.get_labels());
         for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map));
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, get_debug_or_release_fact_value_names(fact_names, ts)));
         }
 
         label_costs.resize(label_map.get_num_labels());
@@ -25,11 +25,12 @@ namespace fts {
         }
     }
 
-    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts, const std::shared_ptr<AbstractTask> parent) : parent(parent) {
+    FTSTask::FTSTask(const merge_and_shrink::FactoredTransitionSystem &fts, const std::shared_ptr<AbstractTask>& parent)
+    : fact_names(std::make_shared<AbstractTaskFactNames>(parent)) {
 
         LabelMap label_map (fts.get_labels());
         for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map));
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, get_debug_or_release_fact_value_names(fact_names, ts)));
         }
 
         label_costs.resize(label_map.get_num_labels());
@@ -57,12 +58,7 @@ namespace fts {
     }
 
     std::string FTSTask::get_variable_name(int var) const {
-        if (parent && parent->get_num_variables() == get_num_variables() && parent->get_variable_domain_size(var) ==
-                                                                                    get_variable_domain_size(var)){
-            return parent->get_variable_name(var);
-        } else {
-            return std::format("FTSvar-{}", var);
-        }
+        return fact_names->get_variable_name(var);
     }
 
     int FTSTask::get_variable_domain_size(int var) const {
@@ -77,12 +73,7 @@ namespace fts {
         ABORT("Accessing axioms of an FTSTask");    }
 
     std::string FTSTask::get_fact_name(const FactPair &fact) const {
-        if (parent && parent->get_num_variables() == get_num_variables() && parent->get_variable_domain_size(fact.var) ==
-                                                                            get_variable_domain_size(fact.var)){
-            return parent->get_fact_name(fact);
-        } else {
-            return std::format("FTSfact-{}-{}", fact.var, fact.value);
-        }
+        return fact_names->get_fact_name(fact);
     }
 
     bool FTSTask::are_facts_mutex(const FactPair &, const FactPair &) const {
@@ -91,16 +82,13 @@ namespace fts {
 
     int FTSTask::get_operator_cost(int index, bool is_axiom) const {
         assert(!is_axiom);
+        utils::unused_variable(is_axiom);
         return get_label_cost(index);
     }
 
     std::string FTSTask::get_operator_name(int index, bool is_axiom) const {
         assert (!is_axiom);
-        if (parent && parent->get_num_operators() == get_num_labels()){
-            return parent->get_operator_name(index, is_axiom);
-        } else {
-            return std::format("FTSop-{}", index);
-        }
+        return fact_names->get_operator_name(index, is_axiom);
     }
 
     int FTSTask::get_num_operators() const {

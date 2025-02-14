@@ -7,11 +7,11 @@ namespace dominance {
 class DatabaseAllPrevious : public DominanceDatabase {
     std::vector<ExplicitState> previous_transformed_states;
 
-    std::shared_ptr<FactoredDominanceRelation> dominance_relation;
+    std::shared_ptr<StateDominanceRelation> dominance_relation;
     //std::shared_ptr<fts::FactoredStateMapping> state_mapping;
 
 public:
-    DatabaseAllPrevious(std::shared_ptr<FactoredDominanceRelation> dominance_relation)
+    DatabaseAllPrevious(std::shared_ptr<StateDominanceRelation> dominance_relation)
         : dominance_relation(dominance_relation){//, state_mapping(state_mapping) {
     }
     virtual ~DatabaseAllPrevious() = default;
@@ -31,7 +31,7 @@ public:
         }
 
         virtual std::unique_ptr<DominanceDatabase> create(const std::shared_ptr<AbstractTask> &,
-                                                          std::shared_ptr<FactoredDominanceRelation> dominance_relation,
+                                                          std::shared_ptr<StateDominanceRelation> dominance_relation,
                                                           std::shared_ptr<fts::FactoredStateMapping> ) override
         {
             return std::make_unique<DatabaseAllPrevious>(dominance_relation);

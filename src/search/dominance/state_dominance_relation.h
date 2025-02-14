@@ -1,31 +1,30 @@
-#ifndef DOMINANCE_DOMINANCE_RELATION_H
-#define DOMINANCE_DOMINANCE_RELATION_H
+#ifndef DOMINANCE_STATE_DOMINANCE_RELATION_H
+#define DOMINANCE_STATE_DOMINANCE_RELATION_H
 
 #include <vector>
 #include <memory>
-#include <set>
 
-#include "local_state_relation.h"
+#include "factor_dominance_relation.h"
 
-namespace merge_and_shrink {
-    class TransitionSystem;
-}
+class State;
+
 namespace utils {
     class LogProxy;
 }
 
 namespace dominance {
+    class LabelRelation;
+
 /*
  * Class that represents the collection of simulation relations for a factored task.
  * Uses unique_ptr so that it owns the local relations, and it cannot be copied away.
  */
-    class FactoredDominanceRelation {
+    class StateDominanceRelation {
     protected:
-        std::vector<std::unique_ptr<LocalStateRelation> > local_relations;
+        std::vector<std::unique_ptr<FactorDominanceRelation> > local_relations;
+        std::unique_ptr<LabelRelation> label_relation;
     public:
-        FactoredDominanceRelation(std::vector<std::unique_ptr<LocalStateRelation>> &&_local_relations) :
-            local_relations (std::move(_local_relations)){
-        }
+        explicit StateDominanceRelation(std::vector<std::unique_ptr<FactorDominanceRelation>> &&_local_relations, std::unique_ptr<LabelRelation> &label_relation);
 
         //Statistics of the factored simulation
         void dump_statistics(utils::LogProxy &log) const;
@@ -49,7 +48,7 @@ namespace dominance {
         double get_percentage_equal() const;
 
         //Methods to access the underlying simulation relations
-        const std::vector<std::unique_ptr<LocalStateRelation> > &get_local_relations() const {
+        const std::vector<std::unique_ptr<FactorDominanceRelation> > &get_local_relations() const {
             return local_relations;
         }
 
@@ -57,18 +56,20 @@ namespace dominance {
             return local_relations.size();
         }
 
-        LocalStateRelation &operator[](int index) {
+        FactorDominanceRelation &operator[](int index) {
             return *(local_relations[index]);
         }
 
-        const LocalStateRelation &operator[](int index) const {
+        const FactorDominanceRelation &operator[](int index) const {
             return *(local_relations[index]);
+        }
+
+        [[nodiscard]] const LabelRelation& get_label_relation() const {
+            return *label_relation;
         }
 
         //Methods to use the simulation
-//        bool pruned_state(const State &state) const;
-//        int get_cost(const State &state) const;
-//        bool dominates(const State &t, const State &s) const;
+        [[nodiscard]] bool dominates(const State &t, const State &s) const;
 
     // TODO (future): Integrate methods for task transformation from the fd_simulation repository
 

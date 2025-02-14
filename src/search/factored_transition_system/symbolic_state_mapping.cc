@@ -22,6 +22,7 @@ namespace fts {
     }
 
     void FactoredSymbolicStateMapping::construct(const FactoredStateMappingIdentity & mapping, const std::shared_ptr<symbolic::SymVariables> vars) {
+        utils::unused_variable(mapping);
         for (size_t v= 0; v < vars->get_num_variables(); ++v){
             mapping_by_factor.emplace_back(vars, v);
         }

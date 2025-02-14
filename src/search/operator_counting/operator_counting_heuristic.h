@@ -16,9 +16,12 @@ namespace operator_counting {
 class ConstraintGenerator;
 
 class OperatorCountingHeuristic : public Heuristic {
+protected:
     std::vector<std::shared_ptr<ConstraintGenerator>> constraint_generators;
     lp::LPSolver lp_solver;
-protected:
+#ifndef NDEBUG
+    named_vector::NamedVector<lp::LPVariable> lp_variables;
+#endif
     virtual int compute_heuristic(const State &ancestor_state) override;
 public:
     OperatorCountingHeuristic(

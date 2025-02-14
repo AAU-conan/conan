@@ -6,6 +6,8 @@
 #include "../factored_transition_system/fts_task.h"
 #include "../factored_transition_system/fts_task_factory.h"
 #include "../factored_transition_system/factored_state_mapping.h"
+#include "../dominance/state_dominance_relation.h"
+#include "../dominance/label_relation.h"
 
 using namespace std;
 using plugins::Options;
@@ -22,6 +24,7 @@ namespace dominance {
 // TODO (documentation):        dump_options();
         PruningMethod::initialize(task);
 
+
         fts::TransformedFTSTask transformed_task = fts_factory->transform_to_fts(task);
         state_mapping = std::move(transformed_task.factored_state_mapping);
 
@@ -30,6 +33,13 @@ namespace dominance {
         if (log.is_at_least_verbose()){
             dominance_relation->dump_statistics(log);
         }
+
+
+#ifndef NDEBUG
+        for (const auto& [i, rel] : std::views::enumerate(dominance_relation->get_local_relations())) {
+            rel->dump(log, transformed_task.fts_task->get_factor(i));
+        }
+#endif
     }
 
     void add_dominance_pruning_options_to_feature(plugins::Feature &feature) {

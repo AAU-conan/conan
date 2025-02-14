@@ -2,7 +2,7 @@
 
 #include "../plugins/plugin.h"
 
-#include "../dominance/factored_dominance_relation.h"
+#include "../dominance/state_dominance_relation.h"
 namespace dominance {
 
     void DatabasePreviousLowerG::insert(const ExplicitState &transformed_state, int g_value) {

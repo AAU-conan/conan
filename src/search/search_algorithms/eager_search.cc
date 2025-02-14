@@ -16,6 +16,8 @@
 #include <optional>
 #include <set>
 
+#include "../utils/search_space_draw.h"
+
 using namespace std;
 
 namespace eager_search {
@@ -34,7 +36,11 @@ EagerSearch::EagerSearch(
       f_evaluator(f_eval),     // default nullptr
       preferred_operator_evaluators(preferred),
       lazy_evaluator(lazy_evaluator),     // default nullptr
-      pruning_method(pruning) {
+      pruning_method(pruning)
+#ifndef NDEBUG
+    ,search_space_drawer("search_space.dot")
+#endif
+    {
     if (lazy_evaluator && !lazy_evaluator->does_cache_estimates()) {
         cerr << "lazy_evaluator must cache its estimates" << endl;
         utils::exit_with(utils::ExitCode::SEARCH_INPUT_ERROR);
@@ -82,6 +88,9 @@ void EagerSearch::initialize() {
     for (Evaluator *evaluator : path_dependent_evaluators) {
         evaluator->notify_initial_state(initial_state);
     }
+#ifndef NDEBUG
+    search_space_drawer.set_initial_state(initial_state);
+#endif
 
     /*
       Note: we consider the initial state as reached by a preferred
@@ -119,6 +128,9 @@ SearchStatus EagerSearch::step() {
     while (true) {
         if (open_list->empty()) {
             log << "Completely explored state space -- no solution!" << endl;
+#ifndef NDEBUG
+            search_space_drawer.draw_search_space(task);
+#endif
             return FAILED;
         }
         StateID id = open_list->remove_min();
@@ -176,8 +188,12 @@ SearchStatus EagerSearch::step() {
     }
 
     const State &s = node->get_state();
-    if (check_goal_and_set_plan(s))
+    if (check_goal_and_set_plan(s)) {
+#ifndef NDEBUG
+        search_space_drawer.draw_search_space(task);
+#endif
         return SOLVED;
+    }
 
     //TODO: Right now the pruned nodes are actually closed. Perhaps we should set the state of the node to pruned?
     if(pruning_method->prune_state(s, node->get_info())) {
@@ -216,6 +232,9 @@ SearchStatus EagerSearch::step() {
         for (Evaluator *evaluator : path_dependent_evaluators) {
             evaluator->notify_state_transition(s, op_id, succ_state);
         }
+#ifndef NDEBUG
+        search_space_drawer.add_successor(s, op, succ_state);
+#endif
 
         // Previously encountered dead end. Don't re-evaluate.
         if (succ_node.is_dead_end())
@@ -235,6 +254,9 @@ SearchStatus EagerSearch::step() {
             EvaluationContext succ_eval_context(
                 succ_state, succ_g, is_preferred, &statistics);
             statistics.inc_evaluated_states();
+#ifndef NDEBUG
+            search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_g);
+#endif
 
             if (open_list->is_dead_end(succ_eval_context)) {
                 succ_node.mark_as_dead_end();
@@ -254,7 +276,10 @@ SearchStatus EagerSearch::step() {
                 succ_node.update_open_node_parent(
                     *node, op, get_adjusted_cost(op));
                 EvaluationContext succ_eval_context(
-                    succ_state, succ_node.get_g(), is_preferred, &statistics);
+                succ_state, succ_node.get_g(), is_preferred, &statistics);
+#ifndef NDEBUG
+                search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_node.get_g());
+#endif
                 open_list->insert(succ_eval_context, succ_state.get_id());
             } else if (succ_node.is_closed() && reopen_closed_nodes) {
                 /*
@@ -266,8 +291,10 @@ SearchStatus EagerSearch::step() {
                 */
                 statistics.inc_reopened();
                 succ_node.reopen_closed_node(*node, op, get_adjusted_cost(op));
-                EvaluationContext succ_eval_context(
-                    succ_state, succ_node.get_g(), is_preferred, &statistics);
+                EvaluationContext succ_eval_context(succ_state, succ_node.get_g(), is_preferred, &statistics);
+#ifndef NDEBUG
+                search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_node.get_g());
+#endif
                 open_list->insert(succ_eval_context, succ_state.get_id());
             } else {
                 /*

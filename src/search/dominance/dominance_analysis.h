@@ -8,13 +8,13 @@ namespace fts {
 }
 
 namespace dominance {
-    class FactoredDominanceRelation;
+    class StateDominanceRelation;
 
     class DominanceAnalysis {
     public:
         virtual ~DominanceAnalysis() = default;
 
-        virtual std::unique_ptr<FactoredDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) = 0;
+        virtual std::unique_ptr<StateDominanceRelation> compute_dominance_relation(const fts::FTSTask &task) = 0;
     };
 
 }

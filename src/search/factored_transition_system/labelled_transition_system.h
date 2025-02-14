@@ -7,16 +7,18 @@
 #include <string>
 #include <algorithm>    // std::find
 #include <cassert>
+#include <generator>
 #include <ranges>
-#include <iostream>
+#include <memory>
+
+class AbstractTask;
 
 namespace merge_and_shrink {
     class TransitionSystem;
 }
 
 namespace fts {
-
-
+    class FactValueNames;
     typedef int AbstractStateRef;
 
     class LabelMap;
@@ -49,7 +51,11 @@ namespace fts {
             return group == -1;
         }
     };
+}
 
+
+
+namespace fts {
     class LTSTransition {
     public:
         AbstractStateRef src, target;
@@ -114,21 +120,26 @@ namespace fts {
     class LabelledTransitionSystem {
         //Duplicated from abstraction
         int num_states;
+        int num_labels;
         std::vector<bool> goal_states;
         AbstractStateRef init_state;
-        std::vector<int> relevant_labels;
+        std::vector<LabelGroup> relevant_label_groups;
+        std::vector<bool> label_group_is_relevant;
         std::vector<int> goal_distances; // TODO: Possibly unify with merge_and_shrink::Distances
 
 
         std::vector<std::vector<int> > label_groups;
         std::vector<LabelGroup> label_group_of_label; //TODO: Make a map to avoid representing irrelevant labels explicitly?
-        std::vector<std::string> name_states;
         std::vector<LTSTransition> transitions;
         std::vector<std::vector<LTSTransition> > transitions_src;
         std::vector<std::vector<TSTransition> > transitions_label_group;
 
+
+        bool is_self_loop_everywhere_label_group(LabelGroup lg) const;
+
     public:
-        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap);
+        std::shared_ptr<FactValueNames> fact_value_names;
+        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, std::shared_ptr<FactValueNames> fact_value_names);
 
         ~LabelledTransitionSystem() {}
 
@@ -141,7 +152,7 @@ namespace fts {
         }
 
         bool is_goal(int state) const {
-            return goal_states[state];
+            return goal_states.at(state);
         }
 
         inline int size() const {
@@ -168,33 +179,26 @@ namespace fts {
             return transitions_label_group[label_group.group];
         }
 
-        const std::vector<std::string> &get_names() const {
-            return name_states;
-        }
+        [[nodiscard]] std::string state_name(int s) const;
 
-        const std::string &name(int s) const {
-            return name_states[s];
-        }
+        [[nodiscard]] std::string label_name(int label) const;
 
-        int get_initial_state() const {
-            return init_state;
-        }
+        [[nodiscard]] std::string label_group_name(const LabelGroup& lg) const;
 
         bool is_relevant_label(int label) const {
-            /*
-            bool is_irrelevant_label_group = abs_tr.size() == (size_t)num_states && std::ranges::all_of(abs_tr,[](const auto & tr) {
-                return tr.src == tr.target;
-            });
-*/
-            //TODO (efficiency): Improve how irrelevant labels are handled.
-            return std::find(relevant_labels.begin(), relevant_labels.end(), label) != relevant_labels.end();
+            return is_relevant_label_group(label_group_of_label.at(label));
         }
 
-        bool is_self_loop_everywhere_label(int label) const;
+        bool is_relevant_label_group(const LabelGroup &label_group) const {
+            return label_group_is_relevant.at(label_group.group);
+        }
 
+        const std::vector<LabelGroup>& get_relevant_label_groups() const {
+            return relevant_label_groups;
+        }
 
-        const std::vector<int> &get_relevant_labels() const {
-            return relevant_labels;
+        AbstractStateRef get_initial_state() const {
+            return init_state;
         }
 
         //For each transition labelled with l, applya a function. If returns true, applies a break
@@ -204,6 +208,10 @@ namespace fts {
                 if (f(tr)) return true;
             }
             return false;
+        }
+
+        [[nodiscard]] const std::vector<std::vector<int>>& get_label_groups() const {
+            return label_groups;
         }
 
         const std::vector<int> &get_labels(LabelGroup label_group) const {
@@ -218,11 +226,16 @@ namespace fts {
             return label_groups.size();
         }
 
+        int get_num_labels() const {
+            return num_labels;
+        }
+
         const std::vector<LabelGroup> &get_group_of_label() const {
             return label_group_of_label;
         }
 
         void dump() const;
+        bool irrelevant_label_group(LabelGroup lg) const;
 
 
         auto get_irrelevant_labels() const {
@@ -234,4 +247,6 @@ namespace fts {
         }
     };
 }
+
+
 #endif

@@ -147,6 +147,7 @@ create_fast_downward_library(
         utils/system_windows
         utils/timer
         utils/tuples
+        utils/graphviz
     CORE_LIBRARY
 )
 # On Linux, find the rt library for clock_gettime().
@@ -561,7 +562,7 @@ if(USE_LP)
         target_sources(lp_solver INTERFACE lp/cplex_solver_interface.h lp/cplex_solver_interface.cc)
     endif()
 
-    find_package(soplex 7.1.0 QUIET)
+    find_package(soplex 7.1.0)
     if (SOPLEX_FOUND)
         message(STATUS "Found SoPlex: ${SOPLEX_INCLUDE_DIRS}")
         target_link_libraries(lp_solver INTERFACE libsoplex)
@@ -886,6 +887,8 @@ create_fast_downward_library(
         operator_counting/operator_counting_heuristic
         operator_counting/pho_constraints
         operator_counting/state_equation_constraints
+        operator_counting/contrastive_landmarks
+        operator_counting/factored_constraints
     DEPENDS lp_solver landmark_cut_heuristic pdbs task_properties
 )
 
@@ -997,7 +1000,9 @@ create_fast_downward_library(
         factored_transition_system/fts_task_factory
         factored_transition_system/label_map
         factored_transition_system/labelled_transition_system
-        factored_transition_system/symbolic_state_mapping.h
+        factored_transition_system/draw_fts
+        factored_transition_system/fact_names
+        factored_transition_system/symbolic_state_mapping
         DEPENDENCY ONLY
         DEPENDS
         mas_heuristic
@@ -1008,17 +1013,54 @@ create_fast_downward_library(
         HELP "Dominance Analysis techniques"
         SOURCES
         dominance/dominance_analysis
-        dominance/factored_dominance_relation
+        dominance/state_dominance_relation
         dominance/label_relation
+        dominance/dense_label_relation
+        dominance/label_relation_noop.h
         dominance/ld_simulation
-        dominance/local_state_relation
+        dominance/factor_dominance_relation
+        dominance/dense_factor_relation
         dominance/dominance_relation_bdd
-        #dominance/label_relation_identity
-        #dominance/label_relation_noop
+        dominance/all_none_factor_index
+        dominance/sparse_factor_relation
+        dominance/label_group_relation
+        dominance/label_grouped_label_relation
+#        dominance/label_relation_identity
+#        dominance/label_relation_noop
         DEPENDS
         factored_transition_system
+        symbolic
 )
 
+create_fast_downward_library(
+        NAME g_dependent_operator_counting
+        HELP "Operator counting heuristic that uses the g-value of nodes"
+        SOURCES
+        operator_counting/g_dependent_operator_counting_heuristic
+        DEPENDS
+        operator_counting
+)
+
+create_fast_downward_library(
+        NAME qualified_dominance
+        HELP "Qualified Dominance Analysis techniques"
+        SOURCES
+        operator_counting/qualified_dominance_constraints
+        qualified_dominance/nfa_merge_non_differentiable
+        DEPENDS
+        dominance
+        factored_transition_system
+        g_dependent_operator_counting
+)
+
+create_fast_downward_library(
+    NAME search_space_draw
+    HELP "Draws the search space"
+    SOURCES
+    utils/search_space_draw
+    DEPENDS
+    eager_search
+)
 
 create_fast_downward_library(
         NAME dominance_pruning
@@ -1036,6 +1078,7 @@ create_fast_downward_library(
         dominance_pruning/database_test
         DEPENDS
         dominance
+        symbolic
 )
 
 
@@ -1149,22 +1192,59 @@ create_fast_downward_library(
 # TODO: partial grounding
 # TODO: pruning rules ILP bad actions
 
-# If any enabled plugin requires the CUDD library, compile with it.
-# If CUDD is not installed, the planner will still compile, but
-# using components that depend on CUDD will cause an error.
-# This behavior can be overwritten by setting the
-# option USE_CUDD to false.
-option(USE_CUDD  "Compile with support for CUDD if installed on this system." TRUE)
+set(CMAKE_CXX_FLAGS_DEBUG "-O0")
 
-if(USE_CUDD) #PLUGIN_SYMBOLIC_ENABLED AND
-    find_package(Cudd)
-    if(Cudd_FOUND)
-        target_compile_definitions(symbolic INTERFACE USE_CUDD)
-        include_directories(${CUDD_INCLUDE_DIRS})
-        target_link_libraries(symbolic INTERFACE ${CUDD_LIBRARIES})
-        #set(CMAKE_CXX_FLAGS_DEBUG "-O3") # need to exclude the -D_GLIBCXX_DEBUG flag for CUDD
-    endif()
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
 endif()
+
+
+include(ExternalProject)
+
+ExternalProject_Add(cudd
+        GIT_REPOSITORY https://github.com/alvaro-torralba/cudd
+        GIT_TAG release
+        PATCH_COMMAND
+            COMMAND sed -i "/if HAVE_DOXYGEN/,/endif/c\\html/index.html:" Makefile.am
+        PREFIX ${CMAKE_BINARY_DIR}/cudd
+        CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS=-std=c++98\ -w --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
+        CMAKE_ARGS -DCMAKE_MAKE_PROGRAM=$(MAKE)
+        BUILD_COMMAND make HAVE_DOXYGEN=0
+        INSTALL_COMMAND make install
+        BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
+        BUILD_IN_SOURCE 1
+        UPDATE_COMMAND ""
+)
+
+add_dependencies(qualified_dominance cudd)
+
+include_directories(SYSTEM ${CMAKE_BINARY_DIR}/cudd/include)
+link_directories(${CMAKE_BINARY_DIR}/cudd/lib)
+
+target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a)
+
+
+ExternalProject_Add(mata
+    GIT_REPOSITORY https://github.com/VeriFIT/mata
+    GIT_TAG 1.6.9
+    PREFIX ${CMAKE_BINARY_DIR}/mata
+    PATCH_COMMAND
+        COMMAND sed -i "s/CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME/false/g" CMakeLists.txt
+    BUILD_COMMAND cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/mata && cmake --build build --parallel -j 18
+    INSTALL_COMMAND cd build && make install
+    BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/mata/lib/libmata.a
+    BUILD_IN_SOURCE 1
+    UPDATE_COMMAND ""
+)
+
+add_dependencies(qualified_dominance mata)
+
+include_directories(SYSTEM ${CMAKE_BINARY_DIR}/mata/include)
+link_directories(${CMAKE_BINARY_DIR}/mata/lib)
+
+target_link_libraries(qualified_dominance INTERFACE ${CMAKE_BINARY_DIR}/mata/lib/libmata.a)
+
+
 
 find_package(Boost)
 if(Boost_FOUND)

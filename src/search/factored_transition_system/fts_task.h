@@ -12,6 +12,7 @@ namespace merge_and_shrink {
 }
 
 namespace fts {
+    class FactNames;
     // This is very similar to the merge_and_shrink::FactoredTransitionSystem
     // However, the idea is that here, we have a "clean" unmutable version of the representation.
     // Specifically, we do not have "non-active" labels, or transition_systems, so all IDs are set from 0 to n-1.
@@ -25,7 +26,7 @@ namespace fts {
     class FTSTask : public AbstractTask {
         // The abstract task that was used to generate this task. This is optional.
         // For now just used to preserve fact and action names, whenever they match
-        const std::shared_ptr<AbstractTask> parent;
+        std::shared_ptr<FactNames> fact_names;
 
         std::vector<int> label_costs;
         std::vector<std::unique_ptr<LabelledTransitionSystem>> transition_systems;
@@ -33,7 +34,7 @@ namespace fts {
 
     public:
         FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts);
-        FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts, const std::shared_ptr<AbstractTask> parent);
+        FTSTask(const merge_and_shrink::FactoredTransitionSystem & fts, const std::shared_ptr<AbstractTask>& parent);
 
 
         int get_num_labels() const;

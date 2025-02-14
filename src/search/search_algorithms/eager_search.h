@@ -3,6 +3,7 @@
 
 #include "../open_list.h"
 #include "../search_algorithm.h"
+#include "../utils/search_space_draw.h"
 
 #include <memory>
 #include <vector>
@@ -27,6 +28,10 @@ class EagerSearch : public SearchAlgorithm {
     std::shared_ptr<Evaluator> lazy_evaluator;
 
     std::shared_ptr<PruningMethod> pruning_method;
+
+#ifndef NDEBUG
+    utils::SearchSpaceDrawer search_space_drawer;
+#endif
 
     void start_f_value_statistics(EvaluationContext &eval_context);
     void update_f_value_statistics(EvaluationContext &eval_context);

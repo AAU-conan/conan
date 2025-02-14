@@ -85,7 +85,7 @@ def get_build_path(config_name):
 def try_run(cmd):
     print(f'Executing command "{" ".join(cmd)}"')
     try:
-        subprocess.check_call(cmd)
+        subprocess.check_output(cmd)
     except OSError as exc:
         if exc.errno == errno.ENOENT:
             print(f"Could not find '{cmd[0]}' on your PATH. For installation instructions, "
