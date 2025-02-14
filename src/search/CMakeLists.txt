@@ -1032,6 +1032,14 @@ create_fast_downward_library(
         symbolic
 )
 
+create_fast_downward_library(
+        NAME g_dependent_operator_counting
+        HELP "Operator counting heuristic that uses the g-value of nodes"
+        SOURCES
+        operator_counting/g_dependent_operator_counting_heuristic
+        DEPENDS
+        operator_counting
+)
 
 create_fast_downward_library(
         NAME qualified_dominance
@@ -1042,6 +1050,7 @@ create_fast_downward_library(
         DEPENDS
         dominance
         factored_transition_system
+        g_dependent_operator_counting
 )
 
 create_fast_downward_library(
