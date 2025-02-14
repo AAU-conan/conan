@@ -9,7 +9,6 @@
 #include "../utils/markup.h"
 
 using std::vector;
-using merge_and_shrink::TransitionSystem;
 
 namespace dominance {
     std::unique_ptr<StateDominanceRelation> LDSimulation::compute_dominance_relation(const fts::FTSTask &task) {

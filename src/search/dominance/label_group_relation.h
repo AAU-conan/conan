@@ -3,10 +3,13 @@
 #include <unordered_set>
 #include <vector>
 
-#include "../factored_transition_system/labelled_transition_system.h"
-
 #include <mata/utils/utils.hh>
 
+
+namespace fts {
+    class LabelGroup;
+    class LabelledTransitionSystem;
+}
 
 using namespace fts;
 
@@ -19,9 +22,7 @@ namespace std {
     template <>
     struct hash<fts::LabelGroup>
     {
-        std::size_t operator()(const fts::LabelGroup& lg) const noexcept {
-            return std::hash<int>()(lg.group);
-        }
+        std::size_t operator()(const fts::LabelGroup& lg) const noexcept;
     };
 }
 

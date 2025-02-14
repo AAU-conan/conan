@@ -6,7 +6,7 @@
 #include <print>
 
 #include "label_group_relation.h"
-#include "sparse_local_state_relation.h"
+#include "sparse_factor_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
 #include "../plugins/plugin.h"
@@ -46,7 +46,7 @@ namespace dominance {
         });
     }
 
-    bool LabelGroupedLabelRelation::update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) {
+    bool LabelGroupedLabelRelation::update_factor(int factor, const fts::FTSTask& /*fts_task*/, const FactorDominanceRelation& sim) {
         return label_group_simulation_relations.at(factor).update(sim);
     }
 

@@ -1,4 +1,6 @@
 #include "draw_fts.h"
+
+#include "fact_names.h"
 #include "../utils/graphviz.h"
 #include "fts_task.h"
 
@@ -21,7 +23,7 @@ namespace fts {
                     }
                 }
                 for (const auto& [t, ls] : state_labels) {
-                    graph.add_edge(state_to_node[s], state_to_node[t], lts->fact_value_names.get_common_operators_name(ls));
+                    graph.add_edge(state_to_node[s], state_to_node[t], lts->fact_value_names->get_common_operators_name(ls));
                 }
             }
         }

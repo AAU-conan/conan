@@ -1,26 +1,21 @@
-#include "sparse_local_state_relation.h"
+#include "sparse_factor_relation.h"
 
 #include "../factored_transition_system/labelled_transition_system.h"
-#include "../merge_and_shrink/transition_system.h"
 #include "../utils/logging.h"
 #include "../plugins/plugin.h"
 
 #include <utility>
 
 using namespace std;
-using merge_and_shrink::TransitionSystem;
 using fts::LabelledTransitionSystem;
 
 namespace dominance {
-    int SparseLocalStateRelation::num_simulations() const {
+    int SparseFactorRelation::num_simulations() const {
         return simulations.size();
     }
 
-    void SparseLocalStateRelation::cancel_simulation_computation() {
-        simulations.clear();
-    }
-
-    SparseLocalStateRelation::SparseLocalStateRelation(const LabelledTransitionSystem& lts) : FactorDominanceRelation(lts.size()) {
+    SparseFactorRelation::SparseFactorRelation(const LabelledTransitionSystem& lts) :
+        FactorDominanceRelation(lts.size()), simulations() {
         // Add all pairs that satisfy the goal condition
         for (int s = 0; s < lts.size(); ++s) {
             for (int t = 0; t < lts.size(); ++t) {
@@ -32,15 +27,15 @@ namespace dominance {
         }
     }
 
-    bool SparseLocalStateRelation::simulates(int t, int s) const {
+    bool SparseFactorRelation::simulates(int t, int s) const {
         return s == t || simulations.contains({t, s});
     }
 
-    bool SparseLocalStateRelation::similar(int s, int t) const {
+    bool SparseFactorRelation::similar(int s, int t) const {
         return simulates(s, t) && simulates(t, s);
     }
 
-    bool SparseLocalStateRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
+    bool SparseFactorRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
         for (const auto& [s, t] : simulations) {
             if (f(s, t))
                 return true;
@@ -48,11 +43,11 @@ namespace dominance {
         return false;
     }
 
-    bool SparseLocalStateRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
+    bool SparseFactorRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
         return 0 < erase_if(simulations, [f](std::pair<int,int> p) { return f(p.first, p.second); });
     }
 
-    using SparseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<SparseLocalStateRelation>;
+    using SparseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<SparseFactorRelation>;
     class SparseLocalStateRelationFactoryFeature final : public plugins::TypedFeature<FactorDominanceRelationFactory, SparseLocalStateRelationFactory> {
     public:
         SparseLocalStateRelationFactoryFeature() : TypedFeature("sparse_fdr") {

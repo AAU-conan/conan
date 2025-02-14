@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include "fact_names.h"
 #include "../utils/system.h"
 #include "labelled_transition_system.h"
 #include "../merge_and_shrink/factored_transition_system.h"
@@ -14,7 +15,7 @@ namespace fts {
 
         LabelMap label_map (fts.get_labels());
         for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, *get_debug_or_release_fact_value_names(fact_names, ts)));
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, get_debug_or_release_fact_value_names(fact_names, ts)));
         }
 
         label_costs.resize(label_map.get_num_labels());
@@ -29,7 +30,7 @@ namespace fts {
 
         LabelMap label_map (fts.get_labels());
         for (const auto & ts : fts) {
-            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, *get_debug_or_release_fact_value_names(fact_names, ts)));
+            transition_systems.push_back(std::make_unique<LabelledTransitionSystem>(fts.get_transition_system(ts), label_map, get_debug_or_release_fact_value_names(fact_names, ts)));
         }
 
         label_costs.resize(label_map.get_num_labels());

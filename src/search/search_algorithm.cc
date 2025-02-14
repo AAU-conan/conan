@@ -17,8 +17,6 @@
 #include <iostream>
 #include <limits>
 
-#include "utils/search_space_draw.h"
-
 using namespace std;
 using utils::ExitCode;
 

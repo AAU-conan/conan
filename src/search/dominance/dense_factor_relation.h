@@ -1,5 +1,5 @@
-#ifndef DOMINANCE_DENSE_DOMINANCE_RELATION_H
-#define DOMINANCE_DENSE_DOMINANCE_RELATION_H
+#ifndef DOMINANCE_DENSE_FACTOR_RELATION_H
+#define DOMINANCE_DENSE_FACTOR_RELATION_H
 
 #include <vector>
 
@@ -10,18 +10,13 @@ namespace dominance {
      * DenseLocalStateRelation represents the simulation relation between states in a single LTS. It is implemented as a
      * dense matrix. An N x N matrix for the N states in the LTS, representing when one state simulates another.
      */
-    class DenseDominanceRelation final : public FactorDominanceRelation {
+    class DenseFactorRelation final : public FactorDominanceRelation {
     protected:
         // Relations between states. relation[s][t] is true if s simulates t.
         std::vector<std::vector<bool> > relation;
 
-        // Vectors of states dominated/dominating by each state. Lazily computed when needed.
-        std::vector<std::vector<int>> dominated_states, dominating_states;
-        void compute_list_dominated_states();
     public:
-        explicit DenseDominanceRelation(const fts::LabelledTransitionSystem& lts);
-
-        void cancel_simulation_computation() override;
+        explicit DenseFactorRelation(const fts::LabelledTransitionSystem& lts);
 
         void remove(int s, int t) {
             relation[s][t] = false;

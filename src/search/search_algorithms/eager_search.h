@@ -16,12 +16,6 @@ namespace plugins {
 class Feature;
 }
 
-#ifndef NDEBUG
-namespace utils {
-    class SearchSpaceDrawer;
-}
-#endif
-
 namespace eager_search {
 class EagerSearch : public SearchAlgorithm {
     const bool reopen_closed_nodes;

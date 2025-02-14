@@ -5,7 +5,6 @@
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../factored_transition_system/fts_task.h"
 #include "../utils/logging.h"
-#include "../merge_and_shrink/labels.h"
 #include "../factored_transition_system/label_map.h"
 #include "../plugins/plugin.h"
 

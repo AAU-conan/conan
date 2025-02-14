@@ -123,3 +123,6 @@ bool LabelGroupSimulationRelation::update(const FactorDominanceRelation &sim) {
   return changes;
 }
 } // namespace dominance
+std::size_t std::hash<LabelGroup>::operator()(const fts::LabelGroup& lg) const noexcept {
+  return std::hash<int>()(lg.group);
+}

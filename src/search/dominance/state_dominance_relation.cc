@@ -3,13 +3,10 @@
 #include "factor_dominance_relation.h"
 #include "label_relation.h"
 #include "../task_proxy.h"
-#include "../merge_and_shrink/transition_system.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../utils/logging.h"
 
 using namespace std;
-
-using merge_and_shrink::TransitionSystem;
 
 namespace dominance {
 

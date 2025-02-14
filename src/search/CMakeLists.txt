@@ -1019,10 +1019,10 @@ create_fast_downward_library(
         dominance/label_relation_noop.h
         dominance/ld_simulation
         dominance/factor_dominance_relation
-        dominance/dense_dominance_relation
+        dominance/dense_factor_relation
         dominance/dominance_relation_bdd
         dominance/all_none_factor_index
-        dominance/sparse_local_state_relation
+        dominance/sparse_factor_relation
         dominance/incremental_ld_simulation
         dominance/label_group_relation
         dominance/label_grouped_label_relation

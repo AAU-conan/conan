@@ -9,7 +9,6 @@
 #include "../plugins/plugin.h"
 
 using std::vector;
-using merge_and_shrink::TransitionSystem;
 
 using namespace dominance;
 
@@ -52,8 +51,9 @@ namespace dominance {
             std::vector<long> changed_factors;
             for (auto [factor, local_relation] : std::views::enumerate(local_relations)) {
                 bool factor_changes = update_local_relation(static_cast<int>(factor), task, *label_relation,  *local_relation);
-                if (factor_changes)
+                if (factor_changes) {
                     changed_factors.push_back(factor);
+                }
             }
             changes = false;
             for (long factor : changed_factors) {

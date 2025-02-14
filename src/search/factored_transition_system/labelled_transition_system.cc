@@ -1,5 +1,7 @@
 #include "labelled_transition_system.h"
 
+#include <utility>
+
 #include "fact_names.h"
 #include "label_map.h"
 #include "../merge_and_shrink/transition_system.h"
@@ -10,7 +12,7 @@ using namespace std;
 namespace fts {
     LabelledTransitionSystem::LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &ts,
                                                        const LabelMap &labelMap,
-                                                       FactValueNames fact_value_names) :
+                                                       std::shared_ptr<FactValueNames> fact_value_names) :
             num_states(ts.get_size()), num_labels(labelMap.get_num_labels()), goal_states(ts.get_goal_states()), init_state(ts.get_init_state()), fact_value_names(std::move(fact_value_names)) {
 
         label_group_of_label.resize(num_labels, LabelGroup(-1));
@@ -53,6 +55,18 @@ namespace fts {
                 label_group_is_relevant[lg_i] = true;
             }
         }
+    }
+
+    std::string LabelledTransitionSystem::state_name(int s) const {
+        return fact_value_names->get_fact_value_name(s);
+    }
+
+    std::string LabelledTransitionSystem::label_name(int label) const {
+        return fact_value_names->get_operator_name(label, false);
+    }
+
+    std::string LabelledTransitionSystem::label_group_name(const LabelGroup& lg) const {
+        return fact_value_names->get_common_operators_name(get_labels(lg));
     }
 
     void LabelledTransitionSystem::dump() const {

@@ -11,8 +11,6 @@
 #include <ranges>
 #include <memory>
 
-#include "fact_names.h"
-
 class AbstractTask;
 
 namespace merge_and_shrink {
@@ -20,6 +18,7 @@ namespace merge_and_shrink {
 }
 
 namespace fts {
+    class FactValueNames;
     typedef int AbstractStateRef;
 
     class LabelMap;
@@ -139,8 +138,8 @@ namespace fts {
         bool is_self_loop_everywhere_label_group(LabelGroup lg) const;
 
     public:
-        FactValueNames fact_value_names;
-        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, FactValueNames fact_value_names);
+        std::shared_ptr<FactValueNames> fact_value_names;
+        LabelledTransitionSystem(const merge_and_shrink::TransitionSystem &abs, const LabelMap &labelMap, std::shared_ptr<FactValueNames> fact_value_names);
 
         ~LabelledTransitionSystem() {}
 
@@ -180,17 +179,11 @@ namespace fts {
             return transitions_label_group[label_group.group];
         }
 
-        [[nodiscard]] std::string state_name(int s) const {
-            return fact_value_names.get_fact_value_name(s);
-        }
+        [[nodiscard]] std::string state_name(int s) const;
 
-        [[nodiscard]] std::string label_name(int label) const {
-            return fact_value_names.get_operator_name(label, false);
-        }
+        [[nodiscard]] std::string label_name(int label) const;
 
-        [[nodiscard]] std::string label_group_name(const LabelGroup& lg) const {
-            return fact_value_names.get_common_operators_name(get_labels(lg));
-        }
+        [[nodiscard]] std::string label_group_name(const LabelGroup& lg) const;
 
         bool is_relevant_label(int label) const {
             return is_relevant_label_group(label_group_of_label.at(label));

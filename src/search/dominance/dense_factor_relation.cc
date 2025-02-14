@@ -1,9 +1,9 @@
-#include "dense_dominance_relation.h"
+#include "dense_factor_relation.h"
 #include "../factored_transition_system/labelled_transition_system.h"
 #include "../plugins/plugin.h"
 
 namespace dominance {
- bool DenseDominanceRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
+ bool DenseFactorRelation::apply_to_simulations_until(std::function<bool(int s, int t)>&& f) const {
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
                 if (simulates(s, t) && f(s, t)) {
@@ -14,7 +14,7 @@ namespace dominance {
         return false;
     }
 
-    bool DenseDominanceRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
+    bool DenseFactorRelation::remove_simulations_if(std::function<bool(int s, int t)>&& f) {
         bool any = false;
         for (int s = 0; s < static_cast<int>(relation.size()); ++s) {
             for (int t = 0; t < static_cast<int>(relation.size()); ++t) {
@@ -28,26 +28,8 @@ namespace dominance {
     }
 
 
-    void DenseDominanceRelation::compute_list_dominated_states() {
-        dominated_states.resize(relation.size());
-        dominating_states.resize(relation.size());
-
-        for (size_t s = 0; s < relation.size(); ++s) {
-            for (size_t t = 0; t < relation.size(); ++t) {
-                if (simulates(t, s)) {
-                    dominated_states[t].push_back(s);
-                    dominating_states[s].push_back(t);
-                }
-            }
-        }
-    }
-
-    void DenseDominanceRelation::cancel_simulation_computation() {
-        std::vector<std::vector<bool> >().swap(relation);
-    }
-
-    DenseDominanceRelation::DenseDominanceRelation(const fts::LabelledTransitionSystem& lts) : FactorDominanceRelation(lts.size()),
-        relation(lts.size(), std::vector<bool>(lts.size(), true)) {
+    DenseFactorRelation::DenseFactorRelation(const fts::LabelledTransitionSystem& lts) : FactorDominanceRelation(lts.size()),
+                                                                                         relation(lts.size(), std::vector<bool>(lts.size(), true)) {
         int num_states = lts.size();
         const std::vector<bool> &goal_states = lts.get_goal_states();
         const std::vector<int> &goal_distances = lts.get_goal_distances();
@@ -66,7 +48,7 @@ namespace dominance {
     }
 
 
-    using DenseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<DenseDominanceRelation>;
+    using DenseLocalStateRelationFactory = FactorDominanceRelationFactoryImpl<DenseFactorRelation>;
     class DenseLocalStateRelationFactoryFeature final : public plugins::TypedFeature<FactorDominanceRelationFactory, DenseLocalStateRelationFactory> {
     public:
         DenseLocalStateRelationFactoryFeature() : TypedFeature("dense_fdr") {

@@ -1,7 +1,8 @@
-#ifndef DOMINANCE_SPARSE_LOCAL_STATE_RELATION_H
-#define DOMINANCE_SPARSE_LOCAL_STATE_RELATION_H
+#ifndef DOMINANCE_SPARSE_FACTOR_RELATION_H
+#define DOMINANCE_SPARSE_FACTOR_RELATION_H
 
 #include <unordered_set>
+#include <boost/functional/hash/hash.hpp>
 
 #include "factor_dominance_relation.h"
 
@@ -23,14 +24,13 @@ using TransitionIndex = size_t;
 TransitionIndex constexpr NOOP_TRANSITION = -1;
 
 // First implementation of a simulation relation.
-class SparseLocalStateRelation final : public FactorDominanceRelation {
+class SparseFactorRelation final : public FactorDominanceRelation {
 public:
   // For each state, the set of states that it simulates
-  std::unordered_set<std::pair<int, int>> simulations;
+  std::unordered_set<std::pair<int, int>,boost::hash<std::pair<int,int>>> simulations;
 
-  void cancel_simulation_computation() override;
 
-  explicit SparseLocalStateRelation(const fts::LabelledTransitionSystem &lts);
+  explicit SparseFactorRelation(const fts::LabelledTransitionSystem &lts);
 
   void print_simulations() const;
 

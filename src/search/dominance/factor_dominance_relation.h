@@ -1,17 +1,10 @@
 #ifndef DOMINANCE_LOCAL_STATE_RELATION_H
 #define DOMINANCE_LOCAL_STATE_RELATION_H
 
-#include <vector>
-#include <string>
-#include <iostream>
 #include <memory>
+#include <functional>
 
-#include "../factored_transition_system/labelled_transition_system.h"
 #include "../utils/logging.h"
-
-namespace merge_and_shrink{
-    class TransitionSystem;
-}
 
 namespace fts {
     class LabelledTransitionSystem;
@@ -43,8 +36,6 @@ namespace dominance {
         [[nodiscard]] virtual int num_simulations() const;
 
         [[nodiscard]] virtual int num_different_states() const;
-
-        virtual void cancel_simulation_computation() = 0;
 
         /**
          * Apply a function to simulations until the function returns true.

@@ -12,6 +12,7 @@ namespace merge_and_shrink {
 }
 
 namespace fts {
+    class FactNames;
     // This is very similar to the merge_and_shrink::FactoredTransitionSystem
     // However, the idea is that here, we have a "clean" unmutable version of the representation.
     // Specifically, we do not have "non-active" labels, or transition_systems, so all IDs are set from 0 to n-1.

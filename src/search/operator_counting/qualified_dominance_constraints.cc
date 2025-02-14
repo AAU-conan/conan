@@ -10,6 +10,7 @@
 #include "../dominance/label_relation.h"
 #include "../dominance/dominance_analysis.h"
 #include "../dominance/state_dominance_relation.h"
+#include "../factored_transition_system/fact_names.h"
 
 #include <print>
 
@@ -282,7 +283,7 @@ namespace operator_counting {
                 }
             }
             for (const auto& [t, labels] : state_labels) {
-                g.add_edge(s, t, lts.fact_value_names.get_common_operators_name(labels));
+                g.add_edge(s, t, lts.fact_value_names->get_common_operators_name(labels));
             }
         }
 

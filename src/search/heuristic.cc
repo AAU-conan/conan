@@ -12,8 +12,6 @@
 #include <cstdlib>
 #include <limits>
 
-#include "utils/search_space_draw.h"
-
 using namespace std;
 Heuristic::Heuristic(
     const shared_ptr<AbstractTask> &transform,
@@ -81,6 +79,7 @@ EvaluationResult Heuristic::compute_result(EvaluationContext &eval_context) {
     }
 
     assert(heuristic == DEAD_END || heuristic >= 0);
+
     if (heuristic == DEAD_END) {
         /*
           It is permissible to mark preferred operators for dead-end
