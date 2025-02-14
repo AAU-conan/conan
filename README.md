@@ -1,4 +1,4 @@
-# The Rational Planner
+# The ConAn Planner
 
 This planner is a fork of the Fast Downward planner. For the README of Fast Downward that his version is based on see [here](FAST_DOWNWARD_README.md), for the official Fast Downward repository, see <https://github.com/aibasel/downward>. All info on this README pertains to the additions in this fork of the planner.
 
