@@ -99,7 +99,7 @@ namespace operator_counting {
                                 }
                             }
 
-                            if (label_relation.noop_simulates_label_in_all_other(factor, task, s_label)) {
+                            if (label_relation.noop_dominates_label_in_all_other(factor, task, s_label)) {
                                 t_targets.insert(state_pair_to_nfa_state.at(s_tr.target).at(t));
                             }
 

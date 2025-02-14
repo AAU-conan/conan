@@ -23,7 +23,7 @@ namespace dominance {
                         log << std::format("Label {} dominates {} in all other", fts_task.get_factor(i).label_name(l2), fts_task.get_factor(i).label_name(l1)) << std::endl;
                     }
                 }
-                if (noop_simulates_label_in_all_other(i, fts_task, l1)) {
+                if (noop_dominates_label_in_all_other(i, fts_task, l1)) {
                     log << std::format("NOOP dominates {} in all other", fts_task.get_factor(i).label_name(l1)) << std::endl;
                 }
             }

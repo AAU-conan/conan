@@ -33,7 +33,7 @@ namespace dominance {
 
         [[nodiscard]] bool label_dominates_label_in_all_other(int factor, const fts::FTSTask& fts_task, int l1, int l2) const override;
 
-        [[nodiscard]] bool noop_simulates_label_in_all_other(int factor, const fts::FTSTask& fts_task, int l) const override;
+        [[nodiscard]] bool noop_dominates_label_in_all_other(int factor, const fts::FTSTask& fts_task, int l) const override;
 
         bool update_factor(int factor, const fts::FTSTask& fts_task, const FactorDominanceRelation& sim) override;
 

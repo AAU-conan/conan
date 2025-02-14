@@ -42,7 +42,7 @@ namespace dominance {
         return l1 == l2;
     }
 
-    bool NoopLabelRelation::noop_simulates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l) const {
+    bool NoopLabelRelation::noop_dominates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l) const {
         return dominated_by_noop_in[l].contains_all_except(factor);
     }
 

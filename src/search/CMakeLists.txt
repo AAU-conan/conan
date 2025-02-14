@@ -1209,7 +1209,7 @@ ExternalProject_Add(cudd
         PREFIX ${CMAKE_BINARY_DIR}/cudd
         CONFIGURE_COMMAND autoreconf -f -i && ./configure CXXFLAGS=-std=c++98\ -w --enable-dddmp --enable-obj --prefix=${CMAKE_BINARY_DIR}/cudd
         CMAKE_ARGS -DCMAKE_MAKE_PROGRAM=$(MAKE)
-        BUILD_COMMAND make -j 16 HAVE_DOXYGEN=0
+        BUILD_COMMAND make HAVE_DOXYGEN=0
         INSTALL_COMMAND make install
         BUILD_BYPRODUCTS ${CMAKE_BINARY_DIR}/cudd/lib/libcudd.a
         BUILD_IN_SOURCE 1

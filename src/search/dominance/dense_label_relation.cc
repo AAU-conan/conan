@@ -44,7 +44,7 @@ namespace dominance {
         return dominates_in[l1][l2].contains_all_except(factor);
     }
 
-    bool DenseLabelRelation::noop_simulates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l) const {
+    bool DenseLabelRelation::noop_dominates_label_in_all_other(int factor, const fts::FTSTask& /*fts_task*/, int l) const {
         return dominated_by_noop_in[l].contains_all_except(factor);
     }
 

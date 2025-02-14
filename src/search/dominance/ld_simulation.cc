@@ -83,7 +83,7 @@ namespace dominance {
                  //   assert(!labels_trs.empty());
                     for (int labels_tr : labels_trs) {
                         //log << "Checking label " << labels_trs[i] << " to " << trs.target << std::endl;
-                        if (local_relation.simulates(t, trs.target) && label_dominance.noop_simulates_label_in_all_other(lts_id, fts_task, labels_tr)) {
+                        if (local_relation.simulates(t, trs.target) && label_dominance.noop_dominates_label_in_all_other(lts_id, fts_task, labels_tr)) {
                             continue;
                         }
                         bool found =

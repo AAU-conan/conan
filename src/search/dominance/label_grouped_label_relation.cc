@@ -39,7 +39,7 @@ namespace dominance {
         });
     }
 
-    bool LabelGroupedLabelRelation::noop_simulates_label_in_all_other(const int factor, const fts::FTSTask& fts_task, const int l) const {
+    bool LabelGroupedLabelRelation::noop_dominates_label_in_all_other(const int factor, const fts::FTSTask& fts_task, const int l) const {
         return std::ranges::all_of(std::views::iota(0u, fts_task.get_factors().size()), [&](const int& j) {
             const auto& lts = fts_task.get_factor(j);
             return j == factor || noop_simulates_label_group(j, lts.get_group_label(l));
