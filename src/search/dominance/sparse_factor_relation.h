@@ -6,9 +6,6 @@
 
 #include "factor_dominance_relation.h"
 
-namespace merge_and_shrink {
-class TransitionSystem;
-}
 
 namespace fts {
 class FTSTask;
@@ -20,10 +17,8 @@ class LogProxy;
 }
 
 namespace dominance {
-using TransitionIndex = size_t;
-TransitionIndex constexpr NOOP_TRANSITION = -1;
-
 // First implementation of a simulation relation.
+// The relation must be a superset of the identity relation.
 class SparseFactorRelation final : public FactorDominanceRelation {
 public:
   // For each state, the set of states that it simulates

@@ -9,6 +9,8 @@ namespace dominance {
     /**
      * DenseLocalStateRelation represents the simulation relation between states in a single LTS. It is implemented as a
      * dense matrix. An N x N matrix for the N states in the LTS, representing when one state simulates another.
+     *
+     * The relation must be a superset of the identity relation.
      */
     class DenseFactorRelation final : public FactorDominanceRelation {
     protected:

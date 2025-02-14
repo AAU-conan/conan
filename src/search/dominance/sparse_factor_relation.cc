@@ -56,7 +56,7 @@ namespace dominance {
         }
 
         [[nodiscard]] shared_ptr<SparseLocalStateRelationFactory> create_component(
-        const plugins::Options &opts,
+        const plugins::Options &/*opts*/,
         const utils::Context &) const override {
             return plugins::make_shared_from_arg_tuples<SparseLocalStateRelationFactory>();
         }

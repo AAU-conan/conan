@@ -3,15 +3,11 @@
 
 #include <vector>
 #include <memory>
-#include <set>
 
 #include "factor_dominance_relation.h"
 
 class State;
 
-namespace merge_and_shrink {
-    class TransitionSystem;
-}
 namespace utils {
     class LogProxy;
 }
