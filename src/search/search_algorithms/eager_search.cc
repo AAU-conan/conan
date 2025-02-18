@@ -255,7 +255,11 @@ SearchStatus EagerSearch::step() {
                 succ_state, succ_g, is_preferred, &statistics);
             statistics.inc_evaluated_states();
 #ifndef NDEBUG
-            search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_g);
+            if (succ_eval_context.is_evaluator_value_infinite(f_evaluator.get())) {
+                search_space_drawer.set_heuristic_value(succ_state, EvaluationResult::INFTY);
+            } else {
+                search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_g);
+            }
 #endif
 
             if (open_list->is_dead_end(succ_eval_context)) {
@@ -278,7 +282,11 @@ SearchStatus EagerSearch::step() {
                 EvaluationContext succ_eval_context(
                 succ_state, succ_node.get_g(), is_preferred, &statistics);
 #ifndef NDEBUG
-                search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_node.get_g());
+                if (succ_eval_context.is_evaluator_value_infinite(f_evaluator.get())) {
+                    search_space_drawer.set_heuristic_value(succ_state, EvaluationResult::INFTY);
+                } else {
+                    search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_node.get_g());
+                }
 #endif
                 open_list->insert(succ_eval_context, succ_state.get_id());
             } else if (succ_node.is_closed() && reopen_closed_nodes) {
@@ -293,7 +301,11 @@ SearchStatus EagerSearch::step() {
                 succ_node.reopen_closed_node(*node, op, get_adjusted_cost(op));
                 EvaluationContext succ_eval_context(succ_state, succ_node.get_g(), is_preferred, &statistics);
 #ifndef NDEBUG
-                search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_node.get_g());
+                if (succ_eval_context.is_evaluator_value_infinite(f_evaluator.get())) {
+                    search_space_drawer.set_heuristic_value(succ_state, EvaluationResult::INFTY);
+                } else {
+                    search_space_drawer.set_heuristic_value(succ_state, succ_eval_context.get_evaluator_value(f_evaluator.get()) - succ_node.get_g());
+                }
 #endif
                 open_list->insert(succ_eval_context, succ_state.get_id());
             } else {
