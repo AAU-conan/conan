@@ -13,7 +13,6 @@ namespace symbolic {
 
     void SymSolution::getPlan(vector <OperatorID> &path) const {
         assert (path.empty()); //This code should be modified to allow appending things to paths
-        //DEBUG_MSG(cout << "Extract path forward: " << g << endl; );
 
         BDD newCut;
         if (exp_fw) {
@@ -65,11 +64,14 @@ namespace symbolic {
         return hADD;
     }
 
-    void SymSolutionLowerBound::new_solution(const SymSolution &sol) {
+    void SymSolutionLowerBound::new_solution(const SymSolution &sol, utils::LogProxy & log) {
         if (!solution || sol.getCost() < solution->getCost()) {
             solution = sol;
-            //TODO: Remove from here or at least take some other log object
-            utils::g_log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+
+            if (log.is_at_least_normal()) {
+                log << "Solution found with cost " << sol.getCost() << " total time: " << utils::g_timer << endl;
+                log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+            }
 
             for (auto notifier: notifiers) {
                 notifier->notify_solution(sol);
@@ -77,7 +79,7 @@ namespace symbolic {
         }
     }
 
-    void SymSolutionLowerBound::setLowerBound(int lower) {
+    void SymSolutionLowerBound::setLowerBound(int lower, utils::LogProxy & log) {
         // Never set a lower bound greater than the current upper bound
         if (solution) {
             lower = min(lower, solution->getCost());
@@ -85,13 +87,22 @@ namespace symbolic {
 
         if (lower > lower_bound) {
             lower_bound = lower;
-            //TODO: Remove from here or at least take some other log object
-            utils::g_log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+            if (log.is_at_least_normal()) {
+                log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+            }
         }
     }
 
     std::string SymSolutionLowerBound::getUpperBoundString() const {
         if (solution) return std::to_string(solution->getCost());
         else return "infinity";
+    }
+
+    int SymSolutionLowerBound::getUpperBound() const {
+        if (solution) {
+            return solution->getCost();
+        } else {
+            return std::numeric_limits<int>::max();
+        }
     }
 }

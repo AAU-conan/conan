@@ -45,7 +45,7 @@ namespace symbolic {
 
         //TODO: Check against goal to detect cases where the initial state is a goal state
 
-        solution->setLowerBound(getF());
+        solution->setLowerBound(getF(), p.log);
     }
 
     /*
@@ -94,9 +94,8 @@ namespace symbolic {
             //Check the cut (removing states classified, since they do not need to be included in open)
             auto sol = perfectHeuristic->checkCut(closed, generated_states, step_image.new_g(), fw);
             if (sol) {
-                p.log << "Solution found with cost " << sol->getCost() << " total time: " << g_timer << endl;
                 // Solution found :)
-                solution->new_solution(sol.value());
+                solution->new_solution(*sol, p.log);
             }
 
             //TODO: We should reconsider whether the commented out operation makes sense. I don't think so because
@@ -115,7 +114,7 @@ namespace symbolic {
 
         closed->closeUpTo(open_list, maxTime, maxNodes);
 
-        solution->setLowerBound(getF());
+        solution->setLowerBound(getF(), p.log);
 
         stats.step_time += sTime();
         if (!finished()) {

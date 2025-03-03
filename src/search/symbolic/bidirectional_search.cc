@@ -51,7 +51,7 @@ namespace symbolic {
 
     bool BidirectionalSearch::stepImage(utils::Duration maxTime, long maxNodes) {
         bool res = selectBestDirection()->stepImage(maxTime, maxNodes);
-        solution->setLowerBound(getF());
+        solution->setLowerBound(getF(), p.log);
         return res;
     }
 }

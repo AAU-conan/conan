@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include "../utils/logging.h"
+
 class OperatorID;
 
 namespace symbolic {
@@ -16,6 +18,7 @@ namespace symbolic {
         std::shared_ptr<ClosedList> exp_fw, exp_bw;
         int g, h;
         BDD cut;
+
     public:
         SymSolution(std::shared_ptr<SymStateSpaceManager> mgr, std::shared_ptr<ClosedList> exp_fw,
                     std::shared_ptr<ClosedList> exp_bw, int g_val, int h_val, const BDD& S) : mgr(std::move(std::move(mgr))),
@@ -51,13 +54,7 @@ namespace symbolic {
             notifiers.push_back(notifier);
         }
 
-        int getUpperBound() const {
-            if (solution) {
-                return solution->getCost();
-            } else {
-                return std::numeric_limits<int>::max();
-            }
-        }
+        int getUpperBound() const;
 
         int getLowerBound() const {
             return lower_bound;
@@ -71,9 +68,9 @@ namespace symbolic {
             return solution;
         }
 
-        void new_solution(const SymSolution &sol);
+        void new_solution(const SymSolution &sol, utils::LogProxy &log);
 
-        void setLowerBound(int lower);
+        void setLowerBound(int lower, utils::LogProxy &log);
     };
 }
 #endif
