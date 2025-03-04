@@ -59,7 +59,7 @@ namespace symbolic {
             h_val -= op.get_cost();
             s = s.get_unregistered_successor(op);
             sBDD = vars->getStateBDD(s);
-            hADD += hADD = hADD.Minimum(sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val)));
+            hADD = hADD.Minimum(sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val)));
         }
         return hADD;
     }
