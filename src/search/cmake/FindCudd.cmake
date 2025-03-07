@@ -1,4 +1,3 @@
-# TODO check that the right version is installed? Do we need 3.0.0?
 # - Find the CUDD decision diagram library.
 # This code defines the following variables:
 #

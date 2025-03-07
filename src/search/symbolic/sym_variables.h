@@ -27,6 +27,9 @@ namespace variable_ordering {
 }
 
 namespace symbolic {
+    typedef unsigned long long int StateCountType;
+
+
 /*
  * BDD-Variables for a symbolic exploration.
  * This information is global for every class using symbolic search.
@@ -83,10 +86,10 @@ namespace symbolic {
 
         BDD getPartialStateBDD(const std::vector<FactPair> &state) const;
 
-        double numStates(const BDD &bdd) const; //Returns the number of states in a BDD
-        double numStates() const;
+        StateCountType numStates(const BDD &bdd) const; //Returns the number of states in a BDD
+        StateCountType numStates() const;
 
-        double numStates(const DisjunctiveBucket &bucket) const;
+        StateCountType numStates(const DisjunctiveBucket &bucket) const;
 
         BDDManager *get_bdd_manager() const {
             return bdd_manager.get();

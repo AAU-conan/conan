@@ -26,7 +26,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project(conan-plan
-    DESCRIPTION "Conan is a domain-independent classical planning system."
+    DESCRIPTION "Conan is a domain-independent classical planning system based on Fast Downward."
     HOMEPAGE_URL https://homes.cs.aau.dk/~alto/conan.html/)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)

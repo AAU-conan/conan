@@ -1,5 +1,6 @@
 #include "sym_search.h"
 
+#include "sym_solution.h"
 #include "../plugins/options.h"
 #include "../plugins/plugin.h"
 
@@ -10,9 +11,11 @@ using namespace std;
 using utils::g_timer;
 
 namespace symbolic {
-    SymSearch::SymSearch(SymController *eng, const SymParamsSearch &params) :
-            mgr(nullptr), p(params), engine(eng) {}
+    SymSearch::SymSearch(const SymParamsSearch &params, std::shared_ptr<SymStateSpaceManager> mgr, std::shared_ptr<SymSolutionLowerBound> solution) : p(params), mgr(mgr), solution(solution) {}
 
+    bool SymSearch::solved() const {
+        return solution->solved();
+    }
 
     SymParamsSearch::SymParamsSearch(const Options &opts) :
             max_disj_nodes(opts.get<int>("max_disj_nodes")),
@@ -31,6 +34,7 @@ namespace symbolic {
             ratioAllottedNodes(opts.get<double>("ratio_allotted_nodes")),
             non_stop(opts.get<bool>("non_stop")),
             log(utils::get_log_for_verbosity(std::get<0>(utils::get_log_arguments_from_options(opts)))) {
+        print_options();
     }
 
     void SymParamsSearch::print_options() const {
@@ -44,6 +48,7 @@ namespace symbolic {
             log << "   Min allotted time: " << minAllottedTime << " nodes: " << minAllottedNodes << endl;
             log << "   Max allotted time: " << maxAllottedTime << " nodes: " << maxAllottedNodes << endl;
             log << "   Mult allotted time: " << ratioAllottedTime << " nodes: " << ratioAllottedNodes << endl;
+            log << "Non stop: " << non_stop << endl;
         }
     }
 

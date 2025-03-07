@@ -33,7 +33,7 @@ class Estimation {
 public:
     utils::Duration time;
     long nodes;
-    Estimation(double t = 1, long n = 1) : time(t), nodes(n) {}
+    Estimation(double t, long n) : time(t), nodes(n) {}
 
     friend std::ostream &operator<<(std::ostream &os, const Estimation &est);
 };
@@ -63,19 +63,19 @@ public:
 
     void recalculate(const StepCostEstimation &o, long nodes);
 
-    inline utils::Duration time() const {
+    utils::Duration time() const {
         return estimation.time;
     }
 
-    inline long nodes() const {
+    long nodes() const {
         return estimation.nodes;
     }
 
-    inline long nextNodes() const {
+    long nextNodes() const {
         return nextStepNodes;
     }
 
-    inline void violated_nodes(long nodes) {
+    void violated_nodes(long nodes) {
         violated(utils::Duration(0), utils::Duration(1), nodes);
     }
 

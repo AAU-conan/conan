@@ -155,16 +155,16 @@ namespace symbolic {
         return !((sBDD * bdd).IsZero());
     }
 
-    double SymVariables::numStates(const BDD &bdd) const {
-        return bdd.CountMinterm(numBDDVars/2);
+    StateCountType	 SymVariables::numStates(const BDD &bdd) const {
+        return static_cast<StateCountType>(bdd.CountMinterm(numBDDVars/2));
     }
 
-    double SymVariables::numStates() const {
+    StateCountType SymVariables::numStates() const {
         return numStates(validBDD);
     }
 
-    double SymVariables::numStates(const DisjunctiveBucket &bucket) const {
-        double sum = 0;
+    StateCountType	 SymVariables::numStates(const DisjunctiveBucket &bucket) const {
+        StateCountType sum = 0;
         for (const BDD &bdd: bucket.bucket) {
             sum += numStates(bdd);
         }

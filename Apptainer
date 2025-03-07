@@ -9,16 +9,11 @@ Stage: build
 
 %post
     apt-get update
-    apt-get -y install --no-install-recommends cmake make gcc g++ python3 g++-multilib git ca-certificates automake
+    apt-get -y install --no-install-recommends cmake make g++-14 python3 g++-multilib git ca-certificates libtool automake autoconf libboost-all-dev
 
-    git clone https://github.com/alvaro-torralba/cudd.git
-    cd cudd
-    ./configure --enable-shared --enable-obj --build=x86-pc-linux-gnu "CFLAGS=-m64 -Wall -Wextra -g -O3" "CXXFLAGS=-m64 -Wall -Wextra -g -O3" "LDFLAGS=-m64"
-    make install
-    cd ..
     
-    ./build.py -j 4
-    
+    ./build.py release
+
 # Stage 2: Run the planner
 Bootstrap: docker
 From: ubuntu:24.04
@@ -32,11 +27,6 @@ Stage: run
 %files from build
     /builds/release/bin/downward
     /builds/release/bin/translate
-    /usr/local/lib/libcudd.a
-    /usr/local/lib/libcudd.so
-    /usr/local/lib/libcudd.la
-    /usr/local/include/cuddObj.hh
-    /usr/local/include/cudd.h
     
 %post
     apt-get update

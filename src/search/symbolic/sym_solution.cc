@@ -1,11 +1,11 @@
 #include "sym_solution.h"
 
-#include <vector>       // std::vector
+#include <vector>
+
+#include "closed_list.h"
+#include "sym_state_space_manager.h"
 #include "../state_registry.h"
 #include "../task_utils/task_properties.h"
-
-#include "unidirectional_search.h"
-
 
 using namespace std;
 
@@ -13,12 +13,13 @@ namespace symbolic {
 
     void SymSolution::getPlan(vector <OperatorID> &path) const {
         assert (path.empty()); //This code should be modified to allow appending things to paths
-        //DEBUG_MSG(cout << "Extract path forward: " << g << endl; );
 
         BDD newCut;
         if (exp_fw) {
-            exp_fw->getPlan(cut, g, path);
-            TaskProxy task = exp_fw->getStateSpace()->getTask();
+            exp_fw->extract_path(cut, g, true, path);
+            std::ranges::reverse(path);
+
+            TaskProxy task = mgr->getTask();
             State s = task.get_initial_state();
 
             if (!path.empty()) {
@@ -29,13 +30,13 @@ namespace symbolic {
                     s = s.get_unregistered_successor(op);
                 }
             }
-            newCut = exp_fw->getStateSpace()->getVars()->getStateBDD(s);
+            newCut = mgr->getVars()->getStateBDD(s);
         } else {
             newCut = cut;
         }
 
         if (exp_bw) {
-            exp_bw->getPlan(newCut, h, path);
+            exp_bw->extract_path(newCut, h, false, path);
         }
     }
 
@@ -44,26 +45,64 @@ namespace symbolic {
         vector<OperatorID> path;
         getPlan(path);
 
-        SymVariables *vars = nullptr;
-        if (exp_fw) vars = exp_fw->getStateSpace()->getVars();
-        else if (exp_bw) vars = exp_bw->getStateSpace()->getVars();
+        SymVariables *vars = mgr->getVars();
 
-        ADD hADD = vars->get_bdd_manager()->getADD(-1);
+        ADD hADD = vars->get_bdd_manager()->getADD(std::numeric_limits<int>::max());
         int h_val = g + h;
 
-        TaskProxy task = (
-                exp_fw ? exp_fw->getStateSpace()->getTask() : exp_bw->getStateSpace()->getTask());
+        TaskProxy task = mgr->getTask();
         State s = task.get_initial_state();
         BDD sBDD = vars->getStateBDD(s);
-        hADD += sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val + 1));
+        hADD = hADD.Minimum(sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val)));
         for (auto op_id: path) {
             const auto &op = task.get_operators()[op_id];
             h_val -= op.get_cost();
             s = s.get_unregistered_successor(op);
             sBDD = vars->getStateBDD(s);
-            hADD += sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val + 1));
+            hADD = hADD.Minimum(sBDD.Add() * (vars->get_bdd_manager()->getADD(h_val)));
         }
         return hADD;
     }
 
+    void SymSolutionLowerBound::new_solution(const SymSolution &sol, utils::LogProxy & log) {
+        if (!solution || sol.getCost() < solution->getCost()) {
+            solution = sol;
+
+            if (log.is_at_least_normal()) {
+                log << "Solution found with cost " << sol.getCost() << " total time: " << utils::g_timer << endl;
+                log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+            }
+
+            for (auto notifier: notifiers) {
+                notifier->notify_solution(sol);
+            }
+        }
+    }
+
+    void SymSolutionLowerBound::setLowerBound(int lower, utils::LogProxy & log) {
+        // Never set a lower bound greater than the current upper bound
+        if (solution) {
+            lower = min(lower, solution->getCost());
+        }
+
+        if (lower > lower_bound) {
+            lower_bound = lower;
+            if (log.is_at_least_normal()) {
+                log << "BOUND: " << lower_bound << " < " << getUpperBoundString() << std::endl;
+            }
+        }
+    }
+
+    std::string SymSolutionLowerBound::getUpperBoundString() const {
+        if (solution) return std::to_string(solution->getCost());
+        else return "infinity";
+    }
+
+    int SymSolutionLowerBound::getUpperBound() const {
+        if (solution) {
+            return solution->getCost();
+        } else {
+            return std::numeric_limits<int>::max();
+        }
+    }
 }

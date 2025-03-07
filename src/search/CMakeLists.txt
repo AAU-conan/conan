@@ -1109,7 +1109,7 @@ create_fast_downward_library(
         symbolic/uniform_cost_search
         symbolic/sym_controller
         symbolic/sym_solution
-        symbolic/unidirectional_search
+        symbolic/opposite_frontier
         symbolic/bidirectional_search
         symbolic/open_list
         symbolic/closed_list
@@ -1120,16 +1120,22 @@ create_fast_downward_library(
 
         DEPENDS variable_ordering step_time_estimation
 )
-#[[
+
+#create_fast_downward_library(
+#        NAME gamer_pdbs
+#        HELP "Symbolic Pattern Database Heuristic following the strategy from the Gamer planner"
+#        SOURCES
+#        symbolic_heuristics/gamer_pdbs_heuristic
+#        DEPENDS symbolic
+#)
 
 create_fast_downward_library(
-        NAME gamer_pdbs
-        HELP "Heuristic"
+        NAME symbolic_perimeter
+        HELP "Symbolic Perimeter heuristic"
         SOURCES
-        symbolic/gamer_pdbs_heuristic
-        DEPENDS SYMBOLIC
+        symbolic_heuristics/symbolic_perimeter_heuristic
+        DEPENDS symbolic
 )
-]]
 
 #create_fast_downward_library(
 #        NAME strong_type
@@ -1139,7 +1145,6 @@ create_fast_downward_library(
 #        strong_type/strong_type.hpp
 #        ONLY_DEPENDENCY
 #)
-
 
 create_fast_downward_library(
         NAME symbolic_search
