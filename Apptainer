@@ -1,23 +1,31 @@
-Bootstrap: docker
-From: ubuntu:24.04
+Bootstrap: localimage
+From: base_build.img
 Stage: build
 
+%setup
+    # Create directories for mounting
+    mkdir $SINGULARITY_ROOTFS/builds
+    mkdir $SINGULARITY_ROOTFS/src
+
+    # Create output directory
+    mkdir $SINGULARITY_ROOTFS/build_output
+
 %files
-    src
     build.py
     build_configs.py
 
 %post
-    apt-get update
-    apt-get -y install --no-install-recommends cmake make g++-14 python3 g++-multilib git ca-certificates libtool automake autoconf libboost-all-dev
-
-    
-    ./build.py release
+    ./build.py release_no_lp
+    cp /builds/release_no_lp/bin/downward /build_output/downward
+    cp -r /builds/release_no_lp/bin/translate /build_output/translate
 
 # Stage 2: Run the planner
-Bootstrap: docker
-From: ubuntu:24.04
+Bootstrap: localimage
+From: base_run.img
 Stage: run
+
+%setup
+    mkdir $SINGULARITY_ROOTFS/builds
 
 # Copy planner binary and required files from Stage 1.
 %files
@@ -25,14 +33,7 @@ Stage: run
     driver
     
 %files from build
-    /builds/release/bin/downward
-    /builds/release/bin/translate
-    
-%post
-    apt-get update
-    apt-get -y install --no-install-recommends python3 time gawk
-    apt-get clean
-    rm -rf /var/lib/apt/lists/*
+    /build_output
 
 %runscript
     #! /bin/bash
@@ -42,7 +43,7 @@ Stage: run
         die "usage: DOMAIN_FILE PROBLEM_FILE PLAN_FILE SEARCH_OPTIONS"
     fi
 
-    $SINGULARITY_ROOTFS/fast-downward.py --plan-file "$3"   "$1" "$2" "${@:4}" 
+    $SINGULARITY_ROOTFS/fast-downward.py --build $SINGULARITY_ROOTFS/build_output/ --plan-file "$3" "$1" "$2" "${@:4}"
 
    
 
