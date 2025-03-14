@@ -1,0 +1,52 @@
+Bootstrap: localimage
+From: misc/apptainer/base_build.img
+Stage: build
+
+%setup
+    # Create directories for mounting
+    mkdir $SINGULARITY_ROOTFS/builds
+    mkdir $SINGULARITY_ROOTFS/src
+
+    # Create output directory
+    mkdir $SINGULARITY_ROOTFS/build_output
+
+%files
+    build.py
+    build_configs.py
+
+%post
+    ./build.py release_no_lp
+    cp /builds/release_no_lp/bin/downward /build_output/downward
+    cp -r /builds/release_no_lp/bin/translate /build_output/translate
+
+# Stage 2: Run the planner
+Bootstrap: localimage
+From: misc/apptainer/base_run.img
+Stage: run
+
+%setup
+    mkdir $SINGULARITY_ROOTFS/builds
+
+# Copy planner binary and required files from Stage 1.
+%files
+    fast-downward.py
+    driver
+    
+%files from build
+    /build_output
+
+%runscript
+    #! /bin/bash
+
+
+    if [[ "$#" -lt 3 ]]; then
+        die "usage: DOMAIN_FILE PROBLEM_FILE PLAN_FILE SEARCH_OPTIONS"
+    fi
+
+    $SINGULARITY_ROOTFS/fast-downward.py --build $SINGULARITY_ROOTFS/build_output/ --plan-file "$3" "$1" "$2" "${@:4}"
+
+   
+
+%labels
+Name        Dominance
+Authors     Alvaro Torralba <alto@cs.aau.dk>

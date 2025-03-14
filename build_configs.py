@@ -7,7 +7,7 @@ release = ["-DCMAKE_BUILD_TYPE=Release"]  + gcc14
 release_nogcc14 = ["-DCMAKE_BUILD_TYPE=Release"]
 debugdev = ["-DCMAKE_BUILD_TYPE=Debug"] + compile_commands
 debug = ["-DCMAKE_BUILD_TYPE=Debug"] + gcc14
-release_no_lp = ["-DCMAKE_BUILD_TYPE=Release", "-DUSE_LP=NO"]
+release_no_lp = ["-DCMAKE_BUILD_TYPE=Release", "-DUSE_LP=NO"] + gcc14
 # USE_GLIBCXX_DEBUG is not compatible with USE_LP (see issue983).
 glibcxx_debug = ["-DCMAKE_BUILD_TYPE=Debug", "-DUSE_LP=NO", "-DUSE_GLIBCXX_DEBUG=YES"]
 minimal = ["-DCMAKE_BUILD_TYPE=Release", "-DDISABLE_LIBRARIES_BY_DEFAULT=YES"]

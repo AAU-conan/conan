@@ -1,56 +1,48 @@
-Bootstrap: docker
-From: ubuntu:24.04
+Bootstrap: localimage
+From: misc/apptainer/base_build.img
 Stage: build
 
 %setup
     mkdir $SINGULARITY_ROOTFS/cplex
+    mkdir $SINGULARITY_ROOTFS/builds
+    mkdir $SINGULARITY_ROOTFS/src
+    mkdir $SINGULARITY_ROOTFS/build_output
 
 %files
-    src
     build.py
     build_configs.py
     fast-downward.py
 
 %post
-    apt-get update
-    apt-get -y install --no-install-recommends cmake make g++-14 python3 g++-multilib git ca-certificates libtool automake autoconf libboost-all-dev
-
     export cplex_DIR=/cplex
     ./build.py release
+    cp /builds/release/bin/downward /build_output/downward
+    cp -r /builds/release/bin/translate /build_output/translate
 
 # Stage 2: Run the planner
-Bootstrap: docker
-From: ubuntu:24.04
+Bootstrap: localimage
+From: misc/apptainer/base_run.img
 Stage: run
 
 %setup
     mkdir $SINGULARITY_ROOTFS/cplex
+    mkdir $SINGULARITY_ROOTFS/builds
 
 # Copy planner binary and required files from Stage 1.
 %files
     fast-downward.py
     driver
-    src/translate
 
 %files from build
-    /builds/release/bin/downward
-    /builds/release/bin/translate
-
-%post
-    apt-get update
-    apt-get -y install --no-install-recommends python3 time gawk libgmp-dev
-    apt-get clean
-    rm -rf /var/lib/apt/lists/*
+    /build_output
 
 %runscript
     #! /bin/bash
-
-
     if [[ "$#" -lt 3 ]]; then
         die "usage: DOMAIN_FILE PROBLEM_FILE PLAN_FILE SEARCH_OPTIONS"
     fi
 
-    $SINGULARITY_ROOTFS/fast-downward.py $@
+    $SINGULARITY_ROOTFS/fast-downward.py --build $SINGULARITY_ROOTFS/build_output/ $@
 
    
 
