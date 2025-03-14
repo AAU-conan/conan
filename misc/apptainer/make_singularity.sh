@@ -1,7 +1,8 @@
 #! /usr/bin/bash
 SHORT=$(git rev-parse --short HEAD)
-PWD=$(pwd)
-DIR=$(basename "$PWD")
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+PROJECT_ROOT=$(dirname "$(dirname "$SCRIPT_DIR")")
+PROJECT_NAME=$(basename "$PROJECT_ROOT")
 
 CPLEX_BIND=""
 if [[ $1 == "cplex" ]]; then
@@ -18,17 +19,17 @@ fi
 mkdir -p builds/singularity_builds
 
 # Build the base build image if the definition file has changed
-if [[ ApptainerBaseBuild -nt base_build.img ]]; then
-    sudo singularity build "base_build.img" ApptainerBaseBuild
+if [[ "$SCRIPT_DIR/ApptainerBaseBuild" -nt "$SCRIPT_DIR/base_build.img" ]]; then
+    sudo singularity build "$SCRIPT_DIR/base_build.img" "$SCRIPT_DIR/ApptainerBaseBuild"
 fi
 
 # Build the base run image if the definition file has changed
-if [[ ApptainerBaseRun -nt base_run.img ]]; then
-    sudo singularity build "base_run.img" ApptainerBaseRun
+if [[ "$SCRIPT_DIR/ApptainerBaseRun" -nt "$SCRIPT_DIR/base_run.img" ]]; then
+    sudo singularity build "$SCRIPT_DIR/base_run.img" "$SCRIPT_DIR/ApptainerBaseRun"
 fi
 
 # Build the apptainer image if the definition file has changed
 sudo singularity build $CPLEX_BIND\
-    --bind "$PWD/src:/src" \
-    --bind "$PWD/builds/singularity_builds:/builds" \
-    "$DIR-$SHORT.img" $APPTAINER_FILE
+    --bind "$PROJECT_ROOT/src:/src" \
+    --bind "$PROJECT_ROOT/builds/singularity_builds:/builds" \
+    "$PROJECT_NAME-$SHORT.img" "$SCRIPT_DIR/$APPTAINER_FILE"
