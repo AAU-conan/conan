@@ -52,12 +52,12 @@ void LandmarkCostPartitioningHeuristic::set_cost_partitioning_algorithm(
     bool alm) {
     if (cost_partitioning == CostPartitioningMethod::OPTIMAL) {
         cost_partitioning_algorithm =
-            utils::make_unique_ptr<OptimalCostPartitioningAlgorithm>(
+            make_unique<OptimalCostPartitioningAlgorithm>(
                 task_properties::get_operator_costs(task_proxy),
                 *lm_graph, lpsolver);
     } else if (cost_partitioning == CostPartitioningMethod::UNIFORM) {
         cost_partitioning_algorithm =
-            utils::make_unique_ptr<UniformCostPartitioningAlgorithm>(
+            make_unique<UniformCostPartitioningAlgorithm>(
                 task_properties::get_operator_costs(task_proxy),
                 *lm_graph, alm);
     } else {
@@ -167,8 +167,7 @@ public:
     }
 
     virtual shared_ptr<LandmarkCostPartitioningHeuristic>
-    create_component(const plugins::Options &opts,
-                     const utils::Context &) const override {
+    create_component(const plugins::Options &opts) const override {
         return plugins::make_shared_from_arg_tuples<LandmarkCostPartitioningHeuristic>(
             get_landmark_heuristic_arguments_from_options(opts),
             opts.get<CostPartitioningMethod>("cost_partitioning"),
