@@ -55,9 +55,7 @@ namespace dominance {
             document_synopsis("Stores the simulation relation between states in a hash map");
         }
 
-        [[nodiscard]] shared_ptr<SparseLocalStateRelationFactory> create_component(
-        const plugins::Options &/*opts*/,
-        const utils::Context &) const override {
+        shared_ptr<SparseLocalStateRelationFactory> create_component(const plugins::Options &/*opts*/) const override {
             return plugins::make_shared_from_arg_tuples<SparseLocalStateRelationFactory>();
         }
     };

@@ -44,9 +44,7 @@ namespace fts {
             document_title("Constructs atomic transition systems");
         }
 
-        virtual std::shared_ptr<AtomicTaskFactory> create_component(
-                const plugins::Options &,
-                const utils::Context &) const override {
+        virtual std::shared_ptr<AtomicTaskFactory> create_component(const plugins::Options &) const override {
             return plugins::make_shared_from_arg_tuples<AtomicTaskFactory>();
         }
     };

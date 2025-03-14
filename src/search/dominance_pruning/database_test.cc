@@ -35,8 +35,7 @@ namespace dominance {
             add_list_option<std::shared_ptr<DominanceDatabaseFactory>>("dbs", "at least one database");
         }
 
-        virtual std::shared_ptr<DatabaseTestFactory> create_component(const plugins::Options & opts,
-        const utils::Context &) const override {
+        virtual std::shared_ptr<DatabaseTestFactory> create_component(const plugins::Options & opts) const override {
             return std::make_shared<DatabaseTestFactory>(opts.get_list<std::shared_ptr<DominanceDatabaseFactory>>("dbs"));
         }
     };

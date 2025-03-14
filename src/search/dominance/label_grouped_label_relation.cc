@@ -73,9 +73,7 @@ namespace dominance {
             document_synopsis("Stores the label relation in separate sparse label group relations for each factor");
         }
 
-        [[nodiscard]] shared_ptr<LabelGroupedLabelRelationFactory> create_component(
-        const plugins::Options &opts,
-        const utils::Context &) const override {
+        [[nodiscard]] shared_ptr<LabelGroupedLabelRelationFactory> create_component(const plugins::Options &opts) const override {
             utils::unused_variable(opts);
             return plugins::make_shared_from_arg_tuples<LabelGroupedLabelRelationFactory>();
         }

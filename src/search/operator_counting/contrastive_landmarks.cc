@@ -90,8 +90,7 @@ public:
   }
 
   [[nodiscard]] std::shared_ptr<ContrastiveLandmarks>
-  create_component(const plugins::Options &,
-                   const utils::Context &) const override {
+  create_component(const plugins::Options &) const override {
     return std::make_shared<ContrastiveLandmarks>();
   }
 };

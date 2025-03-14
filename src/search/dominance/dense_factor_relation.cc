@@ -56,9 +56,7 @@ namespace dominance {
             document_synopsis("Stores the simulation relation between states in a dense matrix");
         }
 
-        [[nodiscard]] std::shared_ptr<DenseLocalStateRelationFactory> create_component(
-        const plugins::Options &/*opts*/,
-        const utils::Context &) const override {
+        std::shared_ptr<DenseLocalStateRelationFactory> create_component(const plugins::Options &/*opts*/) const override {
             return plugins::make_shared_from_arg_tuples<DenseLocalStateRelationFactory>();
         }
     };

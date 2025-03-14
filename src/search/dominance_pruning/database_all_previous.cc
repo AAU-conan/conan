@@ -46,8 +46,7 @@ namespace dominance {
 
         }
 
-        virtual std::shared_ptr<DatabaseAllPreviousFactory> create_component(const plugins::Options &,
-        const utils::Context &) const override {
+        virtual std::shared_ptr<DatabaseAllPreviousFactory> create_component(const plugins::Options &) const override {
             return std::make_shared<DatabaseAllPreviousFactory>();
         }
     };

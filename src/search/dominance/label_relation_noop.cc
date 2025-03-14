@@ -54,9 +54,7 @@ namespace dominance {
             document_synopsis("Stores label relation for NOOP dominating label in dense vector, and used identity check for all other labels");
         }
 
-        [[nodiscard]] std::shared_ptr<NoopLabelRelationFactory> create_component(
-        const plugins::Options &opts,
-        const utils::Context &) const override {
+        std::shared_ptr<NoopLabelRelationFactory> create_component(const plugins::Options &opts) const override {
             utils::unused_variable(opts);
             return plugins::make_shared_from_arg_tuples<NoopLabelRelationFactory>();
         }

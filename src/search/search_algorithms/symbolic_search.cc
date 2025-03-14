@@ -102,8 +102,7 @@ namespace symbolic_search {
             SymController::add_options_to_feature(*this, utils::Duration(30), 10e7);
         }
 
-        std::shared_ptr<SymbolicUniformCostSearch> create_component(
-            const Options &options, const utils::Context &) const override {
+        std::shared_ptr<SymbolicUniformCostSearch> create_component(const Options &options) const override {
             return std::make_shared<SymbolicUniformCostSearch>(options, true);
         }
     };
@@ -122,8 +121,7 @@ namespace symbolic_search {
             SymController::add_options_to_feature(*this, utils::Duration(30), 10e7);
         }
 
-        std::shared_ptr<SymbolicUniformCostSearch> create_component(
-            const Options &options, const utils::Context &) const override {
+        std::shared_ptr<SymbolicUniformCostSearch> create_component(const Options &options) const override {
             return std::make_shared<SymbolicUniformCostSearch>(options, false);
         }
     };

@@ -113,7 +113,7 @@ namespace operator_counting {
             document_synopsis("");
         }
 
-        [[nodiscard]] std::shared_ptr<FactoredConstraints> create_component(const plugins::Options &opts, const utils::Context &) const override {
+        [[nodiscard]] std::shared_ptr<FactoredConstraints> create_component(const plugins::Options &opts) const override {
             utils::unused_variable(opts);
             return std::make_shared<FactoredConstraints>();
         }

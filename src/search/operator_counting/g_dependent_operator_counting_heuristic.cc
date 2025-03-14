@@ -9,6 +9,15 @@
 #include <ranges>
 
 namespace operator_counting {
+    GDependentOperatorCountingHeuristic::GDependentOperatorCountingHeuristic(
+        const std::vector<std::shared_ptr<ConstraintGenerator>> &constraint_generators,
+        bool use_integer_operator_counts, lp::LPSolverType lpsolver, const std::shared_ptr<AbstractTask> &transform,
+        bool cache_estimates, const std::string &description, utils::Verbosity verbosity): OperatorCountingHeuristic(
+        constraint_generators, use_integer_operator_counts, lpsolver, transform, cache_estimates, description,
+        verbosity) {
+        utils::verify_list_not_empty(constraint_generators, "constraint_generators");
+    }
+
     EvaluationResult GDependentOperatorCountingHeuristic::compute_result(EvaluationContext& eval_context) {
         current_g_value = eval_context.get_g_value();
         auto ret = OperatorCountingHeuristic::compute_result(eval_context);
@@ -110,10 +119,7 @@ namespace operator_counting {
         }
 
         std::shared_ptr<GDependentOperatorCountingHeuristic> create_component(
-            const plugins::Options &opts,
-            const utils::Context &context) const override {
-            plugins::verify_list_non_empty<std::shared_ptr<ConstraintGenerator>>(
-                context, opts, "constraint_generators");
+            const plugins::Options &opts) const override {
             auto new_opts = opts;
             // new_opts.set("cache_estimates", false);
             return plugins::make_shared_from_arg_tuples<GDependentOperatorCountingHeuristic>(

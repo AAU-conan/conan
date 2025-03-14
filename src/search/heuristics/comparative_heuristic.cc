@@ -1,4 +1,6 @@
 #include "comparative_heuristic.h"
+
+#include "../utils/component_errors.h"
 #include "../plugins/plugin.h"
 #include <ranges>
 #include <format>
@@ -6,6 +8,12 @@
 #include <print>
 
 class Evaluator;
+
+ComparativeHeuristic::ComparativeHeuristic(const std::vector<std::shared_ptr<Evaluator>> &comparison_heuristics,
+    const std::shared_ptr<AbstractTask> &task, bool cache_estimates, const std::string &description,
+    utils::Verbosity verbosity): Heuristic(task, cache_estimates, description, verbosity), comparison_heuristics(comparison_heuristics) {
+    utils::verify_list_not_empty(comparison_heuristics, "heuristics");
+}
 
 EvaluationResult ComparativeHeuristic::compute_result(EvaluationContext& eval_context) {
     const auto results = comparison_heuristics | std::views::transform([&eval_context](const auto& heuristic) {
@@ -38,10 +46,7 @@ public:
     }
 
     virtual std::shared_ptr<ComparativeHeuristic> create_component(
-        const plugins::Options &opts,
-        const utils::Context &context) const override {
-        plugins::verify_list_non_empty<std::shared_ptr<Evaluator>>(
-            context, opts, "heuristics");
+        const plugins::Options &opts) const override {
         return plugins::make_shared_from_arg_tuples<ComparativeHeuristic>(
             opts.get_list<std::shared_ptr<Evaluator>>( "heuristics"),
             get_heuristic_arguments_from_options(opts)

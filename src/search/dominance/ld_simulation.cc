@@ -159,9 +159,7 @@ namespace dominance {
         }
 
 
-        virtual std::shared_ptr<LDSimulation> create_component(
-                const plugins::Options &opts,
-                const utils::Context &) const override {
+        virtual std::shared_ptr<LDSimulation> create_component(const plugins::Options &opts) const override {
 
             return plugins::make_shared_from_arg_tuples<LDSimulation>(
                     utils::get_log_arguments_from_options(opts),

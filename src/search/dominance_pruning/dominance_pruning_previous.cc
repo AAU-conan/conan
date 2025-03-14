@@ -120,9 +120,7 @@ namespace dominance {
             add_option<std::shared_ptr<DominanceDatabaseFactory>>("database", "Database to store the explored states", "bdd_map()");
         }
 
-        virtual shared_ptr<DominancePruningPrevious> create_component(
-                const plugins::Options &opts,
-                const utils::Context &) const override {
+        virtual shared_ptr<DominancePruningPrevious> create_component(const plugins::Options &opts) const override {
 
             return plugins::make_shared_from_arg_tuples<DominancePruningPrevious>(
             opts.get<std::shared_ptr<DominanceDatabaseFactory>>("database"),

@@ -108,9 +108,7 @@ namespace dominance {
             add_option<bool>("max_bdd_size", "Maximum size for the disjunctive partitioning", "10000");
         }
 
-        virtual std::shared_ptr<DatabaseBDDMapDisjFactory> create_component(
-            const plugins::Options &opts,
-            const utils::Context &) const override {
+        virtual std::shared_ptr<DatabaseBDDMapDisjFactory> create_component(const plugins::Options &opts) const override {
 
             BDDManagerParameters mgr_params (opts);
             auto bdd_mgr = std::make_shared<BDDManager>(mgr_params);

@@ -90,9 +90,7 @@ namespace dominance {
             add_option<bool>("insert_dominated", "Insert dominated or check dominating states", "true");
         }
 
-        virtual std::shared_ptr<DatabaseBDDFactory> create_component(
-            const plugins::Options &opts,
-            const utils::Context &) const override {
+        virtual std::shared_ptr<DatabaseBDDFactory> create_component(const plugins::Options &opts) const override {
 
             BDDManagerParameters mgr_params (opts);
             auto bdd_mgr = std::make_shared<BDDManager>(mgr_params);

@@ -96,10 +96,7 @@ namespace symbolic {
             document_property("preferred operators", "no");
         }
 
-        shared_ptr<SymbolicPerimeterHeuristic> create_component(
-            const plugins::Options &opts,
-            const utils::Context &) const override {
-
+        shared_ptr<SymbolicPerimeterHeuristic> create_component(const plugins::Options &opts) const override {
             auto bdd_manager = make_shared<BDDManager>(opts);
             SymParamsMgr mgr_params(opts);
             SymParamsSearch search_params(opts);

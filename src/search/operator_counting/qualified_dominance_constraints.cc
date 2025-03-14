@@ -467,8 +467,11 @@ namespace operator_counting {
             add_option<bool>("approx_det", "Under-approximate the determinization of the transition response NA", "false");
         }
 
-        [[nodiscard]] std::shared_ptr<QualifiedDominanceConstraints> create_component(const plugins::Options &opts, const utils::Context &) const override {
-            return std::make_shared<QualifiedDominanceConstraints>(opts.get<std::shared_ptr<DominanceAnalysis>>("dominance"), opts.get<bool>("only_pruning"), opts.get<bool>("minimize_nfa"), opts.get<bool>("approx_det"));
+        [[nodiscard]] std::shared_ptr<QualifiedDominanceConstraints> create_component(const plugins::Options &opts) const override {
+            return std::make_shared<QualifiedDominanceConstraints>(opts.get<std::shared_ptr<DominanceAnalysis>>("dominance"),
+                opts.get<bool>("only_pruning"),
+                opts.get<bool>("minimize_nfa"),
+                opts.get<bool>("approx_det"));
         }
     };
 

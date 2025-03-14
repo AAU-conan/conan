@@ -159,9 +159,7 @@ namespace dominance {
             document_synopsis("Stores the label relation in a dense matrix with compact factors");
         }
 
-        [[nodiscard]] std::shared_ptr<DenseLabelRelationFactory> create_component(
-        const plugins::Options &opts,
-        const utils::Context &) const override {
+        [[nodiscard]] std::shared_ptr<DenseLabelRelationFactory> create_component(const plugins::Options &opts) const override {
             utils::unused_variable(opts);
             return plugins::make_shared_from_arg_tuples<DenseLabelRelationFactory>();
         }
